@@ -3,6 +3,7 @@
 import { usePathname } from "next/navigation";
 import Sidebar from "./Sidebar";
 import Topbar from "./Topbar";
+import styles from "./dashboard.module.css";
 
 export default function AppFrame({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -10,12 +11,12 @@ export default function AppFrame({ children }: { children: React.ReactNode }) {
   if (pathname === "/login" || pathname === "/register") return children;
 
   return (
-    <>
-      <Topbar />
-      <div className="flex flex-1 flex-col md:flex-row">
-        <Sidebar />
-        <main className="flex-1 p-6">{children}</main>
+    <div className={styles.shell}>
+      <Sidebar />
+      <div className={styles.workspace}>
+        <Topbar />
+        <main className={styles.main}>{children}</main>
       </div>
-    </>
+    </div>
   );
 }
