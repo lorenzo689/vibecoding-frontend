@@ -2,44 +2,50 @@
 
 ## Project
 
-This repository contains the frontend of a web-first intelligent study and lecture assistant.
+This repository contains the frontend of a web-first intelligent study and lecture assistant for university students.
 
-The product is designed for university students and combines study organization with lecture-based learning.
+The product connects study organization with lecture-based learning in one continuous workflow:
 
-The central product idea is:
-
-Course
-→ Lecture
-→ Document / Slide
-→ Personal Annotation
-→ Dates / Calendar
-→ Summary
-→ Flashcards
+Course\
+→ Lecture\
+→ Document / Slide\
+→ Personal Annotation\
+→ Dates / Calendar\
+→ Summary\
+→ Flashcards\
 → Exam Preparation
 
-The application should not feel like a generic PDF chatbot or another isolated AI study tool.
+The product must not become a generic PDF chatbot or a collection of isolated AI features.
 
-Its main differentiation is the persistent connection between:
+Its differentiation is the connected workflow between study organization, lecture context and exam preparation.
 
-- course organization
-- lecture materials
-- individual slides
-- personal annotations
-- detected dates and deadlines
-- grades / academic performance
-- summaries
-- flashcards
-- exam preparation
+The overall goal is to reduce manual context transfer between lecture material, study organization and later learning.
 
-The goal is one continuous study workflow from the lecture material to exam preparation.
+---
+
+## Target Users
+
+Primary target group:
+
+- university students
+- Bachelor students
+- Master students
+
+Initial product hypothesis:
+
+Students in content-heavy and exam-intensive degree programs may benefit especially from the product.
+
+This is a product hypothesis, not a proven fact.
+
+---
 
 ## Repository Responsibility
 
 This repository is FRONTEND ONLY.
 
-It owns:
+It owns frontend concerns such as:
 
-- frontend pages
+- pages
 - layouts
 - components
 - forms
@@ -47,12 +53,13 @@ It owns:
 - frontend state
 - user interactions
 - responsive behavior
+- accessibility
 - loading states
 - empty states
 - error states
 - displaying backend data
-- calling already available backend / Supabase interfaces
-- representing processing states in the UI
+- consuming already available backend or Supabase interfaces
+- representing long-running processing states in the UI
 
 It does NOT own:
 
@@ -60,58 +67,95 @@ It does NOT own:
 - database migrations
 - Row Level Security policy definitions
 - Supabase backend configuration
+- database functions
 - background workers
 - queues
 - server-side AI processing infrastructure
 - payment backend
 - backend entitlement logic
-- backend usage-limit implementation
+- backend usage-limit infrastructure
+- new product-domain backend APIs
 - backend business logic
-- new API infrastructure unless explicitly provided by another repository
 
-All backend functionality is handled in a separate backend repository.
+Do not use Next.js server-side mechanisms as a substitute for missing backend capabilities.
 
-If a frontend feature requires backend functionality that does not exist yet:
+Server Components, middleware, or other framework features may be used for frontend/web-application concerns such as rendering, navigation, or session-aware UI when appropriate, but they must not silently become a second product backend.
 
-1. Do not implement a fake backend.
-2. Do not redesign the database.
-3. Do not create migrations.
-4. Do not create or modify RLS policies.
-5. Do not silently invent API contracts.
-6. Clearly state the required backend dependency.
+---
+
+## Sibling Backend Repository
+
+A separate backend Git repository exists as a sibling directory:
+
+`../backend`
+
+The backend repository may be inspected READ-ONLY when necessary to understand the current contract, including:
+
+- Supabase schema
+- migrations
+- generated database types
+- authentication behavior
+- Row Level Security behavior
+- Edge Functions
+- Storage configuration
+- existing backend capabilities
+
+Never modify files in `../backend` during a frontend task.
+
+Do not:
+
+- create or edit backend migrations
+- create or edit RLS policies
+- modify Edge Functions
+- modify generated backend types
+- change Supabase configuration
+- switch backend branches
+- create backend commits
+- push backend changes
+
+Unless explicitly instructed otherwise, the backend repository's local `main` branch is the stable backend contract.
+
+Do not silently use `origin/dev`, another branch, or unmerged backend work as the frontend contract.
+
+If a requested frontend feature requires backend functionality that does not exist on the current backend contract:
+
+1. do not invent a backend interface
+2. do not create a fake production backend
+3. do not redesign the database from this repository
+4. do not work around missing RLS or schema behavior
+5. implement only the safely achievable frontend scope
+6. report the exact backend dependency
+
+A missing backend capability does not automatically authorize a UI-only substitute.
+
+Build a UI-only prototype only when the current feature prompt explicitly requests or permits it.
+
+Do not silently use `localStorage`, in-memory state, mock APIs, or other fake persistence as a substitute for missing production persistence.
+
+---
 
 ## Product Goal
 
-The product should reduce the manual transfer of information between lecture material, organization and exam preparation.
-
 A student should eventually be able to:
 
-1. create or access a course
-2. upload lecture material
-3. view the lecture slide by slide
-4. attach personal notes or markings to specific slides
-5. see automatically extracted topics, definitions, dates and relevant information
-6. confirm detected dates before adding them to the calendar
-7. revisit unresolved lecture notes
-8. generate explanations
-9. generate summaries
-10. generate flashcards
-11. prepare for an exam using the accumulated course context
+1. register and log in
+2. access a protected application area
+3. create and manage courses
+4. upload lecture material to a course
+5. view lecture material slide by slide or page by page
+6. attach personal notes and markings to specific slides
+7. see extracted topics, definitions, dates and other relevant information
+8. review detected dates before they become calendar entries
+9. revisit unresolved lecture notes
+10. generate explanations and examples
+11. generate summaries
+12. generate flashcards
+13. manage basic academic performance information
+14. prepare for an exam using accumulated course and lecture context
 
-The frontend should always preserve this course and lecture context.
+The frontend should preserve course, lecture, document and slide context whenever relevant.
 
-## Target Users
-
-Primary target group:
-
-- university students
-- Bachelor and Master students
-
-Initial product hypothesis:
-
-Students in content-heavy and exam-intensive degree programs may benefit especially from the product.
-
-This is a product hypothesis, not a proven fact.
+---
 
 ## Core Product Areas
 
@@ -125,11 +169,17 @@ The product requires:
 - logout
 - protected application areas
 
-Authentication is provided by Supabase Auth through interfaces supplied by the overall system.
+The backend provides Supabase Auth.
+
+The corresponding frontend integration may not exist yet.
+
+Verify `CURRENT_STATE.md` and the repository contents before implementation.
+
+Do not implement custom password storage or custom authentication logic.
 
 ### Dashboard
 
-The dashboard should give the student a clear overview of:
+The dashboard should give the student a useful overview of items such as:
 
 - courses
 - upcoming deadlines
@@ -138,7 +188,7 @@ The dashboard should give the student a clear overview of:
 - unresolved notes
 - relevant learning progress
 
-The dashboard should prioritize useful information rather than becoming an overloaded analytics screen.
+The dashboard should prioritize useful context instead of becoming an overloaded analytics screen.
 
 ### Course Management
 
@@ -157,20 +207,22 @@ A course can conceptually contain:
 - summaries
 - flashcards
 
+These are conceptual product entities.
+
+Do not infer exact backend table names, field names, relationships, or API contracts from this list.
+
 ### Lecture Material
 
-Students can work with uploaded lecture material.
-
-The UI should support a document / slide-based experience.
+The product uses lecture documents as contextual learning material.
 
 Important conceptual relationship:
 
-Course
-→ Lecture
-→ Document
+Course\
+→ Lecture\
+→ Document\
 → Slide
 
-A slide should be treated as a meaningful context unit in the user experience.
+A slide or page is a meaningful context unit in the user experience.
 
 ### Slide Annotations
 
@@ -183,7 +235,7 @@ Students should be able to attach information to a specific slide, for example:
 - example needed
 - follow up later
 
-These annotations should remain connected to the slide and later learning workflow.
+These annotations should remain connected to the underlying slide and later learning workflow.
 
 ### Intelligent Date Detection
 
@@ -194,16 +246,14 @@ Lecture material may contain dates such as:
 - assignments
 - deadlines
 
-The frontend should represent detected dates as suggestions.
-
-Detected information must not appear as automatically confirmed user data.
+Detected dates are suggestions, not automatically confirmed user data.
 
 Expected UX:
 
-Detected date
-→ show source/context
-→ user reviews
-→ user confirms
+Detected date\
+→ show source and context\
+→ user reviews\
+→ user confirms\
 → calendar entry appears
 
 ### Calendar
@@ -228,11 +278,11 @@ The product concept includes:
 - current overall grade
 - target-grade calculations
 
-This feature may be implemented incrementally and is not required for every early frontend slice.
+This feature may be implemented incrementally.
 
 ### AI-Assisted Learning
 
-The product may use an external LLM provider.
+The final product LLM provider is intentionally undecided.
 
 Potential providers:
 
@@ -240,11 +290,9 @@ Potential providers:
 - Google Gemini
 - xAI Grok
 
-The final provider is intentionally undecided.
+Do not tightly couple frontend behavior or branding to one provider unless the current task explicitly requires it.
 
-The frontend must not be tightly designed around the branding or behavior of one provider.
-
-AI-assisted features include:
+AI-assisted product capabilities may include:
 
 - document analysis
 - explanations
@@ -252,15 +300,18 @@ AI-assisted features include:
 - examples
 - summaries
 - flashcards
-- extraction of dates and other structured information
+- extraction of dates
+- extraction of other structured information
 
-AI output should be presented as generated or suggested information where appropriate.
+AI output should be presented as generated, extracted, or suggested information where appropriate.
+
+---
 
 ## Processing States
 
 Some operations will not complete immediately.
 
-The frontend must conceptually support states such as:
+The frontend must be able to represent states such as:
 
 - idle
 - queued
@@ -274,18 +325,20 @@ Examples include:
 - summary generation
 - flashcard generation
 
-The frontend must not assume that AI-generated results always appear instantly.
+The frontend must not assume that generated results always appear instantly.
 
-The implementation of background processing itself belongs to the backend repository.
+The implementation of workers, queues, and background processing belongs to the backend repository.
+
+---
 
 ## MVP Priorities
 
-### Core MVP
+### Core MVP / MUST
 
 - registration and login
-- protected app area
+- protected application area
 - course management
-- PDF / lecture material upload UI
+- lecture material upload UI
 - slide/page-based document experience
 - slide-linked personal notes and markings
 - display of extracted lecture information
@@ -293,27 +346,33 @@ The implementation of background processing itself belongs to the backend reposi
 - course calendar
 - AI-generated summaries
 - AI-generated flashcards
+- frontend behavior that accurately reflects backend authentication and authorization guarantees
 
-### Secondary / SHOULD
+### SHOULD
+
+Implement when explicitly requested after or alongside the relevant core flow:
 
 - AI explanations
-- examples and terminology explanations
+- terminology explanations
+- examples
 - unresolved-note follow-up
-- grade management
+- basic grade management
 - target-grade calculations
 
-### Not part of the initial MVP
+### Out of Scope for the Initial MVP
 
-- native iOS app
-- native Android app
+- native iOS application
+- native Android application
 - LMS integrations
 - university-wide B2B administration
+- institutional licensing management
 - complex collaboration
 - community functionality
-- full payment system
-- institutional licensing management
+- full payment system unless explicitly requested
 
-## Frontend Tech Stack
+---
+
+## Frontend Technology Context
 
 The intended frontend stack is:
 
@@ -329,7 +388,7 @@ Development environment:
 - Git
 - GitHub
 
-Frontend quality tools:
+Planned frontend quality tools:
 
 - ESLint
 - Playwright
@@ -338,51 +397,71 @@ Deployment target:
 
 - Vercel
 
-Backend / infrastructure exists separately and may include Supabase services.
+Backend and infrastructure are maintained separately and currently use Supabase.
+
+Before implementation, inspect:
+
+- `package.json`
+- `package-lock.json`
+
+The repository files are the source of truth for installed dependency versions.
+
+Use APIs and patterns compatible with the versions actually installed.
+
+Do not downgrade or replace framework versions unless explicitly requested.
+
+---
 
 ## Design Direction
 
-The product should feel like a modern, calm and trustworthy EdTech application.
+The application should feel like a modern, calm and trustworthy EdTech/SaaS product.
 
-Design priorities:
+Priorities:
 
 - clarity
 - readability
-- strong hierarchy
+- strong visual hierarchy
 - simple navigation
 - calm visual language
 - responsive layouts
-- useful empty states
-- useful loading states
-- understandable errors
 - accessible forms
+- keyboard usability
+- visible focus states
+- useful loading states
+- useful empty states
+- understandable error states
+- consistent spacing
 - consistent components
 
 Avoid:
 
 - excessive gradients
 - stereotypical AI visuals
-- unnecessary animations
-- cluttered dashboards
+- unnecessary animation
+- visually noisy dashboards
 - excessive cards without hierarchy
 - inconsistent spacing
 - inconsistent components
-- visually impressive UI that makes the study workflow harder to understand
+- decorative UI that makes the study workflow harder to understand
 
-The product should feel like one coherent study environment rather than a collection of unrelated tools.
+The application should feel like one coherent study environment rather than a collection of unrelated tools.
 
-## UX Principle
+---
 
-The user should always understand:
+## UX Context Principle
+
+The user should be able to understand, whenever relevant:
 
 - which course they are in
 - which lecture they are viewing
 - which document is active
 - which slide an annotation belongs to
 - where generated information came from
-- whether information was detected, generated, or confirmed by the user
+- whether information was detected, generated, confirmed, or authored by the user
 
 Preserve context throughout the interface.
+
+---
 
 ## Product Differentiation
 
@@ -395,7 +474,7 @@ Existing products already provide individual capabilities such as:
 - learning plans
 - study calendars
 
-Therefore the product must not be positioned around one isolated AI feature.
+Therefore the product must not be positioned or designed around one isolated AI capability.
 
 The planned differentiation is the combination of:
 
@@ -405,16 +484,19 @@ The planned differentiation is the combination of:
 - detected deadlines
 - calendar
 - academic performance
-- AI learning material
+- AI-generated learning material
 - exam preparation
 
 within one connected workflow.
 
-## Data and Backend Assumptions
+---
+
+## Conceptual Domain Model
 
 The frontend may consume data representing concepts such as:
 
 - User
+- Profile
 - Course
 - Lecture
 - Document
@@ -428,44 +510,66 @@ The frontend may consume data representing concepts such as:
 
 These are conceptual domain entities.
 
-Do not assume exact database table names, column names, relationships or API shapes unless they already exist in this repository or are explicitly provided by the backend.
+Do not assume exact database table names, column names, relationships, API routes, or payload shapes unless they already exist in the frontend repository or are explicitly supported by the current backend contract.
+
+---
 
 ## Security Context
 
-Security is an important product requirement.
+Security is part of the product.
 
 From the frontend perspective:
 
 - never expose secrets
-- never expose service-role credentials
+- never expose Supabase service-role credentials
 - never hardcode API keys
 - never store passwords manually
-- use Supabase Auth through the available integration
+- use backend-provided Supabase Auth through the project's supported frontend integration
+- do not create custom authentication or password-storage mechanisms
 - treat uploaded documents as untrusted input
 - treat AI output as untrusted generated data
 - do not bypass backend authorization
+- do not rely on frontend filtering as an authorization boundary
 - do not invent elevated backend access to make a frontend feature work
+- do not claim a backend authorization guarantee that the current backend contract does not provide
 
-Authorization, RLS, database security and sensitive server-side enforcement belong to the backend repository.
+Database security, RLS policy definitions, backend authorization enforcement, sensitive business rules, and infrastructure belong to the backend repository.
 
-## Source of Truth
+---
 
-This file describes the permanent project and product context.
+## Source of Truth and Scope
 
-Task-specific behavior should be defined by the individual vibe-coding prompt.
+This file describes permanent project and repository context.
 
-When a task prompt defines a narrower scope, follow that scope while preserving the project context defined here.
+It is not an instruction to implement the entire product.
 
-Do not expand a task merely because another feature appears in this file.
+The current feature prompt defines the active implementation scope and acceptance criteria.
+
+When a task prompt defines a narrower scope:
+
+1. follow that scope
+2. preserve the permanent project context defined here
+3. do not expand the task merely because other features appear in this file
+
+`CURRENT_STATE.md` provides an advisory implementation snapshot.
+
+It may be outdated and never overrides repository contents.
+
+Repository contents remain authoritative.
+
+---
 
 ## Decision Rule
 
 When implementing a requested frontend feature:
 
-1. understand the existing frontend
-2. preserve the product context defined here
-3. follow the task-specific prompt
-4. reuse existing frontend patterns
+1. inspect the existing frontend
+2. preserve the project context defined here
+3. follow the current task-specific prompt
+4. reuse existing frontend patterns where available
 5. stay inside the frontend repository boundary
-6. do not invent backend behavior
-7. surface missing backend dependencies clearly
+6. inspect `../backend` read-only only when needed to understand an existing contract
+7. do not invent backend behavior
+8. do not invent database fields, API routes, or persistence behavior
+9. do not use fake persistence unless explicitly permitted by the task
+10. report missing backend dependencies clearly
