@@ -1,0 +1,348 @@
+.page {
+  --green: #224f41;
+  --muted: #667369;
+}
+
+.topRow {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 20px;
+}
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 550;
+  color: var(--muted);
+}
+.backLink:hover {
+  color: var(--green);
+}
+
+/* Page header */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 28px;
+}
+.header h1 {
+  font-size: 22px;
+  font-weight: 550;
+  letter-spacing: -0.4px;
+}
+.createButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 0 18px;
+  border-radius: 8px;
+  background: var(--green);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 550;
+  cursor: pointer;
+  transition: background 150ms;
+}
+.createButton:hover {
+  background: #173d31;
+}
+
+/* Empty state */
+.empty {
+  border: 1px dashed #dfe5d7;
+  border-radius: 12px;
+  padding: 56px 24px;
+  text-align: center;
+}
+.empty h2 {
+  font-size: 17px;
+  font-weight: 550;
+}
+.empty p {
+  margin: 8px 0 22px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+/* Course card as link */
+.courseLink {
+  display: block;
+}
+.courseLink:focus-visible {
+  outline: 3px solid #67957a;
+  outline-offset: 4px;
+  border-radius: 10px;
+}
+
+/* Badge color variants (matches dashboard badge tone pattern) */
+.badge[data-color="green"] {
+  background: #d7e8c7;
+  color: #3f6b2e;
+}
+.badge[data-color="amber"] {
+  background: #f3dfae;
+  color: #8a5a12;
+}
+.badge[data-color="sage"] {
+  background: #cfe3d6;
+  color: #2f6b4d;
+}
+.badge[data-color="blue"] {
+  background: #cddced;
+  color: #2c5490;
+}
+.badge[data-color="rose"] {
+  background: #f3d3d3;
+  color: #a13d3d;
+}
+.badge[data-color="violet"] {
+  background: #ddd3ee;
+  color: #5b3f8a;
+}
+.badge[data-color="teal"] {
+  background: #c9e8e2;
+  color: #1f6b5c;
+}
+.badge[data-color="coral"] {
+  background: #f6dcc4;
+  color: #a85a1f;
+}
+.badge[data-color="indigo"] {
+  background: #d6d9f5;
+  color: #3d4590;
+}
+
+/* Dialog */
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: #1a241f4d;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  z-index: 50;
+}
+.dialog {
+  width: 100%;
+  max-width: 440px;
+  max-height: 90vh;
+  overflow-y: auto;
+  background: #fff;
+  border-radius: 12px;
+  padding: 28px;
+  box-shadow: 0 30px 80px #08291f33;
+}
+.dialogHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+.dialogHeader h2 {
+  font-size: 18px;
+  font-weight: 550;
+}
+.closeButton {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  color: var(--muted);
+  cursor: pointer;
+}
+.closeButton:hover {
+  background: #f0f3ea;
+  color: var(--green);
+}
+.field {
+  margin-bottom: 18px;
+}
+.field label {
+  display: block;
+  font-size: 13px;
+  font-weight: 550;
+  margin-bottom: 8px;
+}
+.field input,
+.field textarea {
+  display: block;
+  width: 100%;
+  border: 1px solid #d7ded6;
+  border-radius: 8px;
+  background: #fff;
+  padding: 11px 13px;
+  font: inherit;
+  font-size: 14px;
+  color: inherit;
+  transition: border-color 150ms, box-shadow 150ms;
+}
+.field textarea {
+  resize: vertical;
+  min-height: 72px;
+}
+.field input:focus,
+.field textarea:focus {
+  outline: none;
+  border-color: var(--green);
+  box-shadow: 0 0 0 3px #224f411c;
+}
+.hint {
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.swatchRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.swatch {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+}
+.swatch[aria-pressed="true"] {
+  border-color: var(--green);
+}
+.submitButton {
+  width: 100%;
+  min-height: 46px;
+  border-radius: 8px;
+  background: var(--green);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 550;
+  cursor: pointer;
+  transition: background 150ms;
+}
+.submitButton:hover {
+  background: #173d31;
+}
+
+/* File upload */
+.uploadSection {
+  margin-top: 32px;
+  border: 1px solid #dfe5d7;
+  border-radius: 12px;
+  padding: 22px;
+}
+.uploadSection h2 {
+  font-size: 15px;
+  font-weight: 550;
+}
+.uploadLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  min-height: 40px;
+  padding: 0 16px;
+  border: 1px solid #d7ded6;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 550;
+  color: var(--green);
+  cursor: pointer;
+  transition: border-color 150ms, background 150ms;
+}
+.uploadLabel:hover {
+  background: #f0f3ea;
+  border-color: #9daa9f;
+}
+.uploadLabel input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+.uploadHint {
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.fileList {
+  list-style: none;
+  padding: 0;
+  margin: 18px 0 0;
+  display: grid;
+  gap: 8px;
+}
+.fileRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid #e5e9df;
+  border-radius: 8px;
+  font-size: 13px;
+}
+.fileName {
+  border: none;
+  background: none;
+  padding: 0;
+  font: inherit;
+  font-weight: 550;
+  color: inherit;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.fileName:hover {
+  color: var(--green);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.fileRow small {
+  color: var(--muted);
+  flex-shrink: 0;
+  margin-left: auto;
+}
+.fileRemove {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border-radius: 6px;
+  color: var(--muted);
+  cursor: pointer;
+}
+.fileRemove:hover {
+  background: #f7e9e6;
+  color: #a83d31;
+}
+
+/* Danger zone */
+.dangerZone {
+  margin-top: 32px;
+  padding-top: 22px;
+  border-top: 1px solid #e1e6dc;
+}
+.dangerButton {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 0 16px;
+  border-radius: 8px;
+  border: 1px solid #e3c4bd;
+  background: #fdfdf9;
+  color: #a83d31;
+  font-size: 13px;
+  font-weight: 550;
+  cursor: pointer;
+  transition: background 150ms;
+}
+.dangerButton:hover {
+  background: #f7e9e6;
+}
