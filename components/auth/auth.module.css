@@ -27,6 +27,8 @@
 .primary:disabled { opacity: .55; cursor: not-allowed; }
 .shell a:focus-visible, .shell button:focus-visible { outline: 3px solid #67957a; outline-offset: 4px; }
 .previewNote { margin: 14px 0 0; font-size: 12px; color: var(--muted); text-align: center; line-height: 1.6; }
+.devLink { color: #9a7b2f; text-decoration: underline dotted; text-underline-offset: 3px; }
+.devLink:hover { color: #7a611f; }
 .status { color: var(--green); font-size: 13px; line-height: 1.6; }
 .status:not(:empty) { margin-top: 14px; padding: 12px; background: #e9efe5; border-radius: 7px; }
 .alternative { margin-top: 28px; text-align: center; font-size: 13px; color: var(--muted); line-height: 1.8; }

@@ -47,6 +47,11 @@ export default function AuthForm({ mode }: { mode: "login" | "register" }) {
         </div>
         <button className={styles.primary} type="submit">{registering ? "Create account" : "Sign in"}<span aria-hidden="true">→</span></button>
         <p id="auth-preview-note" className={styles.previewNote}>Design preview · {registering ? "Account creation" : "Sign-in"} is not available yet.</p>
+        {!registering && (
+          <p className={styles.previewNote}>
+            <Link href="/dashboard" className={styles.devLink}>Entwicklung: direkt zum Dashboard →</Link>
+          </p>
+        )}
         <div role="status" className={styles.status}>{submitted && "This is a visual preview. Your details have not been sent or saved."}</div>
       </form>
       <p className={styles.alternative}>{registering ? "Already have an account?" : "Don't have an account?"}{" "}
