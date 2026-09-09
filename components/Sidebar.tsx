@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import s from "./dashboard.module.css";
 const items = [
-  { href: "/", label: "Dashboard" },
+  { href: "/dashboard", label: "Dashboard" },
   { href: "/courses", label: "Kurse" },
   { href: "/calendar", label: "Kalender" },
   { href: "/documents", label: "Unterlagen" },
@@ -18,7 +18,7 @@ export default function Sidebar() {
   return (
     <aside className={s.sidebar}>
       <div className={s.brandRow}>
-        <Link href="/" className={s.brand} onClick={() => setOpen(false)}>
+        <Link href="/dashboard" className={s.brand} onClick={() => setOpen(false)}>
           Lernapp<span>.</span>
         </Link>
         <button

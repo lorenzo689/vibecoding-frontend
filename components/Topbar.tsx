@@ -2,7 +2,7 @@
 import { usePathname } from "next/navigation";
 import s from "./dashboard.module.css";
 const labels: Record<string, string> = {
-  "/": "Dashboard",
+  "/dashboard": "Dashboard",
   "/courses": "Kurse",
   "/calendar": "Kalender",
   "/documents": "Unterlagen",
