@@ -1,9 +1,9 @@
 "use client";
-
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-
-const navItems = [
+import { useState } from "react";
+import s from "./dashboard.module.css";
+const items = [
   { href: "/", label: "Dashboard" },
   { href: "/courses", label: "Kurse" },
   { href: "/calendar", label: "Kalender" },
@@ -12,32 +12,54 @@ const navItems = [
   { href: "/summaries", label: "Zusammenfassungen" },
   { href: "/grades", label: "Noten" },
 ];
-
 export default function Sidebar() {
   const pathname = usePathname();
-
+  const [open, setOpen] = useState(false);
   return (
-    <nav
-      aria-label="Hauptnavigation"
-      className="flex shrink-0 gap-1 overflow-x-auto border-b border-zinc-200 bg-white p-2 md:w-56 md:flex-col md:overflow-visible md:border-b-0 md:border-r md:p-4 dark:border-zinc-800 dark:bg-zinc-950"
-    >
-      {navItems.map((item) => {
-        const isActive = pathname === item.href;
-        return (
-          <Link
-            key={item.href}
-            href={item.href}
-            aria-current={isActive ? "page" : undefined}
-            className={`whitespace-nowrap rounded-md px-3 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 ${
-              isActive
-                ? "bg-zinc-100 font-medium text-zinc-900 dark:bg-zinc-800 dark:text-zinc-50"
-                : "text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-zinc-50"
-            }`}
-          >
-            {item.label}
-          </Link>
-        );
-      })}
-    </nav>
+    <aside className={s.sidebar}>
+      <div className={s.brandRow}>
+        <Link href="/" className={s.brand} onClick={() => setOpen(false)}>
+          Lernapp<span>.</span>
+        </Link>
+        <button
+          className={s.menu}
+          aria-expanded={open}
+          aria-controls="app-navigation"
+          onClick={() => setOpen(!open)}
+        >
+          {open ? "Menü schließen" : "Menü öffnen"}
+        </button>
+      </div>
+      <div id="app-navigation" className={open ? s.navOpen : s.navArea}>
+        <p className={s.eyebrow}>DEIN STUDIENRAUM</p>
+        <nav aria-label="Hauptnavigation">
+          {items.map((item, i) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              aria-current={pathname === item.href ? "page" : undefined}
+              onClick={() => setOpen(false)}
+            >
+              <span aria-hidden="true">0{i + 1}</span>
+              {item.label}
+            </Link>
+          ))}
+        </nav>
+        <div className={s.sidebarBottom}>
+          <p>
+            Alles beginnt mit
+            <br />
+            <strong>einem guten Überblick.</strong>
+          </p>
+          <div className={s.profile}>
+            <span aria-hidden="true">L</span>
+            <div>
+              <strong>Dein Studienraum</strong>
+              <small>Frontend-Vorschau</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </aside>
   );
 }
