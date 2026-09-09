@@ -1,12 +1,11 @@
+import type { Metadata } from "next";
+import CalendarPreview from "@/components/calendar/CalendarPreview";
+
+export const metadata: Metadata = {
+  title: "Kalender | Lernapp",
+  description: "Vorlesungen, Lernzeit und wichtige Termine im Studienkontext.",
+};
+
 export default function CalendarPage() {
-  return (
-    <div className="flex flex-col gap-2">
-      <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">
-        Kalender
-      </h1>
-      <p className="text-zinc-600 dark:text-zinc-400">
-        Platzhalter – Inhalt folgt.
-      </p>
-    </div>
-  );
+  return <CalendarPreview />;
 }
