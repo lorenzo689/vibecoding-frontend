@@ -7,8 +7,7 @@ import styles from "./dashboard.module.css";
 
 export default function AppFrame({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  // Presentation only: these routes have no session or authorization behavior.
-  if (pathname === "/login" || pathname === "/register" || pathname === "/")
+  if (pathname === "/login" || pathname === "/register" || pathname === "/" || pathname.startsWith("/auth/"))
     return children;
 
   return (
