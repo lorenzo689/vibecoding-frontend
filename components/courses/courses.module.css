@@ -238,6 +238,12 @@
   font-size: 15px;
   font-weight: 550;
 }
+.uploadSection h2 small {
+  margin-left: 8px;
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--muted);
+}
 .uploadLabel {
   display: inline-flex;
   align-items: center;
@@ -321,6 +327,82 @@
 .fileRemove:hover {
   background: #f7e9e6;
   color: #a83d31;
+}
+
+/* Tool tiles (flashcards / summaries) */
+.toolGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-top: 24px;
+}
+.toolCard {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 18px;
+  border: 1px solid #dfe5d7;
+  background: #fdfdf9;
+  border-radius: 10px;
+  transition: transform 150ms, box-shadow 150ms, border-color 150ms;
+}
+.toolCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 26px #08291f0f;
+  border-color: #c9d4c1;
+}
+.toolIcon {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 9px;
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.3px;
+}
+.toolIcon[data-tool="flashcards"] {
+  background: #e5ecd8;
+  color: #49643c;
+}
+.toolIcon[data-tool="summary"] {
+  background: #e3e8ec;
+  color: #2c5490;
+}
+.toolBody {
+  flex: 1;
+  min-width: 0;
+}
+.toolCard h3 {
+  font-size: 14px;
+  font-weight: 550;
+}
+.toolCard h3 small {
+  margin-left: 6px;
+  font-size: 10px;
+  font-weight: 500;
+  color: #6a7f5c;
+}
+.toolCard p {
+  margin-top: 3px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.toolArrow {
+  flex-shrink: 0;
+  color: #9db98a;
+  font-size: 14px;
+  transition: transform 150ms, color 150ms;
+}
+.toolCard:hover .toolArrow {
+  transform: translateX(3px);
+  color: var(--green);
+}
+@media (max-width: 600px) {
+  .toolGrid {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* Danger zone */

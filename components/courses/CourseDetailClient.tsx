@@ -137,7 +137,9 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
       <p>{course.description || "Keine Beschreibung hinterlegt."}</p>
 
       <div className={styles.uploadSection}>
-        <h2>Vorlesungsfolien & Übungen</h2>
+        <h2>
+          Vorlesungsfolien & Übungen <small>{files.length}</small>
+        </h2>
         <label className={styles.uploadLabel}>
           + Datei hochladen
           <input
@@ -178,6 +180,33 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
             ))}
           </ul>
         )}
+      </div>
+
+      <div className={styles.toolGrid}>
+        <Link href={`/courses/${courseId}/flashcards`} className={styles.courseLink}>
+          <article className={styles.toolCard}>
+            <span className={styles.toolIcon} data-tool="flashcards">KK</span>
+            <div className={styles.toolBody}>
+              <h3>
+                Karteikarten <small>24</small>
+              </h3>
+              <p>Aus deinem Vorlesungsmaterial lernen.</p>
+            </div>
+            <span className={styles.toolArrow} aria-hidden="true">→</span>
+          </article>
+        </Link>
+        <Link href={`/courses/${courseId}/summaries`} className={styles.courseLink}>
+          <article className={styles.toolCard}>
+            <span className={styles.toolIcon} data-tool="summary">ZF</span>
+            <div className={styles.toolBody}>
+              <h3>
+                Zusammenfassung <small>3</small>
+              </h3>
+              <p>Das Wesentliche aus deinen Vorlesungen.</p>
+            </div>
+            <span className={styles.toolArrow} aria-hidden="true">→</span>
+          </article>
+        </Link>
       </div>
 
       <div className={styles.dangerZone}>

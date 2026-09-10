@@ -19,7 +19,7 @@ const filters: { value: Filter; label: string }[] = [
   { value: "failed", label: "Aufmerksamkeit nötig" },
 ];
 
-export default function SummaryWorkspace() {
+export default function SummaryWorkspace({ courseId }: { courseId: string }) {
   const [query, setQuery] = useState("");
   const [course, setCourse] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
@@ -134,7 +134,7 @@ export default function SummaryWorkspace() {
           <div className={s.workflowLinks}>
             <div><p className={shared.eyebrow}>VON HIER AUS WEITER</p><h3>Das Wissen bleibt verbunden.</h3></div>
             <Link href="/documents">Zu den Unterlagen <span aria-hidden="true">→</span></Link>
-            <Link href="/flashcards">Zu den Karteikarten <small>24 · Beispiel</small> <span aria-hidden="true">→</span></Link>
+            <Link href={`/courses/${courseId}/flashcards`}>Zu den Karteikarten <small>24 · Beispiel</small> <span aria-hidden="true">→</span></Link>
           </div>
         </section>
       </div>

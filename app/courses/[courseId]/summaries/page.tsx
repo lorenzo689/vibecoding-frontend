@@ -8,7 +8,11 @@ export const metadata: Metadata = {
   description: "Zusammenfassungen mit Kurs-, Vorlesungs- und Quellenkontext.",
 };
 
-export default function SummariesPage() {
+export default async function CourseSummariesPage(
+  props: PageProps<"/courses/[courseId]/summaries">
+) {
+  const { courseId } = await props.params;
+
   return (
     <div className={`${shared.dashboard} ${s.page}`}>
       <section className={shared.intro}>
@@ -27,7 +31,7 @@ export default function SummariesPage() {
         Produktvorschau · Zusammenfassungen und Quellen sind illustrative, KI-generierte
         Beispielinhalte. Bitte immer mit den Originalunterlagen abgleichen.
       </p>
-      <SummaryWorkspace />
+      <SummaryWorkspace courseId={courseId} />
       <footer className={shared.dashboardFooter}>
         <span>Lernapp · Dein Semester, verbunden.</span>
         <span>Zusammenfassungsvorschau ohne Datenanbindung</span>
