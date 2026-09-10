@@ -3,11 +3,10 @@ import { usePathname } from "next/navigation";
 import s from "./dashboard.module.css";
 const labels: Record<string, string> = {
   "/dashboard": "Dashboard",
+  "/assistant": "KI-Assistent",
   "/courses": "Kurse",
   "/calendar": "Kalender",
   "/documents": "Unterlagen",
-  "/flashcards": "Karteikarten",
-  "/summaries": "Zusammenfassungen",
   "/grades": "Noten",
 };
 export default function Topbar() {

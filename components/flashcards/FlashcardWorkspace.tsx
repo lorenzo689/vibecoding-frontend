@@ -16,7 +16,7 @@ function matches(status: DeckStatus, filter: Filter) {
   return filter === "all" || status === filter || (filter === "processing" && status === "queued") || (filter === "attention" && status === "failed");
 }
 
-export default function FlashcardWorkspace() {
+export default function FlashcardWorkspace({ courseId }: { courseId: string }) {
   const [query, setQuery] = useState(""); const [course, setCourse] = useState(""); const [filter, setFilter] = useState<Filter>("all");
   const [selectedId, setSelectedId] = useState("vibe-coding"); const [index, setIndex] = useState(0); const [revealed, setRevealed] = useState(false); const [ratings, setRatings] = useState<Ratings>({});
   const studyRef = useRef<HTMLElement>(null); const selected = decks.find((deck) => deck.id === selectedId)!; const card = cards[index]; const counts = ratingCounts(ratings);
@@ -50,7 +50,7 @@ export default function FlashcardWorkspace() {
           <div className={s.sessionSummary}><div><p className={shared.eyebrow}>DEINE SITZUNG · LOKAL</p><h3>{Object.keys(ratings).length === cards.length ? "Vorschau abgeschlossen." : "Ein ruhiger Schritt nach dem anderen."}</h3></div><dl><div><dt>Noch unsicher</dt><dd>{counts.unsure}</dd></div><div><dt>Verstanden</dt><dd>{counts.understood}</dd></div><div><dt>Noch offen</dt><dd>{cards.length - counts.unsure - counts.understood}</dd></div></dl><button type="button" onClick={resetSession}>Sitzung neu starten</button></div>
         </section>
         <section className={s.generator} aria-labelledby="generator-heading"><div><p className={shared.eyebrow}>NEUE KARTEIKARTEN</p><h2 id="generator-heading">Aus Material wird Wiederholung.</h2></div><div className={s.generatorFields}><label htmlFor="generator-course">Kurs<select id="generator-course" disabled defaultValue="nk"><option value="nk">Neue Konzepte</option></select></label><label htmlFor="generator-source">Zusammenfassung oder Dokument<select id="generator-source" disabled defaultValue="vibe"><option value="vibe">Vibe Coding Setup · Zusammenfassung</option></select></label><label htmlFor="generator-count">Kartenanzahl<select id="generator-count" disabled defaultValue="24"><option value="24">24 Karten</option></select></label></div><button type="button" disabled aria-describedby="generator-note">Karteikarten erstellen</button><p id="generator-note">Vorschau · Es wird keine Generierung gestartet oder gespeichert.</p></section>
-        <nav className={s.workflowLinks} aria-label="Verbundener Lernworkflow"><div><p className={shared.eyebrow}>DEIN LERNWEG</p><h3>Vom Material bis zur Prüfung.</h3></div><Link href="/documents">Zu den Unterlagen <span aria-hidden="true">→</span></Link><Link href="/summaries">Zu den Zusammenfassungen <span aria-hidden="true">→</span></Link><Link href="/calendar">Zum Kalender <span aria-hidden="true">→</span></Link></nav>
+        <nav className={s.workflowLinks} aria-label="Verbundener Lernworkflow"><div><p className={shared.eyebrow}>DEIN LERNWEG</p><h3>Vom Material bis zur Prüfung.</h3></div><Link href="/documents">Zu den Unterlagen <span aria-hidden="true">→</span></Link><Link href={`/courses/${courseId}/summaries`}>Zu den Zusammenfassungen <span aria-hidden="true">→</span></Link><Link href="/calendar">Zum Kalender <span aria-hidden="true">→</span></Link></nav>
       </div>
     </div>
   </>;

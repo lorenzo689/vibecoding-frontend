@@ -5,11 +5,10 @@ import { useState } from "react";
 import s from "./dashboard.module.css";
 const items = [
   { href: "/dashboard", label: "Dashboard" },
+  { href: "/assistant", label: "KI-Assistent" },
   { href: "/courses", label: "Kurse" },
   { href: "/calendar", label: "Kalender" },
   { href: "/documents", label: "Unterlagen" },
-  { href: "/flashcards", label: "Karteikarten" },
-  { href: "/summaries", label: "Zusammenfassungen" },
   { href: "/grades", label: "Noten" },
 ];
 export default function Sidebar() {
