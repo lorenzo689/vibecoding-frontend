@@ -1,0 +1,270 @@
+.page {
+  max-width: 1080px;
+  margin-inline: auto;
+  color: #26382f;
+}
+
+.eyebrow,
+.sectionLabel {
+  color: #627b55;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 1.35px;
+}
+
+.page h1 {
+  margin-top: 12px;
+  font-size: clamp(30px, 4vw, 44px);
+  font-weight: 500;
+  letter-spacing: -1.4px;
+  line-height: 1.1;
+}
+
+.intro {
+  max-width: 590px;
+  margin-top: 12px;
+  color: #667369;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.pageHeader {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 32px;
+  padding-bottom: 32px;
+  border-bottom: 1px solid #dfe5d9;
+}
+
+.identity {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  min-width: 240px;
+}
+
+.identity > span {
+  display: grid;
+  place-items: center;
+  width: 50px;
+  height: 50px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: #e7ecde;
+  color: #4e6944;
+  font-size: 17px;
+}
+
+.identity strong,
+.identity small {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.identity strong {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.identity small {
+  margin-top: 5px;
+  color: #667369;
+  font-size: 11px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.8fr);
+  gap: 24px;
+  margin-top: 32px;
+}
+
+.card,
+.errorCard {
+  padding: 28px;
+  border: 1px solid #dfe5d7;
+  border-radius: 10px;
+  background: #fdfdf9;
+}
+
+.card h2,
+.errorCard h2 {
+  margin-top: 10px;
+  font-size: 18px;
+  font-weight: 550;
+  letter-spacing: -0.35px;
+}
+
+.supportingText,
+.errorCard p {
+  margin-top: 9px;
+  color: #667369;
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.card form {
+  margin-top: 27px;
+}
+
+.card label {
+  display: block;
+  margin-bottom: 8px;
+  color: #344a3d;
+  font-size: 12px;
+  font-weight: 550;
+}
+
+.card input {
+  width: 100%;
+  min-height: 46px;
+  padding: 11px 13px;
+  border: 1px solid #ced8ca;
+  border-radius: 7px;
+  background: #fff;
+  color: #26382f;
+  font: inherit;
+  font-size: 13px;
+}
+
+.card input:focus {
+  border-color: #67957a;
+  outline: 3px solid #dce9df;
+}
+
+.card input[aria-invalid="true"] {
+  border-color: #a85243;
+}
+
+.fieldHelp {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 7px;
+  color: #748078;
+  font-size: 10px;
+}
+
+.statusMessage,
+.errorMessage {
+  min-height: 36px;
+  padding-top: 10px;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.statusMessage {
+  color: #3e694d;
+}
+
+.errorMessage {
+  color: #934235;
+}
+
+.card button,
+.errorCard button {
+  min-height: 42px;
+  padding: 10px 17px;
+  border: 1px solid #224f41;
+  border-radius: 7px;
+  background: #224f41;
+  color: #fff;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 550;
+  cursor: pointer;
+}
+
+.card button:hover:not(:disabled),
+.errorCard button:hover:not(:disabled) {
+  background: #193e33;
+}
+
+.card button:disabled,
+.errorCard button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.accountDetails {
+  margin-top: 26px;
+}
+
+.accountDetails > div {
+  padding-block: 15px;
+  border-bottom: 1px solid #e4e8df;
+}
+
+.accountDetails dt {
+  color: #748078;
+  font-size: 10px;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+
+.accountDetails dd {
+  margin-top: 7px;
+  overflow-wrap: anywhere;
+  color: #344a3d;
+  font-size: 12px;
+}
+
+.securityNote {
+  margin-top: 22px;
+  padding: 14px;
+  border-radius: 7px;
+  background: #edf1e6;
+  color: #586d51;
+  font-size: 11px;
+  line-height: 1.65;
+}
+
+.errorCard {
+  max-width: 620px;
+  margin-top: 32px;
+}
+
+.errorCard button {
+  margin-top: 20px;
+}
+
+.loadingCard {
+  width: min(100%, 680px);
+  height: 250px;
+  margin-top: 32px;
+  border: 1px solid #dfe5d7;
+  border-radius: 10px;
+  background: linear-gradient(100deg, #f4f6ef 20%, #fafbf7 40%, #f4f6ef 60%);
+  background-size: 200% 100%;
+  animation: loading 1.5s ease-in-out infinite;
+}
+
+@keyframes loading {
+  to { background-position-x: -200%; }
+}
+
+@media (max-width: 800px) {
+  .pageHeader {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 520px) {
+  .card,
+  .errorCard {
+    padding: 21px;
+  }
+
+  .identity {
+    min-width: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loadingCard { animation: none; }
+}

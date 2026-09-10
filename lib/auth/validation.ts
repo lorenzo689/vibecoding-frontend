@@ -8,6 +8,7 @@ const protectedPrefixes = [
   "/flashcards",
   "/summaries",
   "/grades",
+  "/profile",
 ];
 
 export function isProtectedPath(pathname: string): boolean {

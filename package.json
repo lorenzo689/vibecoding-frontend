@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --test components/flashcards/session.test.mjs components/grades/calculations.test.mjs lib/auth/validation.test.mjs"
+    "test": "node --test components/flashcards/session.test.mjs components/grades/calculations.test.mjs lib/auth/validation.test.mjs lib/auth/profile.test.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",

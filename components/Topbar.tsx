@@ -8,6 +8,7 @@ const labels: Record<string, string> = {
   "/calendar": "Kalender",
   "/documents": "Unterlagen",
   "/grades": "Noten",
+  "/profile": "Profil",
 };
 export default function Topbar() {
   const path = usePathname();
