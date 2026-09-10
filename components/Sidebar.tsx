@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import AuthenticatedProfile from "./auth/AuthenticatedProfile";
 import s from "./dashboard.module.css";
 const items = [
   { href: "/dashboard", label: "Dashboard" },
@@ -51,13 +52,7 @@ export default function Sidebar() {
             <br />
             <strong>einem guten Überblick.</strong>
           </p>
-          <div className={s.profile}>
-            <span aria-hidden="true">L</span>
-            <div>
-              <strong>Dein Studienraum</strong>
-              <small>Frontend-Vorschau</small>
-            </div>
-          </div>
+          <AuthenticatedProfile />
         </div>
       </div>
     </aside>
