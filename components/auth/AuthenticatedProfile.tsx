@@ -1,8 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { AuthChangeEvent } from "@supabase/supabase-js";
+import {
+  PROFILE_UPDATED_EVENT,
+  profileInitial,
+  type ProfileUpdatedDetail,
+} from "@/lib/auth/profile";
 import { createClient } from "@/lib/supabase/browser";
 import s from "@/components/dashboard.module.css";
 
@@ -11,7 +17,7 @@ type ProfileState =
   | { status: "ready"; name: string; email: string }
   | { status: "error"; message: string };
 
-export default function AuthenticatedProfile() {
+export default function AuthenticatedProfile({ onNavigate }: { onNavigate?: () => void }) {
   const router = useRouter();
   const [profile, setProfile] = useState<ProfileState>({ status: "loading" });
   const [signingOut, setSigningOut] = useState(false);
@@ -49,9 +55,21 @@ export default function AuthenticatedProfile() {
         router.refresh();
       }
     });
+
+    function handleProfileUpdated(event: Event) {
+      const { displayName } = (event as CustomEvent<ProfileUpdatedDetail>).detail;
+      setProfile((current) =>
+        current.status === "ready"
+          ? { ...current, name: displayName }
+          : current
+      );
+    }
+
+    window.addEventListener(PROFILE_UPDATED_EVENT, handleProfileUpdated);
     return () => {
       window.clearTimeout(initialLoad);
       data.subscription.unsubscribe();
+      window.removeEventListener(PROFILE_UPDATED_EVENT, handleProfileUpdated);
     };
   }, [loadProfile, router]);
 
@@ -74,14 +92,19 @@ export default function AuthenticatedProfile() {
 
   const name = profile.status === "ready" ? profile.name : profile.status === "error" ? profile.message : "Profil wird geladen …";
   const detail = profile.status === "ready" ? profile.email : profile.status === "error" ? "Bitte Seite neu laden" : "Einen Moment bitte";
-  const initial = profile.status === "ready" ? Array.from(profile.name)[0]?.toLocaleUpperCase("de-DE") ?? "L" : "L";
+  const initial = profile.status === "ready" ? profileInitial(profile.name) : "L";
 
   return (
     <div className={s.profileArea}>
-      <div className={s.profile} aria-live="polite">
+      <Link
+        href="/profile"
+        className={s.profile}
+        aria-label="Eigenes Profil öffnen"
+        onClick={onNavigate}
+      >
         <span aria-hidden="true">{initial}</span>
-        <div><strong>{name}</strong><small>{detail}</small></div>
-      </div>
+        <div aria-live="polite"><strong>{name}</strong><small>{detail}</small></div>
+      </Link>
       <button type="button" className={s.logoutButton} onClick={logout} disabled={signingOut}>
         {signingOut ? "Wird abgemeldet …" : "Abmelden"}
       </button>

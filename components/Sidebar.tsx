@@ -51,7 +51,7 @@ export default function Sidebar() {
             <br />
             <strong>einem guten Überblick.</strong>
           </p>
-          <AuthenticatedProfile />
+          <AuthenticatedProfile onNavigate={() => setOpen(false)} />
         </div>
       </div>
     </aside>
