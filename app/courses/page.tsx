@@ -1,30 +1,32 @@
 "use client";
 
-import { useState, useSyncExternalStore } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import {
-  createCourse,
-  getCoursesServerSnapshot,
-  getCoursesSnapshot,
-  subscribe,
-  type Course,
-} from "@/lib/courses";
+import { createCourse, listCourses, type Course } from "@/lib/supabase/queries/courses";
+import { deriveCourseBadge } from "@/lib/courseBadge";
 import CreateCourseDialog from "@/components/courses/CreateCourseDialog";
 import dashboardStyles from "@/components/dashboard.module.css";
 import styles from "@/components/courses/courses.module.css";
 
 export default function CoursesPage() {
-  const courses = useSyncExternalStore(
-    subscribe,
-    getCoursesSnapshot,
-    getCoursesServerSnapshot
-  );
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
 
-  function handleCreate(input: Omit<Course, "id" | "createdAt">) {
-    createCourse(input);
+  useEffect(() => {
+    listCourses().then((data) => {
+      setCourses(data);
+      setLoading(false);
+    });
+  }, []);
+
+  async function handleCreate(input: { title: string; description: string }) {
+    const course = await createCourse(input);
+    setCourses((prev) => [...prev, course]);
     setDialogOpen(false);
   }
+
+  if (loading) return null;
 
   return (
     <div className={styles.page}>
@@ -58,27 +60,30 @@ export default function CoursesPage() {
         </div>
       ) : (
         <div className={dashboardStyles.courseGrid}>
-          {courses.map((course) => (
-            <Link
-              key={course.id}
-              href={`/courses/${course.id}`}
-              className={styles.courseLink}
-            >
-              <article className={dashboardStyles.course}>
-                <div className={dashboardStyles.courseTop}>
-                  <span
-                    className={`${dashboardStyles.badge} ${styles.badge}`}
-                    data-color={course.color}
-                  >
-                    {course.code}
-                  </span>
-                  <small>KURS</small>
-                </div>
-                <h3>{course.name}</h3>
-                <p>{course.description || "Keine Beschreibung hinterlegt."}</p>
-              </article>
-            </Link>
-          ))}
+          {courses.map((course) => {
+            const badge = deriveCourseBadge(course.title);
+            return (
+              <Link
+                key={course.id}
+                href={`/courses/${course.id}`}
+                className={styles.courseLink}
+              >
+                <article className={dashboardStyles.course}>
+                  <div className={dashboardStyles.courseTop}>
+                    <span
+                      className={`${dashboardStyles.badge} ${styles.badge}`}
+                      data-color={badge.color}
+                    >
+                      {badge.code}
+                    </span>
+                    <small>KURS</small>
+                  </div>
+                  <h3>{course.title}</h3>
+                  <p>{course.description || "Keine Beschreibung hinterlegt."}</p>
+                </article>
+              </Link>
+            );
+          })}
         </div>
       )}
 

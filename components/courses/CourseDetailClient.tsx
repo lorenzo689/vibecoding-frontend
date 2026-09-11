@@ -1,16 +1,18 @@
 "use client";
 
-import { useEffect, useState, useSyncExternalStore, type ChangeEvent } from "react";
+import { useEffect, useState, type ChangeEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { deleteCourse, getCourse, subscribe } from "@/lib/courses";
+import { deleteCourse, getCourse, type Course } from "@/lib/supabase/queries/courses";
 import {
   addCourseFile,
   deleteCourseFile,
-  deleteCourseFiles,
-  getCourseFiles,
+  deleteLocalBlob,
+  getCourseFileBlob,
+  listCourseFiles,
   type CourseFile,
-} from "@/lib/courseFiles";
+} from "@/lib/supabase/queries/files";
+import { deriveCourseBadge } from "@/lib/courseBadge";
 import dashboardStyles from "@/components/dashboard.module.css";
 import styles from "./courses.module.css";
 
@@ -49,16 +51,14 @@ function formatSize(bytes: number): string {
 
 export default function CourseDetailClient({ courseId }: { courseId: string }) {
   const router = useRouter();
-  const course = useSyncExternalStore(
-    subscribe,
-    () => getCourse(courseId) ?? null,
-    () => undefined
-  );
+  const [course, setCourse] = useState<Course | null | undefined>(undefined);
   const [files, setFiles] = useState<CourseFile[]>([]);
   const [fileError, setFileError] = useState<string | null>(null);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
 
   useEffect(() => {
-    getCourseFiles(courseId).then(setFiles);
+    getCourse(courseId).then(setCourse);
+    listCourseFiles(courseId).then(setFiles);
   }, [courseId]);
 
   async function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
@@ -72,12 +72,20 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
     } else {
       setFileError(null);
     }
-    await Promise.all(allowed.map((file) => addCourseFile(courseId, file)));
-    setFiles(await getCourseFiles(courseId));
+    const uploaded = await Promise.all(allowed.map((file) => addCourseFile(courseId, file)));
+    setFiles((prev) => [...prev, ...uploaded]);
   }
 
-  function handleDownload(file: CourseFile) {
-    const url = URL.createObjectURL(file.blob);
+  async function handleDownload(file: CourseFile) {
+    const blob = await getCourseFileBlob(file.id);
+    if (!blob) {
+      setDownloadError(
+        `„${file.name}" ist nur auf dem Gerät verfügbar, auf dem sie hochgeladen wurde.`
+      );
+      return;
+    }
+    setDownloadError(null);
+    const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
     link.download = file.name;
@@ -89,15 +97,16 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
 
   async function handleRemoveFile(id: string) {
     await deleteCourseFile(id);
-    setFiles(await getCourseFiles(courseId));
+    setFiles((prev) => prev.filter((file) => file.id !== id));
   }
 
   async function handleDeleteCourse() {
     if (!window.confirm("Diesen Kurs wirklich löschen? Das kann nicht rückgängig gemacht werden.")) {
       return;
     }
-    await deleteCourseFiles(courseId);
-    deleteCourse(courseId);
+    const currentFiles = await listCourseFiles(courseId);
+    await deleteCourse(courseId);
+    await Promise.all(currentFiles.map((file) => deleteLocalBlob(file.id)));
     router.push("/courses");
   }
 
@@ -108,10 +117,7 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
       <div className={styles.page}>
         <div className={styles.empty}>
           <h2>Kurs nicht gefunden</h2>
-          <p>
-            Dieser Kurs existiert nicht in diesem Browser — lokale
-            Kurs-Daten werden nicht geräteübergreifend synchronisiert.
-          </p>
+          <p>Dieser Kurs existiert nicht oder du hast keinen Zugriff darauf.</p>
           <Link href="/courses" className={styles.createButton}>
             Zurück zur Kursübersicht
           </Link>
@@ -119,6 +125,8 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
       </div>
     );
   }
+
+  const badge = deriveCourseBadge(course.title);
 
   return (
     <div className={styles.page}>
@@ -129,11 +137,11 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
       </div>
       <span
         className={`${dashboardStyles.badge} ${styles.badge}`}
-        data-color={course.color}
+        data-color={badge.color}
       >
-        {course.code}
+        {badge.code}
       </span>
-      <h1 style={{ marginTop: 16 }}>{course.name}</h1>
+      <h1 style={{ marginTop: 16 }}>{course.title}</h1>
       <p>{course.description || "Keine Beschreibung hinterlegt."}</p>
 
       <div className={styles.uploadSection}>
@@ -150,10 +158,12 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
           />
         </label>
         <p className={styles.uploadHint}>
-          PDF, Word, Excel oder Bilder. Nur lokal in diesem Browser
-          gespeichert, solange es noch keinen Datei-Speicher im Backend gibt.
+          PDF, Word, Excel oder Bilder. Metadaten werden gespeichert, der
+          Dateiinhalt bleibt aktuell nur auf diesem Gerät (noch kein
+          Datei-Speicher im Backend).
         </p>
         {fileError && <p className={styles.uploadHint}>{fileError}</p>}
+        {downloadError && <p className={styles.uploadHint}>{downloadError}</p>}
 
         {files.length > 0 && (
           <ul className={styles.fileList}>
@@ -187,9 +197,7 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
           <article className={styles.toolCard}>
             <span className={styles.toolIcon} data-tool="flashcards">KK</span>
             <div className={styles.toolBody}>
-              <h3>
-                Karteikarten <small>24</small>
-              </h3>
+              <h3>Karteikarten</h3>
               <p>Aus deinem Vorlesungsmaterial lernen.</p>
             </div>
             <span className={styles.toolArrow} aria-hidden="true">→</span>
@@ -199,9 +207,7 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
           <article className={styles.toolCard}>
             <span className={styles.toolIcon} data-tool="summary">ZF</span>
             <div className={styles.toolBody}>
-              <h3>
-                Zusammenfassung <small>3</small>
-              </h3>
+              <h3>Zusammenfassung</h3>
               <p>Das Wesentliche aus deinen Vorlesungen.</p>
             </div>
             <span className={styles.toolArrow} aria-hidden="true">→</span>

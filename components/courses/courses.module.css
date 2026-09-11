@@ -197,21 +197,6 @@
   font-size: 11px;
   color: var(--muted);
 }
-.swatchRow {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-.swatch {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  border: 2px solid transparent;
-  cursor: pointer;
-}
-.swatch[aria-pressed="true"] {
-  border-color: var(--green);
-}
 .submitButton {
   width: 100%;
   min-height: 46px;
@@ -377,12 +362,6 @@
 .toolCard h3 {
   font-size: 14px;
   font-weight: 550;
-}
-.toolCard h3 small {
-  margin-left: 6px;
-  font-size: 10px;
-  font-weight: 500;
-  color: #6a7f5c;
 }
 .toolCard p {
   margin-top: 3px;
