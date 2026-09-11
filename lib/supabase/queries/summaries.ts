@@ -1,7 +1,5 @@
 import { createClient } from "@/lib/supabase/browser";
-
-// summaries.content is a jsonb column with no backend-defined shape yet.
-// { text: string } is a format we chose on the frontend for now.
+import { summaryText } from "./summary-format";
 
 export type CourseSummary = {
   materialId: string;
@@ -41,7 +39,7 @@ export async function getCourseSummary(courseId: string): Promise<CourseSummary 
     materialId: row.id,
     summaryId: row.summaries.id,
     title: row.title,
-    text: row.summaries.content?.text ?? "",
+    text: summaryText(row.summaries.content),
     updatedAt: row.summaries.updated_at,
   };
 }
@@ -72,7 +70,7 @@ export async function saveCourseSummary(
       materialId: existing.materialId,
       summaryId: data.id,
       title: input.title,
-      text: data.content?.text ?? "",
+      text: summaryText(data.content),
       updatedAt: data.updated_at,
     };
   }
@@ -100,13 +98,16 @@ export async function saveCourseSummary(
     })
     .select("id, content, updated_at")
     .single();
-  if (summaryError) throw summaryError;
+  if (summaryError) {
+    await supabase.from("materials").delete().eq("id", material.id);
+    throw summaryError;
+  }
 
   return {
     materialId: material.id,
     summaryId: summary.id,
     title: input.title,
-    text: summary.content?.text ?? "",
+    text: summaryText(summary.content),
     updatedAt: summary.updated_at,
   };
 }

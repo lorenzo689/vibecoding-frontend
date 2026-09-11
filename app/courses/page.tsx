@@ -12,21 +12,66 @@ export default function CoursesPage() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function loadCourses() {
+    setLoading(true);
+    setError(null);
+    try {
+      setCourses(await listCourses());
+    } catch {
+      setError("Deine Kurse konnten nicht geladen werden. Bitte versuche es erneut.");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   useEffect(() => {
-    listCourses().then((data) => {
-      setCourses(data);
-      setLoading(false);
-    });
+    let active = true;
+
+    listCourses()
+      .then((nextCourses) => {
+        if (active) setCourses(nextCourses);
+      })
+      .catch(() => {
+        if (active) {
+          setError("Deine Kurse konnten nicht geladen werden. Bitte versuche es erneut.");
+        }
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
   }, []);
 
   async function handleCreate(input: { title: string; description: string }) {
-    const course = await createCourse(input);
-    setCourses((prev) => [...prev, course]);
-    setDialogOpen(false);
+    setError(null);
+    try {
+      const course = await createCourse(input);
+      setCourses((prev) => [...prev, course]);
+      setDialogOpen(false);
+    } catch {
+      setError("Der Kurs konnte nicht erstellt werden.");
+      throw new Error("create-course-failed");
+    }
   }
 
-  if (loading) return null;
+  if (loading) return <div className={styles.page} aria-live="polite">Kurse werden geladen …</div>;
+
+  if (error && courses.length === 0) {
+    return (
+      <div className={styles.page}>
+        <div className={styles.empty} role="alert">
+          <h2>Kurse nicht verfügbar</h2>
+          <p>{error}</p>
+          <button type="button" className={styles.createButton} onClick={loadCourses}>Erneut versuchen</button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.page}>
@@ -42,6 +87,7 @@ export default function CoursesPage() {
           </button>
         )}
       </div>
+      {error && <p className={styles.uploadHint} role="alert">{error}</p>}
 
       {courses.length === 0 ? (
         <div className={styles.empty}>

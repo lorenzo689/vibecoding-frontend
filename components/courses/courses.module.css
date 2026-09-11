@@ -248,6 +248,8 @@
   background: #f0f3ea;
   border-color: #9daa9f;
 }
+.uploadLabel:disabled { cursor: not-allowed; opacity: .58; }
+.uploadLabel:disabled:hover { background: transparent; border-color: #d7ded6; }
 .uploadLabel input {
   position: absolute;
   width: 1px;

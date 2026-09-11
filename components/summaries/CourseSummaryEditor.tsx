@@ -21,15 +21,20 @@ export default function CourseSummaryEditor({ courseId }: { courseId: string }) 
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    getCourseSummary(courseId).then((summary) => {
-      if (summary) {
-        setText(summary.text);
-        setUpdatedAt(summary.updatedAt);
-      } else {
-        setEditing(true);
-      }
-      setLoading(false);
-    });
+    let active = true;
+    getCourseSummary(courseId)
+      .then((summary) => {
+        if (!active) return;
+        if (summary) {
+          setText(summary.text);
+          setUpdatedAt(summary.updatedAt);
+        } else {
+          setEditing(true);
+        }
+      })
+      .catch(() => { if (active) setError("Die Zusammenfassung konnte nicht geladen werden."); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
   }, [courseId]);
 
   async function handleSave() {
@@ -46,7 +51,11 @@ export default function CourseSummaryEditor({ courseId }: { courseId: string }) 
     }
   }
 
-  if (loading) return null;
+  if (loading) return <p className={s.status} aria-live="polite">Zusammenfassung wird geladen …</p>;
+
+  if (error && !updatedAt && !editing) {
+    return <div className={s.empty} role="alert"><h3>Nicht verfügbar</h3><p>{error} Bitte lade die Seite erneut.</p></div>;
+  }
 
   return (
     <div className={s.editor}>

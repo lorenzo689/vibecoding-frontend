@@ -16,6 +16,8 @@
 .field input:focus { outline: none; border-color: var(--green); box-shadow: 0 0 0 3px #224f411c; }
 .field input:user-invalid { border-color: #a83d31; }
 .field small { display: block; margin-top: 6px; color: var(--muted); font-size: 11px; }
+.forgotPassword { display: inline-block; margin-top: 9px; color: var(--green); font-size: 12px; font-weight: 550; text-decoration: underline; text-underline-offset: 3px; }
+.forgotPassword:hover { color: #102e24; }
 .passwordWrap { position: relative; }
 .passwordWrap input { padding-right: 56px; }
 .visibility { position: absolute; right: 4px; top: 4px; width: 44px; height: 44px; display: grid; place-items: center; border-radius: 5px; color: #68766d; cursor: pointer; }

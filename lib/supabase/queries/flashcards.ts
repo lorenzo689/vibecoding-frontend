@@ -71,7 +71,10 @@ async function ensureDeck(courseId: string, title: string): Promise<{ materialId
     .insert({ material_id: material.id, title })
     .select("id")
     .single();
-  if (deckError) throw deckError;
+  if (deckError) {
+    await supabase.from("materials").delete().eq("id", material.id);
+    throw deckError;
+  }
 
   return { materialId: material.id, deckId: deck.id };
 }

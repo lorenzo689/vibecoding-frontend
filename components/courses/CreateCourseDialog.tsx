@@ -8,11 +8,13 @@ export default function CreateCourseDialog({
   onCreate,
 }: {
   onClose: () => void;
-  onCreate: (input: { title: string; description: string }) => void;
+  onCreate: (input: { title: string; description: string }) => Promise<void>;
 }) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const titleInputRef = useRef<HTMLInputElement>(null);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     titleInputRef.current?.focus();
@@ -23,10 +25,17 @@ export default function CreateCourseDialog({
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [onClose]);
 
-  function submit(event: FormEvent<HTMLFormElement>) {
+  async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!title.trim()) return;
-    onCreate({ title: title.trim(), description: description.trim() });
+    setSaving(true);
+    setError(null);
+    try {
+      await onCreate({ title: title.trim(), description: description.trim() });
+    } catch {
+      setError("Der Kurs konnte nicht erstellt werden. Bitte versuche es erneut.");
+      setSaving(false);
+    }
   }
 
   return (
@@ -63,6 +72,7 @@ export default function CreateCourseDialog({
               onChange={(event) => setTitle(event.target.value)}
               placeholder="z. B. Neue Konzepte"
               required
+              disabled={saving}
             />
           </div>
           <div className={styles.field}>
@@ -72,13 +82,15 @@ export default function CreateCourseDialog({
               value={description}
               onChange={(event) => setDescription(event.target.value)}
               placeholder="Kurzer Kontext zum Kurs"
+              disabled={saving}
             />
             <p className={styles.hint}>
               Wird später als Kontext für den KI-Assistenten genutzt.
             </p>
           </div>
-          <button type="submit" className={styles.submitButton}>
-            Kurs erstellen
+          {error && <p className={styles.hint} role="alert">{error}</p>}
+          <button type="submit" className={styles.submitButton} disabled={saving}>
+            {saving ? "Wird erstellt …" : "Kurs erstellen"}
           </button>
         </form>
       </div>

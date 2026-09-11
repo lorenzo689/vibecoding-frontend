@@ -1,47 +1,17 @@
 "use client";
 
-import { useEffect, useState, type ChangeEvent } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { deleteCourse, getCourse, type Course } from "@/lib/supabase/queries/courses";
 import {
-  addCourseFile,
   deleteCourseFile,
-  deleteLocalBlob,
-  getCourseFileBlob,
   listCourseFiles,
   type CourseFile,
 } from "@/lib/supabase/queries/files";
 import { deriveCourseBadge } from "@/lib/courseBadge";
 import dashboardStyles from "@/components/dashboard.module.css";
 import styles from "./courses.module.css";
-
-const ALLOWED_MIME_TYPES = [
-  "application/pdf",
-  "application/msword",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-  "application/vnd.ms-excel",
-  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-];
-const ALLOWED_EXTENSIONS = [
-  ".pdf",
-  ".doc",
-  ".docx",
-  ".xls",
-  ".xlsx",
-  ".png",
-  ".jpg",
-  ".jpeg",
-  ".gif",
-  ".webp",
-];
-
-function isAllowedFile(file: File): boolean {
-  if (file.type.startsWith("image/")) return true;
-  if (ALLOWED_MIME_TYPES.includes(file.type)) return true;
-  const lower = file.name.toLowerCase();
-  return ALLOWED_EXTENSIONS.some((ext) => lower.endsWith(ext));
-}
 
 function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -53,61 +23,46 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
   const router = useRouter();
   const [course, setCourse] = useState<Course | null | undefined>(undefined);
   const [files, setFiles] = useState<CourseFile[]>([]);
-  const [fileError, setFileError] = useState<string | null>(null);
-  const [downloadError, setDownloadError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   useEffect(() => {
-    getCourse(courseId).then(setCourse);
-    listCourseFiles(courseId).then(setFiles);
+    let active = true;
+    Promise.all([getCourse(courseId), listCourseFiles(courseId)])
+      .then(([nextCourse, nextFiles]) => {
+        if (!active) return;
+        setCourse(nextCourse);
+        setFiles(nextFiles);
+      })
+      .catch(() => {
+        if (!active) return;
+        setLoadError("Der Kurs konnte nicht geladen werden. Bitte versuche es erneut.");
+        setCourse(null);
+      });
+    return () => { active = false; };
   }, [courseId]);
 
-  async function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
-    const selected = Array.from(event.target.files ?? []);
-    event.target.value = "";
-    if (selected.length === 0) return;
-
-    const allowed = selected.filter(isAllowedFile);
-    if (allowed.length < selected.length) {
-      setFileError("Nur PDF, Word, Excel und Bilddateien werden unterstützt.");
-    } else {
-      setFileError(null);
-    }
-    const uploaded = await Promise.all(allowed.map((file) => addCourseFile(courseId, file)));
-    setFiles((prev) => [...prev, ...uploaded]);
-  }
-
-  async function handleDownload(file: CourseFile) {
-    const blob = await getCourseFileBlob(file.id);
-    if (!blob) {
-      setDownloadError(
-        `„${file.name}" ist nur auf dem Gerät verfügbar, auf dem sie hochgeladen wurde.`
-      );
-      return;
-    }
-    setDownloadError(null);
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = file.name;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  }
-
   async function handleRemoveFile(id: string) {
-    await deleteCourseFile(id);
-    setFiles((prev) => prev.filter((file) => file.id !== id));
+    setActionError(null);
+    try {
+      await deleteCourseFile(id);
+      setFiles((prev) => prev.filter((file) => file.id !== id));
+    } catch {
+      setActionError("Der Dateieintrag konnte nicht entfernt werden.");
+    }
   }
 
   async function handleDeleteCourse() {
     if (!window.confirm("Diesen Kurs wirklich löschen? Das kann nicht rückgängig gemacht werden.")) {
       return;
     }
-    const currentFiles = await listCourseFiles(courseId);
-    await deleteCourse(courseId);
-    await Promise.all(currentFiles.map((file) => deleteLocalBlob(file.id)));
-    router.push("/courses");
+    setActionError(null);
+    try {
+      await deleteCourse(courseId);
+      router.push("/courses");
+    } catch {
+      setActionError("Der Kurs konnte nicht gelöscht werden.");
+    }
   }
 
   if (course === undefined) return null;
@@ -116,8 +71,8 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
     return (
       <div className={styles.page}>
         <div className={styles.empty}>
-          <h2>Kurs nicht gefunden</h2>
-          <p>Dieser Kurs existiert nicht oder du hast keinen Zugriff darauf.</p>
+          <h2>{loadError ? "Kurs nicht verfügbar" : "Kurs nicht gefunden"}</h2>
+          <p>{loadError ?? "Dieser Kurs existiert nicht oder du hast keinen Zugriff darauf."}</p>
           <Link href="/courses" className={styles.createButton}>
             Zurück zur Kursübersicht
           </Link>
@@ -148,35 +103,20 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
         <h2>
           Vorlesungsfolien & Übungen <small>{files.length}</small>
         </h2>
-        <label className={styles.uploadLabel}>
+        <button type="button" className={styles.uploadLabel} disabled>
           + Datei hochladen
-          <input
-            type="file"
-            multiple
-            accept=".pdf,.doc,.docx,.xls,.xlsx,image/*"
-            onChange={handleFileChange}
-          />
-        </label>
+        </button>
         <p className={styles.uploadHint}>
-          PDF, Word, Excel oder Bilder. Metadaten werden gespeichert, der
-          Dateiinhalt bleibt aktuell nur auf diesem Gerät (noch kein
-          Datei-Speicher im Backend).
+          Noch nicht verfügbar: Das Backend besitzt Dateimetadaten, aber noch
+          keinen freigegebenen Storage-Bucket für Datei-Inhalte.
         </p>
-        {fileError && <p className={styles.uploadHint}>{fileError}</p>}
-        {downloadError && <p className={styles.uploadHint}>{downloadError}</p>}
+        {actionError && <p className={styles.uploadHint} role="alert">{actionError}</p>}
 
         {files.length > 0 && (
           <ul className={styles.fileList}>
             {files.map((file) => (
               <li key={file.id} className={styles.fileRow}>
-                <button
-                  type="button"
-                  className={styles.fileName}
-                  onClick={() => handleDownload(file)}
-                  title="Herunterladen"
-                >
-                  {file.name}
-                </button>
+                <span className={styles.fileName}>{file.name}</span>
                 <small>{formatSize(file.size)}</small>
                 <button
                   type="button"

@@ -33,14 +33,14 @@ export default function AuthenticatedProfile({ onNavigate }: { onNavigate?: () =
       }
       const { data, error } = await supabase
         .from("profiles")
-        .select("display_name")
-        .eq("id", userData.user.id)
+        .select("name")
+        .eq("user_id", userData.user.id)
         .maybeSingle();
       if (error || !data) {
         setProfile({ status: "error", message: "Profil nicht verfügbar" });
         return;
       }
-      setProfile({ status: "ready", name: data.display_name, email: userData.user.email ?? "Angemeldet" });
+      setProfile({ status: "ready", name: data.name, email: userData.user.email ?? "Angemeldet" });
     } catch {
       setProfile({ status: "error", message: "Profil konnte nicht geladen werden" });
     }

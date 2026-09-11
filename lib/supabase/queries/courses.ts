@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/browser";
+import type { Tables } from "@/lib/supabase/database.types";
 
 export type Course = {
   id: string;
@@ -9,14 +10,7 @@ export type Course = {
   updatedAt: string;
 };
 
-type CourseRow = {
-  id: string;
-  title: string;
-  description: string | null;
-  owner_id: string;
-  created_at: string;
-  updated_at: string;
-};
+type CourseRow = Tables<"courses">;
 
 function mapCourse(row: CourseRow): Course {
   return {
@@ -36,7 +30,7 @@ export async function listCourses(): Promise<Course[]> {
     .order("created_at", { ascending: true });
 
   if (error) throw error;
-  return (data as CourseRow[]).map(mapCourse);
+  return data.map(mapCourse);
 }
 
 export async function getCourse(id: string): Promise<Course | null> {
@@ -47,7 +41,7 @@ export async function getCourse(id: string): Promise<Course | null> {
     .maybeSingle();
 
   if (error) throw error;
-  return data ? mapCourse(data as CourseRow) : null;
+  return data ? mapCourse(data) : null;
 }
 
 export async function createCourse(input: {
@@ -69,7 +63,7 @@ export async function createCourse(input: {
     .single();
 
   if (error) throw error;
-  return mapCourse(data as CourseRow);
+  return mapCourse(data);
 }
 
 export async function deleteCourse(id: string): Promise<void> {

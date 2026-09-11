@@ -1,48 +1,91 @@
-# Frontend-Authentifizierung einrichten
+# Frontend-Authentifizierung
 
-Die Anwendung verwendet Supabase Auth über `@supabase/ssr`. Sessions liegen in
-Cookies, werden in `proxy.ts` erneuert und auf geschützten Routen serverseitig
-geprüft. Im Browser dürfen ausschließlich Projekt-URL und Publishable-/Anon-Key
-verwendet werden.
+Die Anwendung verwendet Supabase Auth über `@supabase/ssr`. Browser- und
+Server-Client teilen Cookie-Sessions; `proxy.ts` erneuert und validiert sie.
 
-## Lokale Umgebung
+## Umgebung
 
-`.env.example` nach `.env.local` kopieren und eintragen:
+`.env.example` nach `.env.local` kopieren:
 
 ```dotenv
-NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
-NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=<öffentlicher lokaler Key>
+NEXT_PUBLIC_SUPABASE_URL=<project-url>
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=<publishable-key>
+AUTH_SITE_URL=http://127.0.0.1:3000
 ```
 
-Bei einem älteren Projekt kann stattdessen `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-verwendet werden. Niemals Service-Role-Key, Secret-Key, Datenbankpasswort oder
-Supabase Access Token in das Frontend eintragen.
+`AUTH_SITE_URL` muss eine Basisadresse ohne Pfad sein und in Staging und
+Produktion der echten HTTPS-Frontend-Domain entsprechen. Sie wird serverseitig
+für Recovery-Redirects und Same-Origin-Prüfungen verwendet.
 
-## Supabase Auth URLs
+Niemals Service-Role-Key, Secret-Key, Datenbankpasswort oder Management-Token in
+das Frontend eintragen. `.env.local` ist gitignored; `.env.example` enthält nur
+Platzhalter.
 
-Lokal:
+## Registrierung und Profil
 
-- Site URL: `http://127.0.0.1:3000`
-- Redirect Allowlist: `http://127.0.0.1:3000/auth/callback`
-- optional zusätzlich: `http://localhost:3000/auth/callback`
+Die Registrierung sendet:
 
-Für Staging und Produktion jeweils die echte Domain konfigurieren:
+```ts
+options: { data: { display_name: validatedName } }
+```
 
-- Site URL: `https://<tatsächliche-domain>`
-- Redirect Allowlist: `https://<tatsächliche-domain>/auth/callback`
+Der Backend-Trigger legt das Profil an und speichert den Wert in
+`profiles.name`. `display_name` ist nur der Name des Auth-Metadatenfeldes und
+keine aktuelle Datenbankspalte.
 
-Keine fremden Domains oder unnötigen Wildcards freigeben. Der ausgewählte
-Backend-`dev`-Contract verlangt E-Mail-Bestätigung und mindestens acht
-Passwortzeichen. Remote-Einstellungen werden nicht durch dieses Frontend
-übertragen; sie müssen im Backend mit dessen dokumentiertem Plan-/Push-Prozess
-oder bewusst im Supabase Dashboard gesetzt werden.
+Der Browser legt niemals selbst Profile an. Profilabfragen werden über
+`user_id = authUser.id` auf das eigene Profil beschränkt; RLS bildet die echte
+Autorisierungsgrenze. Bearbeitbar ist ausschließlich `name` mit 1–60
+Unicode-Zeichen.
 
-## Manueller End-to-End-Check
+## Bestätigungslinks
 
-1. Registrieren und die Mail in der lokalen Mail-Oberfläche öffnen.
-2. Bestätigungslink im selben Browser öffnen, in dem die Registrierung gestartet wurde.
-3. Weiterleitung zu `/dashboard`, Profilanzeige und Reload prüfen.
-4. Abmelden und den direkten Zugriff auf `/dashboard` prüfen.
-5. Login mit falschem und richtigem Passwort sowie unbestätigter Adresse prüfen.
+Die Backend-Mailvorlagen verweisen auf:
 
-Browser-Callback und Mailzustellung sind nicht Bestandteil der Unit-Tests.
+```text
+/auth/confirm?token_hash=...&type=email
+/auth/confirm?token_hash=...&type=recovery
+```
+
+Der Proxy übernimmt nur die erlaubten Typen `email` und `recovery` in ein
+kurzlebiges HttpOnly-Cookie und entfernt den Token aus der sichtbaren URL. Der
+GET-Aufruf verbraucht den Token nicht. Erst die ausdrückliche Bestätigung sendet
+einen Same-Origin-POST an `/auth/confirm/verify`, der `verifyOtp()` aufruft.
+
+Erfolgreiche E-Mail-Bestätigung führt nach `/dashboard`. Ein Recovery-Link führt
+mit einer kurzlebigen serverseitigen Recovery-Markierung nach
+`/auth/reset-password`.
+
+`/auth/callback` bleibt ausschließlich für bestehende PKCE-Code-Links erhalten
+und tauscht einen `code` einmalig über `exchangeCodeForSession()` aus.
+
+## Passwort zurücksetzen
+
+1. `/forgot-password` fordert über `resetPasswordForEmail()` eine Mail an.
+2. Die Antwort verrät nicht, ob ein Konto zur Adresse existiert.
+3. Der Recovery-Mail-Link wird ausdrücklich bestätigt.
+4. `/auth/reset-password` verlangt eine validierte Auth-Session und die
+   kurzlebige Recovery-Markierung.
+5. Das neue Passwort wird unverändert mit `updateUser({ password })` gesendet.
+6. Nach Erfolg werden Recovery-Markierung und lokale Session beendet; die
+   Anmeldung erfolgt mit dem neuen Passwort.
+
+## Routenschutz
+
+Geschützt sind Dashboard, Assistent, Kurse samt Unterseiten, Kalender,
+Unterlagen, Karteikarten, Zusammenfassungen, Noten und Profil. Unauthentifizierte
+Aufrufe werden mit einer geprüften internen Rücksprungadresse nach `/login`
+geleitet. Externe, protokollrelative und öffentliche Ziele werden verworfen.
+
+## Manuelle Abnahme
+
+1. Registrieren und eine neue Bestätigungsmail öffnen.
+2. Link auch in einem zweiten Browser prüfen.
+3. Bestätigungsschaltfläche verwenden und Weiterleitung prüfen.
+4. Profil, Reload und geschützte Direktaufrufe prüfen.
+5. Logout und erneuten Direktzugriff testen.
+6. Passwort-Reset vollständig durchführen.
+7. Abgelaufene und bereits verbrauchte Links prüfen.
+8. Staging-/Produktions-Site-URL, Redirect-Allowlist und SMTP separat abnehmen.
+
+Remote-Einstellungen werden durch dieses Frontend nicht automatisch geändert.

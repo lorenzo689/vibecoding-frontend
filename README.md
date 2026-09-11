@@ -1,36 +1,72 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Lernapp Frontend
 
-## Getting Started
+Next.js-Frontend für einen verbundenen Studienraum aus Kursen, Lernmaterial,
+Zusammenfassungen, Karteikarten und Prüfungsvorbereitung.
 
-First, run the development server:
+## Lokale Einrichtung
+
+Voraussetzung ist Node.js 22 oder neuer.
+
+```bash
+npm ci
+```
+
+`.env.example` nach `.env.local` kopieren und die öffentlichen Werte des
+ausgewählten Supabase-Projekts eintragen:
+
+```dotenv
+NEXT_PUBLIC_SUPABASE_URL=<project-url>
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=<publishable-key>
+AUTH_SITE_URL=http://127.0.0.1:3000
+```
+
+`AUTH_SITE_URL` ist eine serverseitige Basisadresse für Auth-Redirects und
+Origin-Prüfungen. Keine Service-Role-Keys, Secret-Keys, Datenbankpasswörter oder
+Management-Tokens in dieses Repository eintragen.
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Die Anwendung ist anschließend unter `http://127.0.0.1:3000` erreichbar.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Backend-Vertrag
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Das Frontend ist gegen den read-only geprüften Backend-Stand `dev` bei
+`2549698` synchronisiert. Die lokale Typkopie liegt unter
+`lib/supabase/database.types.ts`; zur Laufzeit und in CI besteht keine
+Abhängigkeit auf einen benachbarten Backend-Checkout.
 
-## Learn More
+Aktiv angebunden sind:
 
-To learn more about Next.js, take a look at the following resources:
+- Registrierung, E-Mail-Bestätigung, Login, Cookie-Session und Logout
+- Passwort-Reset
+- eigenes Profil
+- Kurse
+- Dateimetadaten
+- eigene Zusammenfassungen
+- eigene Karteikarten
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Dashboard, Kalender, Noten, die globale Unterlagenansicht und der KI-Assistent
+enthalten weiterhin deutlich gekennzeichnete Vorschau- beziehungsweise
+Beispieldaten.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Das Backend besitzt noch keinen freigegebenen Storage-Bucket samt Policies für
+Dateiinhalte. Deshalb ist der Upload im Frontend deaktiviert; es wird keine
+lokale Browserablage als Ersatz für Produktionspersistenz verwendet.
 
-## Deploy on Vercel
+## Qualitätsprüfungen
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+npm test
+npm run lint
+npm run build
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Die GitHub-Actions-Pipeline führt diese Prüfungen für Pull Requests und Pushes
+nach `main` aus.
+
+Weitere Auth- und Umgebungsdetails stehen in
+[`docs/authentication.md`](docs/authentication.md). Dauerhafte Repository-Regeln
+stehen in [`AGENTS.md`](AGENTS.md); der aktuelle technische Snapshot in
+[`CURRENT_STATE.md`](CURRENT_STATE.md).
