@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import ProfilePage from "@/components/profile/ProfilePage";
-import type { ProfileRecord } from "@/lib/auth/profile";
 import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -21,14 +20,14 @@ export default async function Page() {
 
   const { data, error } = await supabase
     .from("profiles")
-    .select("display_name, created_at, updated_at")
-    .eq("id", userData.user.id)
+    .select("name, created_at, updated_at")
+    .eq("user_id", userData.user.id)
     .maybeSingle();
 
   return (
     <ProfilePage
       email={userData.user.email ?? "Keine E-Mail-Adresse verfügbar"}
-      initialProfile={(data as ProfileRecord | null) ?? null}
+      initialProfile={data ?? null}
       initialError={
         error
           ? "Dein Profil konnte gerade nicht geladen werden."

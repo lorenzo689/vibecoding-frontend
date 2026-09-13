@@ -1,7 +1,13 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { isProtectedPath, safeAuthRedirect } from "@/lib/auth/validation";
+import {
+  createPendingConfirmation,
+  parseEmailOtpType,
+  PENDING_CONFIRMATION_COOKIE,
+} from "@/lib/auth/confirmation";
 import { getSupabaseConfig } from "./config";
+import type { Database } from "./database.types";
 
 function redirectWithCookies(url: URL, response: NextResponse) {
   const redirect = NextResponse.redirect(url);
@@ -11,6 +17,36 @@ function redirectWithCookies(url: URL, response: NextResponse) {
 
 export async function updateSession(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
+
+  if (pathname === "/auth/confirm") {
+    const tokenHash = request.nextUrl.searchParams.get("token_hash");
+    const type = parseEmailOtpType(request.nextUrl.searchParams.get("type"));
+
+    if (tokenHash || request.nextUrl.searchParams.has("type")) {
+      const pending = type && tokenHash ? createPendingConfirmation(tokenHash, type) : null;
+      const cleanUrl = request.nextUrl.clone();
+      cleanUrl.search = "";
+
+      if (!pending) {
+        cleanUrl.pathname = "/login";
+        cleanUrl.searchParams.set("authError", "confirmation");
+        return NextResponse.redirect(cleanUrl);
+      }
+
+      const redirect = NextResponse.redirect(cleanUrl);
+      redirect.cookies.set(PENDING_CONFIRMATION_COOKIE, pending, {
+        httpOnly: true,
+        sameSite: "lax",
+        secure: request.nextUrl.protocol === "https:",
+        path: "/auth",
+        maxAge: 10 * 60,
+      });
+      redirect.headers.set("cache-control", "no-store");
+      redirect.headers.set("referrer-policy", "no-referrer");
+      return redirect;
+    }
+  }
+
   let config;
 
   try {
@@ -27,7 +63,7 @@ export async function updateSession(request: NextRequest) {
   }
 
   let response = NextResponse.next({ request });
-  const supabase = createServerClient(config.url, config.publicKey, {
+  const supabase = createServerClient<Database>(config.url, config.publicKey, {
     cookies: {
       getAll: () => request.cookies.getAll(),
       setAll(cookiesToSet) {

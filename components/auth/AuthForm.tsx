@@ -11,6 +11,7 @@ import {
   validateRegistrationPassword,
 } from "@/lib/auth/validation";
 import { createClient } from "@/lib/supabase/browser";
+import { registrationProfileMetadata } from "@/lib/auth/profile";
 import styles from "./auth.module.css";
 
 type Notice = { tone: "error" | "success"; message: string } | null;
@@ -20,10 +21,15 @@ const initialMessages: Record<string, string> = {
   configuration: "Die Supabase-Verbindung ist noch nicht konfiguriert. Bitte prüfe die öffentliche Frontend-Konfiguration.",
 };
 
-export default function AuthForm({ mode, next, initialError }: {
+const initialNotices: Record<string, string> = {
+  passwordUpdated: "Dein Passwort wurde geändert. Du kannst dich jetzt anmelden.",
+};
+
+export default function AuthForm({ mode, next, initialError, initialNotice }: {
   mode: "login" | "register";
   next?: string;
   initialError?: string;
+  initialNotice?: string;
 }) {
   const router = useRouter();
   const registering = mode === "register";
@@ -35,6 +41,8 @@ export default function AuthForm({ mode, next, initialError }: {
   const [notice, setNotice] = useState<Notice>(
     initialError && initialMessages[initialError]
       ? { tone: "error", message: initialMessages[initialError] }
+      : initialNotice && initialNotices[initialNotice]
+        ? { tone: "success", message: initialNotices[initialNotice] }
       : null
   );
 
@@ -47,8 +55,8 @@ export default function AuthForm({ mode, next, initialError }: {
   async function verifyProfile(userId: string) {
     const { data, error } = await createClient()
       .from("profiles")
-      .select("id, display_name")
-      .eq("id", userId)
+      .select("id, name")
+      .eq("user_id", userId)
       .maybeSingle();
     return !error && Boolean(data);
   }
@@ -78,8 +86,8 @@ export default function AuthForm({ mode, next, initialError }: {
           email,
           password,
           options: {
-            data: { display_name: displayName.value },
-            emailRedirectTo: `${window.location.origin}/auth/callback`,
+            data: registrationProfileMetadata(displayName.value),
+            emailRedirectTo: `${window.location.origin}/auth/confirm`,
           },
         });
         if (error) {
@@ -131,7 +139,7 @@ export default function AuthForm({ mode, next, initialError }: {
       const { error } = await createClient().auth.resend({
         type: "signup",
         email: confirmationEmail,
-        options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+        options: { emailRedirectTo: `${window.location.origin}/auth/confirm` },
       });
       if (error) {
         setNotice({ tone: "error", message: authErrorMessage(error, "resend") });
@@ -181,6 +189,11 @@ export default function AuthForm({ mode, next, initialError }: {
                 <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" /><circle cx="12" cy="12" r="3" />{visible && <path d="m3 3 18 18" />}</svg>
               </button>
             </div>
+            {!registering && (
+              <Link className={styles.forgotPassword} href="/forgot-password">
+                Passwort vergessen?
+              </Link>
+            )}
           </div>
           {notice && <p className={styles.notice} data-tone={notice.tone} role="alert">{notice.message}</p>}
           <button className={styles.primary} type="submit" disabled={pending}>{pending ? "Bitte warten …" : registering ? "Konto erstellen" : "Anmelden"}<span aria-hidden="true">→</span></button>

@@ -7,7 +7,7 @@ import styles from "./dashboard.module.css";
 
 export default function AppFrame({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  if (pathname === "/login" || pathname === "/register" || pathname === "/" || pathname.startsWith("/auth/"))
+  if (pathname === "/login" || pathname === "/register" || pathname === "/forgot-password" || pathname === "/" || pathname.startsWith("/auth/"))
     return children;
 
   return (

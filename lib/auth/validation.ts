@@ -2,6 +2,7 @@ export const DEFAULT_AUTH_REDIRECT = "/dashboard";
 
 const protectedPrefixes = [
   "/dashboard",
+  "/assistant",
   "/courses",
   "/calendar",
   "/documents",
@@ -56,9 +57,17 @@ export function validateLoginPassword(password: string): string | null {
   return password.length > 0 ? null : "Bitte gib dein Passwort ein.";
 }
 
+export function validatePasswordReset(password: string, confirmation: string): string | null {
+  return validateRegistrationPassword(password)
+    ?? (password === confirmation ? null : "Die beiden Passwörter stimmen nicht überein.");
+}
+
 type AuthErrorLike = { code?: string; status?: number; message?: string };
 
-export function authErrorMessage(error: AuthErrorLike, context: "login" | "register" | "resend") {
+export function authErrorMessage(
+  error: AuthErrorLike,
+  context: "login" | "register" | "resend" | "recovery" | "password"
+) {
   if (error.status === 429 || error.code === "over_request_rate_limit" || error.code === "over_email_send_rate_limit") {
     return "Zu viele Versuche. Bitte warte einen Moment und versuche es erneut.";
   }
@@ -73,6 +82,12 @@ export function authErrorMessage(error: AuthErrorLike, context: "login" | "regis
   }
   if (context === "resend") {
     return "Die Bestätigungs-E-Mail konnte nicht gesendet werden. Bitte versuche es später erneut.";
+  }
+  if (context === "recovery") {
+    return "Die E-Mail konnte gerade nicht gesendet werden. Bitte versuche es später erneut.";
+  }
+  if (context === "password") {
+    return "Das neue Passwort konnte nicht gespeichert werden. Bitte fordere bei Bedarf einen neuen Link an.";
   }
   return "Die Anmeldung konnte nicht abgeschlossen werden. Bitte versuche es erneut.";
 }

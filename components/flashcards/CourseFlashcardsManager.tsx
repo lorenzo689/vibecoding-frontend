@@ -17,12 +17,16 @@ export default function CourseFlashcardsManager({ courseId }: { courseId: string
   const [answer, setAnswer] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [removingId, setRemovingId] = useState<string | null>(null);
 
   useEffect(() => {
-    getCourseDeck(courseId).then((deck) => {
-      setCards(deck?.cards ?? []);
-      setLoading(false);
-    });
+    let active = true;
+    getCourseDeck(courseId)
+      .then((deck) => { if (active) setCards(deck?.cards ?? []); })
+      .catch(() => { if (active) setLoadError("Die Karteikarten konnten nicht geladen werden."); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
   }, [courseId]);
 
   function toggleReveal(id: string) {
@@ -55,11 +59,21 @@ export default function CourseFlashcardsManager({ courseId }: { courseId: string
   }
 
   async function handleRemove(id: string) {
-    await deleteFlashcard(id);
-    setCards((current) => current.filter((card) => card.id !== id));
+    setRemovingId(id);
+    setError(null);
+    try {
+      await deleteFlashcard(id);
+      setCards((current) => current.filter((card) => card.id !== id));
+    } catch {
+      setError("Die Karteikarte konnte nicht gelöscht werden.");
+    } finally {
+      setRemovingId(null);
+    }
   }
 
-  if (loading) return null;
+  if (loading) return <p className={s.status} aria-live="polite">Karteikarten werden geladen …</p>;
+
+  if (loadError) return <div className={s.empty} role="alert"><h3>Nicht verfügbar</h3><p>{loadError} Bitte lade die Seite erneut.</p></div>;
 
   return (
     <div className={s.manager}>
@@ -86,6 +100,7 @@ export default function CourseFlashcardsManager({ courseId }: { courseId: string
                         event.stopPropagation();
                         handleRemove(card.id);
                       }}
+                      disabled={removingId === card.id}
                     >
                       ✕
                     </button>
@@ -120,7 +135,7 @@ export default function CourseFlashcardsManager({ courseId }: { courseId: string
         <button type="submit" className={s.submitButton} disabled={saving}>
           {saving ? "Wird gespeichert …" : "+ Karteikarte hinzufügen"}
         </button>
-        {error && <span className={s.status}>{error}</span>}
+        {error && <span className={s.status} role="alert">{error}</span>}
       </form>
     </div>
   );
