@@ -118,6 +118,11 @@ user records:
 - grade examples and target calculation
 - AI-assistant conversation
 
+The intended first production scope of the AI assistant is now specified in
+`docs/assistant-product-scope.md`. This specification does not change the
+current implementation status: the assistant remains a disabled, clearly
+labeled frontend preview until its required backend contracts exist.
+
 ## Testing and CI
 
 Available frontend checks:

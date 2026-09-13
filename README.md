@@ -67,6 +67,8 @@ Die GitHub-Actions-Pipeline führt diese Prüfungen für Pull Requests und Pushe
 nach `main` aus.
 
 Weitere Auth- und Umgebungsdetails stehen in
-[`docs/authentication.md`](docs/authentication.md). Dauerhafte Repository-Regeln
-stehen in [`AGENTS.md`](AGENTS.md); der aktuelle technische Snapshot in
-[`CURRENT_STATE.md`](CURRENT_STATE.md).
+[`docs/authentication.md`](docs/authentication.md). Der verbindliche
+Produktumfang für die erste produktive Version des KI-Assistenten steht in
+[`docs/assistant-product-scope.md`](docs/assistant-product-scope.md).
+Dauerhafte Repository-Regeln stehen in [`AGENTS.md`](AGENTS.md); der aktuelle
+technische Snapshot in [`CURRENT_STATE.md`](CURRENT_STATE.md).
