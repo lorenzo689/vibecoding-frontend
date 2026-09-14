@@ -13,6 +13,13 @@ export type FlashcardDeck = {
   cards: Flashcard[];
 };
 
+export type FlashcardDeckSummary = {
+  materialId: string;
+  deckId: string;
+  title: string;
+  cardCount: number;
+};
+
 type MaterialWithDeckRow = {
   id: string;
   title: string;
@@ -22,20 +29,35 @@ type MaterialWithDeckRow = {
   } | null;
 };
 
-export async function getCourseDeck(courseId: string): Promise<FlashcardDeck | null> {
-  // .limit(1) instead of .maybeSingle(): a partial failure between the two
-  // inserts in ensureDeck() could in theory leave more than one deck material
-  // for this course. Take the first rather than throwing on that edge case.
+export async function listCourseDecks(courseId: string): Promise<FlashcardDeckSummary[]> {
   const { data, error } = await createClient()
     .from("materials")
     .select("id, title, flashcard_decks!material_id(id, flashcards(id, question, answer))")
     .eq("course_id", courseId)
     .eq("type", "flashcard_deck")
-    .order("created_at", { ascending: true })
-    .limit(1);
+    .order("created_at", { ascending: true });
 
   if (error) throw error;
-  const row = (data as MaterialWithDeckRow[])[0] ?? null;
+  return (data as MaterialWithDeckRow[])
+    .filter((row) => row.flashcard_decks)
+    .map((row) => ({
+      materialId: row.id,
+      deckId: row.flashcard_decks!.id,
+      title: row.title,
+      cardCount: row.flashcard_decks!.flashcards.length,
+    }));
+}
+
+export async function getDeck(materialId: string): Promise<FlashcardDeck | null> {
+  const { data, error } = await createClient()
+    .from("materials")
+    .select("id, title, flashcard_decks!material_id(id, flashcards(id, question, answer))")
+    .eq("id", materialId)
+    .eq("type", "flashcard_deck")
+    .maybeSingle();
+
+  if (error) throw error;
+  const row = data as MaterialWithDeckRow | null;
   if (!row || !row.flashcard_decks) return null;
 
   return {
@@ -46,10 +68,10 @@ export async function getCourseDeck(courseId: string): Promise<FlashcardDeck | n
   };
 }
 
-async function ensureDeck(courseId: string, title: string): Promise<{ materialId: string; deckId: string }> {
-  const existing = await getCourseDeck(courseId);
-  if (existing) return existing;
-
+export async function createDeck(
+  courseId: string,
+  title: string
+): Promise<{ materialId: string; deckId: string; title: string }> {
   const supabase = createClient();
   const { data: userData, error: userError } = await supabase.auth.getUser();
   if (userError || !userData.user) throw userError ?? new Error("Nicht angemeldet.");
@@ -76,15 +98,18 @@ async function ensureDeck(courseId: string, title: string): Promise<{ materialId
     throw deckError;
   }
 
-  return { materialId: material.id, deckId: deck.id };
+  return { materialId: material.id, deckId: deck.id, title };
+}
+
+export async function deleteDeck(materialId: string): Promise<void> {
+  const { error } = await createClient().from("materials").delete().eq("id", materialId);
+  if (error) throw error;
 }
 
 export async function addFlashcard(
-  courseId: string,
+  deckId: string,
   input: { question: string; answer: string }
 ): Promise<Flashcard> {
-  const { deckId } = await ensureDeck(courseId, "Karteikarten");
-
   const { data, error } = await createClient()
     .from("flashcards")
     .insert({ deck_id: deckId, question: input.question, answer: input.answer })

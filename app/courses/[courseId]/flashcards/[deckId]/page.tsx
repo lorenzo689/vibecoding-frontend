@@ -1,20 +1,20 @@
 import type { Metadata } from "next";
-import CourseFlashcardDecks from "@/components/flashcards/CourseFlashcardDecks";
+import FlashcardDeckDetail from "@/components/flashcards/FlashcardDeckDetail";
 import shared from "@/components/dashboard.module.css";
 
 export const metadata: Metadata = {
   title: "Karteikarten | Lernapp",
-  description: "Deine Karteikarten-Decks für diesen Kurs.",
+  description: "Deine eigenen Karteikarten in diesem Deck.",
 };
 
-export default async function CourseFlashcardsPage(
-  props: PageProps<"/courses/[courseId]/flashcards">
+export default async function FlashcardDeckPage(
+  props: PageProps<"/courses/[courseId]/flashcards/[deckId]">
 ) {
-  const { courseId } = await props.params;
+  const { courseId, deckId } = await props.params;
 
   return (
     <div className={shared.dashboard}>
-      <CourseFlashcardDecks courseId={courseId} />
+      <FlashcardDeckDetail courseId={courseId} materialId={deckId} />
       <footer className={shared.dashboardFooter}>
         <span>Lernapp · Dein Semester, verbunden.</span>
         <span>Gespeichert in deinem Konto</span>
