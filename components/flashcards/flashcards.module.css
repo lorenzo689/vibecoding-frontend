@@ -2,43 +2,339 @@
   --green: #224f41;
   --muted: #667369;
 }
-.cardList {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: grid;
-  gap: 12px;
-}
-.card {
-  border: 1px solid #dfe5d7;
-  background: #fdfdf9;
-  border-radius: 10px;
-  padding: 18px 20px;
+.headerButton {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 0 18px;
+  border-radius: 8px;
+  background: var(--green);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 550;
   cursor: pointer;
+  transition: background 150ms;
 }
-.cardTop {
+.headerButton:hover {
+  background: #173d31;
+}
+
+/* Create-deck dialog */
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: #1a241f4d;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  z-index: 50;
+}
+.dialog {
+  width: 100%;
+  max-width: 400px;
+  max-height: 90vh;
+  overflow-y: auto;
+  background: #fff;
+  border-radius: 12px;
+  padding: 28px;
+  box-shadow: 0 30px 80px #08291f33;
+}
+.dialogHeader {
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  align-items: flex-start;
-  gap: 12px;
+  margin-bottom: 20px;
 }
-.question {
-  font-size: 14px;
+.dialogHeader h2 {
+  font-size: 18px;
   font-weight: 550;
 }
-.answer {
-  margin-top: 10px;
-  padding-top: 10px;
-  border-top: 1px solid #e5e9df;
-  font-size: 13px;
+.closeButton {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
   color: var(--muted);
-  line-height: 1.7;
+  cursor: pointer;
+}
+.closeButton:hover {
+  background: #f0f3ea;
+  color: var(--green);
+}
+.field {
+  margin-bottom: 18px;
+}
+.field label {
+  display: block;
+  font-size: 13px;
+  font-weight: 550;
+  margin-bottom: 8px;
+}
+.field input {
+  display: block;
+  width: 100%;
+  border: 1px solid #d7ded6;
+  border-radius: 8px;
+  background: #fff;
+  padding: 11px 13px;
+  font: inherit;
+  font-size: 14px;
+  color: inherit;
+  transition: border-color 150ms, box-shadow 150ms;
+}
+.field input:focus {
+  outline: none;
+  border-color: var(--green);
+  box-shadow: 0 0 0 3px #224f411c;
 }
 .hint {
-  font-size: 10px;
-  letter-spacing: 0.6px;
-  color: #9db98a;
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+/* Deck overview (folder grid) */
+.deckGrid {
+  list-style: none;
+  padding: 0;
+  margin: 32px 0 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 20px;
+}
+.deckTile {
+  position: relative;
+}
+.deckRemove {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  z-index: 1;
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border-radius: 6px;
+  color: var(--muted);
+  background: #fdfdf9;
+}
+.deckRemove:hover {
+  background: #f7e9e6;
+  color: #a83d31;
+}
+.deckLink {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 8px;
+  border-radius: 10px;
+  text-align: center;
+  transition: background 150ms, transform 150ms;
+}
+.deckLink:hover {
+  background: #f0f3ea;
+  transform: translateY(-2px);
+}
+.deckLink:focus-visible {
+  outline: 3px solid #67957a;
+  outline-offset: -2px;
+}
+.deckColor {
+  display: block;
+}
+.folderIcon {
+  width: 64px;
+  height: 48px;
+  filter: drop-shadow(0 4px 8px #08291f1a);
+}
+.deckLabel {
+  font-size: 13px;
+  font-weight: 550;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.deckCount {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+/* Same derived-color palette as course badges, applied as a folder fill */
+.deckColor[data-color="green"] { color: #3f6b2e; }
+.deckColor[data-color="amber"] { color: #8a5a12; }
+.deckColor[data-color="sage"] { color: #2f6b4d; }
+.deckColor[data-color="blue"] { color: #2c5490; }
+.deckColor[data-color="rose"] { color: #a13d3d; }
+.deckColor[data-color="violet"] { color: #5b3f8a; }
+.deckColor[data-color="teal"] { color: #1f6b5c; }
+.deckColor[data-color="coral"] { color: #a85a1f; }
+.deckColor[data-color="indigo"] { color: #3d4590; }
+
+/* Deck detail header */
+.deckHeader {
+  margin-bottom: 6px;
+}
+.deckHeader h2 {
+  margin-top: 8px;
+  font-size: 20px;
+  font-weight: 550;
+  letter-spacing: -0.3px;
+}
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 550;
+  color: var(--muted);
+}
+.backLink:hover {
+  color: var(--green);
+}
+
+.cardList {
+  margin: 24px 0 0;
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  gap: 10px;
+}
+.card {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  border: 1px solid #dfe5d7;
+  background: #fdfdf9;
+  border-radius: 8px;
+  padding: 9px 9px 9px 12px;
+  cursor: pointer;
+  transition: border-color 150ms, box-shadow 150ms;
+}
+.card:hover {
+  border-color: #c9d4c1;
+  box-shadow: 0 8px 18px #08291f0f;
+}
+.cardIcon {
   flex-shrink: 0;
+  width: 15px;
+  height: 15px;
+  color: #9db98a;
+}
+.question {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 550;
+}
+
+/* Study popup with flip card */
+.studyDialog {
+  width: 100%;
+  max-width: 560px;
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px 24px 24px;
+  box-shadow: 0 30px 80px #08291f33;
+}
+.studyHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+.studyCount {
+  font-size: 11px;
+  letter-spacing: 0.6px;
+  color: var(--muted);
+}
+.studyRow {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.studyArrow {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #d7ded6;
+  border-radius: 8px;
+  background: #fdfdf9;
+  color: var(--green);
+  font-size: 15px;
+  cursor: pointer;
+  transition: background 150ms, border-color 150ms;
+}
+.studyArrow:hover:not(:disabled) {
+  background: #f0f3ea;
+  border-color: #9daa9f;
+}
+.studyArrow:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.flipCard {
+  flex: 1;
+  min-width: 0;
+  height: 240px;
+  perspective: 1200px;
+  cursor: pointer;
+}
+.flipCardInner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transition: transform 500ms;
+  transform-style: preserve-3d;
+}
+.flipCard[data-flipped="true"] .flipCardInner {
+  transform: rotateY(180deg);
+}
+.flipCardFace {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 24px;
+  text-align: center;
+  border: 1px solid #dfe5d7;
+  border-radius: 12px;
+  background: #fdfdf9;
+  overflow-y: auto;
+}
+.flipCardBack {
+  transform: rotateY(180deg);
+  background: #eef3e7;
+}
+.flipCardFace p {
+  font-size: 15px;
+  line-height: 1.6;
+}
+.flipCardLabel {
+  font-size: 10px;
+  letter-spacing: 0.8px;
+  color: #9db98a;
+}
+.studyHint {
+  margin-top: 16px;
+  text-align: center;
+  font-size: 11px;
+  color: var(--muted);
 }
 .removeButton {
   flex-shrink: 0;
@@ -54,28 +350,44 @@
   color: #a83d31;
 }
 .empty {
-  text-align: center;
-  padding: 40px 20px;
-  border: 1px solid #dfe5d7;
-  background: #fdfdf9;
-  border-radius: 10px;
+  margin: 32px 0 0;
+  max-width: 380px;
+  padding: 0;
 }
 .empty h3 {
   font-size: 15px;
   font-weight: 550;
 }
 .empty p {
-  margin-top: 8px;
+  margin-top: 24px;
   font-size: 13px;
   color: var(--muted);
+  line-height: 1.6;
 }
 .addForm {
-  margin-top: 20px;
-  border: 1px dashed #dfe5d7;
+  max-width: 900px;
+  margin: 0 auto;
+  border: 1px solid #dfe5d7;
+  background: #fdfdf9;
   border-radius: 10px;
-  padding: 18px 20px;
+  padding: 16px 20px;
   display: grid;
-  gap: 12px;
+  grid-template-columns: 1fr 1fr auto;
+  align-items: start;
+  gap: 14px;
+}
+.addForm .status {
+  grid-column: 1 / -1;
+}
+.addForm .submitButton {
+  height: 42px;
+  align-self: end;
+}
+@media (max-width: 760px) {
+  .addForm {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
 }
 .addForm label {
   display: block;
@@ -85,7 +397,10 @@
 }
 .addForm input,
 .addForm textarea {
+  display: block;
+  box-sizing: border-box;
   width: 100%;
+  height: 42px;
   border: 1px solid #d7ded6;
   border-radius: 8px;
   background: #fff;
@@ -95,8 +410,8 @@
   color: inherit;
 }
 .addForm textarea {
-  min-height: 60px;
-  resize: vertical;
+  resize: none;
+  overflow-y: auto;
 }
 .addForm input:focus,
 .addForm textarea:focus {
