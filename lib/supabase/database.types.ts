@@ -502,6 +502,8 @@ export type Database = {
         Relationships: []
       }
       files: {
+        // Manually patched against supabase/migrations/20260913160000_file_lifecycle.sql —
+        // regenerate via `npm run gen:types` against a migrated DB and remove this note.
         Row: {
           course_id: string
           created_at: string

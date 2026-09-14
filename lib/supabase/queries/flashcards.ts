@@ -95,17 +95,6 @@ export async function addFlashcard(
   return data as Flashcard;
 }
 
-export async function updateFlashcard(
-  id: string,
-  input: { question: string; answer: string }
-): Promise<void> {
-  const { error } = await createClient()
-    .from("flashcards")
-    .update({ question: input.question, answer: input.answer })
-    .eq("id", id);
-  if (error) throw error;
-}
-
 export async function deleteFlashcard(id: string): Promise<void> {
   const { error } = await createClient().from("flashcards").delete().eq("id", id);
   if (error) throw error;
