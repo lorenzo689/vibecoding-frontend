@@ -240,37 +240,51 @@ export type Database = {
         ]
       }
       files: {
+        // Manually patched against supabase/migrations/20260913160000_file_lifecycle.sql —
+        // regenerate via `npm run gen:types` against a migrated DB and remove this note.
         Row: {
           course_id: string
           created_at: string
+          error_code: string | null
           id: string
           mime_type: string
           original_filename: string
           size_bytes: number
+          status: string
           storage_bucket: string
           storage_path: string
+          updated_at: string
+          upload_key: string | null
           uploaded_by: string
         }
         Insert: {
           course_id: string
           created_at?: string
+          error_code?: string | null
           id?: string
           mime_type: string
           original_filename: string
           size_bytes: number
+          status?: string
           storage_bucket: string
           storage_path: string
+          updated_at?: string
+          upload_key?: string | null
           uploaded_by: string
         }
         Update: {
           course_id?: string
           created_at?: string
+          error_code?: string | null
           id?: string
           mime_type?: string
           original_filename?: string
           size_bytes?: number
+          status?: string
           storage_bucket?: string
           storage_path?: string
+          updated_at?: string
+          upload_key?: string | null
           uploaded_by?: string
         }
         Relationships: [

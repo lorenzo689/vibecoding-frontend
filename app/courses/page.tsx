@@ -14,37 +14,27 @@ export default function CoursesPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function loadCourses() {
+  function fetchCourses() {
+    return listCourses()
+      .then((nextCourses) => {
+        setCourses(nextCourses);
+      })
+      .catch(() => {
+        setError("Deine Kurse konnten nicht geladen werden. Bitte versuche es erneut.");
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }
+
+  function loadCourses() {
     setLoading(true);
     setError(null);
-    try {
-      setCourses(await listCourses());
-    } catch {
-      setError("Deine Kurse konnten nicht geladen werden. Bitte versuche es erneut.");
-    } finally {
-      setLoading(false);
-    }
+    fetchCourses();
   }
 
   useEffect(() => {
-    let active = true;
-
-    listCourses()
-      .then((nextCourses) => {
-        if (active) setCourses(nextCourses);
-      })
-      .catch(() => {
-        if (active) {
-          setError("Deine Kurse konnten nicht geladen werden. Bitte versuche es erneut.");
-        }
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
-
-    return () => {
-      active = false;
-    };
+    fetchCourses();
   }, []);
 
   async function handleCreate(input: { title: string; description: string }) {

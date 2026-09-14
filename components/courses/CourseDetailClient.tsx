@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ChangeEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { deleteCourse, getCourse, type Course } from "@/lib/supabase/queries/courses";
 import {
   deleteCourseFile,
+  getCourseFileDownloadUrl,
   listCourseFiles,
+  uploadCourseFile,
   type CourseFile,
 } from "@/lib/supabase/queries/files";
 import { deriveCourseBadge } from "@/lib/courseBadge";
@@ -19,12 +21,36 @@ function formatSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+const UPLOAD_ERROR_MESSAGES: Record<string, string> = {
+  INVALID_FILE: "Nur PDF, PPTX, DOCX und TXT werden unterstützt.",
+  FILE_TOO_LARGE: "Die Datei ist größer als 50 MiB.",
+  COURSE_NOT_FOUND: "Dieser Kurs wurde nicht gefunden. Bitte lade die Seite neu.",
+  UPLOAD_KEY_CONFLICT: "Der Upload-Vorgang steht in Konflikt. Bitte versuche es erneut.",
+  UPLOAD_DELETED: "Dieser Upload wurde bereits gelöscht. Bitte versuche es erneut.",
+  UNAUTHENTICATED: "Deine Sitzung ist abgelaufen. Bitte melde dich erneut an.",
+};
+
+function uploadErrorMessage(error: unknown): string {
+  const code = error instanceof Error ? error.message : "";
+  return UPLOAD_ERROR_MESSAGES[code] ?? "Die Datei konnte nicht hochgeladen werden.";
+}
+
+function statusLabel(file: CourseFile): string | null {
+  if (file.status === "pending") return "Wird geprüft …";
+  if (file.status === "failed") return "Prüfung fehlgeschlagen";
+  if (file.status === "deleting") return "Wird gelöscht …";
+  if (file.status === "unverified") return "Ungeprüfter Altbestand";
+  return null;
+}
+
 export default function CourseDetailClient({ courseId }: { courseId: string }) {
   const router = useRouter();
   const [course, setCourse] = useState<Course | null | undefined>(undefined);
   const [files, setFiles] = useState<CourseFile[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [removingId, setRemovingId] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -42,13 +68,49 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
     return () => { active = false; };
   }, [courseId]);
 
+  async function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
+    const selected = Array.from(event.target.files ?? []);
+    event.target.value = "";
+    if (selected.length === 0) return;
+
+    setActionError(null);
+    setUploading(true);
+    try {
+      for (const file of selected) {
+        const uploaded = await uploadCourseFile(courseId, file);
+        setFiles((prev) => [uploaded, ...prev]);
+      }
+    } catch (error) {
+      setActionError(uploadErrorMessage(error));
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  async function handleDownload(file: CourseFile) {
+    setActionError(null);
+    try {
+      const url = await getCourseFileDownloadUrl(file.id, true);
+      window.open(url, "_blank", "noopener,noreferrer");
+    } catch {
+      setActionError(
+        file.status === "ready"
+          ? "Der Download konnte nicht gestartet werden."
+          : "Diese Datei ist noch nicht zum Download bereit."
+      );
+    }
+  }
+
   async function handleRemoveFile(id: string) {
     setActionError(null);
+    setRemovingId(id);
     try {
       await deleteCourseFile(id);
       setFiles((prev) => prev.filter((file) => file.id !== id));
     } catch {
       setActionError("Der Dateieintrag konnte nicht entfernt werden.");
+    } finally {
+      setRemovingId(null);
     }
   }
 
@@ -103,31 +165,53 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
         <h2>
           Vorlesungsfolien & Übungen <small>{files.length}</small>
         </h2>
-        <button type="button" className={styles.uploadLabel} disabled>
-          + Datei hochladen
-        </button>
+        <label className={styles.uploadLabel} aria-disabled={uploading}>
+          {uploading ? "Wird hochgeladen …" : "+ Datei hochladen"}
+          <input
+            type="file"
+            multiple
+            accept=".pdf,.pptx,.docx,.txt"
+            onChange={handleFileChange}
+            disabled={uploading}
+          />
+        </label>
         <p className={styles.uploadHint}>
-          Noch nicht verfügbar: Das Backend besitzt Dateimetadaten, aber noch
-          keinen freigegebenen Storage-Bucket für Datei-Inhalte.
+          PDF, PowerPoint (.pptx), Word (.docx) oder Text (.txt), max. 50 MiB.
         </p>
         {actionError && <p className={styles.uploadHint} role="alert">{actionError}</p>}
 
         {files.length > 0 && (
           <ul className={styles.fileList}>
-            {files.map((file) => (
-              <li key={file.id} className={styles.fileRow}>
-                <span className={styles.fileName}>{file.name}</span>
-                <small>{formatSize(file.size)}</small>
-                <button
-                  type="button"
-                  className={styles.fileRemove}
-                  aria-label={`${file.name} entfernen`}
-                  onClick={() => handleRemoveFile(file.id)}
-                >
-                  ✕
-                </button>
-              </li>
-            ))}
+            {files.map((file) => {
+              const label = statusLabel(file);
+              return (
+                <li key={file.id} className={styles.fileRow}>
+                  {file.status === "ready" ? (
+                    <button
+                      type="button"
+                      className={styles.fileName}
+                      onClick={() => handleDownload(file)}
+                      title="Herunterladen"
+                    >
+                      {file.name}
+                    </button>
+                  ) : (
+                    <span className={styles.fileName}>{file.name}</span>
+                  )}
+                  {label && <small>{label}</small>}
+                  <small>{formatSize(file.size)}</small>
+                  <button
+                    type="button"
+                    className={styles.fileRemove}
+                    aria-label={`${file.name} entfernen`}
+                    onClick={() => handleRemoveFile(file.id)}
+                    disabled={removingId === file.id}
+                  >
+                    ✕
+                  </button>
+                </li>
+              );
+            })}
           </ul>
         )}
       </div>
