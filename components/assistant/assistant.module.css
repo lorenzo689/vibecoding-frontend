@@ -37,6 +37,112 @@
   color: var(--muted);
 }
 
+/* Layout */
+.layout {
+  display: flex;
+  min-height: 480px;
+}
+.sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  border-right: 1px solid #e1e6da;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.newConversationButton {
+  border: 1px solid #d7ded6;
+  border-radius: 8px;
+  background: #fff;
+  color: var(--green);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 8px 10px;
+  cursor: pointer;
+}
+.conversationList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+  overflow-y: auto;
+}
+.conversationItem {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 7px;
+  padding: 2px;
+}
+.conversationItem[data-active="true"] {
+  background: #eef2e7;
+}
+.conversationTitle {
+  flex: 1;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 8px 8px;
+  font-size: 12px;
+  color: var(--ink);
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.conversationRenameInput {
+  flex: 1;
+  font: inherit;
+  font-size: 12px;
+  padding: 7px 8px;
+  border: 1px solid #c7d0c1;
+  border-radius: 6px;
+}
+.conversationDelete {
+  border: none;
+  background: none;
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1;
+  padding: 4px 6px;
+  cursor: pointer;
+  border-radius: 6px;
+}
+.conversationDelete:hover {
+  background: #e5ecd8;
+  color: #7a2b2b;
+}
+.chatColumn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* Banner */
+.banner {
+  margin: 14px 22px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: #fbeee0;
+  color: #7a4a1a;
+  border: 1px solid #f0d6b6;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 12px;
+}
+.banner button {
+  background: none;
+  border: none;
+  color: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+
 /* Messages */
 .messages {
   list-style: none;
@@ -44,6 +150,8 @@
   padding: 24px 22px;
   display: grid;
   gap: 16px;
+  flex: 1;
+  overflow-y: auto;
 }
 .messageRow {
   display: flex;
@@ -80,11 +188,36 @@
 .sourceChip {
   display: inline-block;
   margin-top: 8px;
+  margin-right: 6px;
   font-size: 10px;
   color: #607355;
   background: #e7ece2;
   border-radius: 4px;
   padding: 3px 8px;
+}
+.errorChip {
+  display: inline-block;
+  margin-top: 8px;
+  font-size: 10px;
+  color: #8a3b1f;
+  background: #f5ddd0;
+  border-radius: 4px;
+  padding: 3px 8px;
+}
+.typingDot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #6a7d63;
+  animation: assistantPulse 1s ease-in-out infinite;
+}
+@keyframes assistantPulse {
+  0%, 100% { opacity: 0.25; }
+  50% { opacity: 1; }
+}
+.bubble[data-status="failed"] {
+  outline: 1px solid #e4b49a;
 }
 
 /* Suggested prompts */
@@ -101,7 +234,11 @@
   font-size: 12px;
   color: var(--green);
   background: #fff;
+  cursor: pointer;
+}
+.suggestionChip:disabled {
   cursor: not-allowed;
+  opacity: 0.5;
 }
 
 /* Composer */
@@ -137,6 +274,9 @@
   color: #fff;
   font-size: 13px;
   font-weight: 550;
+  cursor: pointer;
+}
+.sendButton:disabled {
   opacity: 0.55;
   cursor: not-allowed;
 }
@@ -158,5 +298,16 @@
   }
   .composer {
     padding-inline: 16px;
+  }
+  .layout {
+    flex-direction: column;
+  }
+  .sidebar {
+    width: auto;
+    border-right: none;
+    border-bottom: 1px solid #e1e6da;
+  }
+  .conversationList {
+    max-height: 140px;
   }
 }

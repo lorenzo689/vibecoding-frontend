@@ -22,14 +22,10 @@ export default function AssistantPage() {
           <span>Verbunden mit deinem Studienraum.</span>
         </div>
       </section>
-      <p className={shared.notice}>
-        Produktvorschau · Antworten sind illustrative Beispielinhalte, es wird
-        nichts generiert oder gesendet.
-      </p>
       <AssistantWorkspace />
       <footer className={shared.dashboardFooter}>
         <span>Lernapp · Dein Semester, verbunden.</span>
-        <span>Assistenten-Vorschau ohne Datenanbindung</span>
+        <span>Antworten beziehen sich nur auf deine eigenen Kursmaterialien.</span>
       </footer>
     </div>
   );

@@ -1,5 +1,3 @@
-// Synchronized from ../backend/types/database.types.ts at backend dev 2549698.
-// Keep this copy local so the standalone frontend CI does not depend on a sibling checkout.
 export type Json =
   | string
   | number
@@ -36,6 +34,149 @@ export type Database = {
   }
   public: {
     Tables: {
+      chat_conversations: {
+        Row: {
+          course_id: string
+          created_at: string
+          id: string
+          owner_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          course_id: string
+          created_at?: string
+          id?: string
+          owner_id: string
+          title?: string
+          updated_at?: string
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          id?: string
+          owner_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_conversations_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_conversations_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_message_sources: {
+        Row: {
+          assistant_role: string
+          chunk_id: string | null
+          created_at: string
+          id: string
+          message_id: string
+          page_number: number | null
+          quoted_excerpt: string
+          rank: number
+          similarity: number
+        }
+        Insert: {
+          assistant_role?: never
+          chunk_id?: string | null
+          created_at?: string
+          id?: string
+          message_id: string
+          page_number?: number | null
+          quoted_excerpt: string
+          rank: number
+          similarity: number
+        }
+        Update: {
+          assistant_role?: never
+          chunk_id?: string | null
+          created_at?: string
+          id?: string
+          message_id?: string
+          page_number?: number | null
+          quoted_excerpt?: string
+          rank?: number
+          similarity?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_message_sources_chunk_id_fkey"
+            columns: ["chunk_id"]
+            isOneToOne: false
+            referencedRelation: "chunks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_message_sources_message_id_assistant_role_fkey"
+            columns: ["message_id", "assistant_role"]
+            isOneToOne: false
+            referencedRelation: "chat_messages"
+            referencedColumns: ["id", "role"]
+          },
+        ]
+      }
+      chat_messages: {
+        Row: {
+          content: string
+          conversation_id: string
+          created_at: string
+          error_code: string | null
+          id: string
+          input_tokens: number | null
+          model: string | null
+          output_tokens: number | null
+          provider: string | null
+          role: string
+          status: string
+        }
+        Insert: {
+          content?: string
+          conversation_id: string
+          created_at?: string
+          error_code?: string | null
+          id?: string
+          input_tokens?: number | null
+          model?: string | null
+          output_tokens?: number | null
+          provider?: string | null
+          role: string
+          status: string
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          created_at?: string
+          error_code?: string | null
+          id?: string
+          input_tokens?: number | null
+          model?: string | null
+          output_tokens?: number | null
+          provider?: string | null
+          role?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "chat_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chunks: {
         Row: {
           chunk_index: number
@@ -239,38 +380,180 @@ export type Database = {
           },
         ]
       }
+      file_processing_jobs: {
+        Row: {
+          attempts: number
+          available_at: string
+          created_at: string
+          file_id: string
+          id: string
+          last_error: string | null
+          locked_at: string | null
+          max_attempts: number
+          status: string
+          updated_at: string
+          worker_id: string | null
+        }
+        Insert: {
+          attempts?: number
+          available_at?: string
+          created_at?: string
+          file_id: string
+          id?: string
+          last_error?: string | null
+          locked_at?: string | null
+          max_attempts?: number
+          status?: string
+          updated_at?: string
+          worker_id?: string | null
+        }
+        Update: {
+          attempts?: number
+          available_at?: string
+          created_at?: string
+          file_id?: string
+          id?: string
+          last_error?: string | null
+          locked_at?: string | null
+          max_attempts?: number
+          status?: string
+          updated_at?: string
+          worker_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "file_processing_jobs_file_id_fkey"
+            columns: ["file_id"]
+            isOneToOne: true
+            referencedRelation: "files"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      file_processing_staging_chunks: {
+        Row: {
+          chunk_index: number
+          content: string
+          embedding: string
+          job_id: string
+          metadata: Json
+          page_number: number | null
+        }
+        Insert: {
+          chunk_index: number
+          content: string
+          embedding: string
+          job_id: string
+          metadata?: Json
+          page_number?: number | null
+        }
+        Update: {
+          chunk_index?: number
+          content?: string
+          embedding?: string
+          job_id?: string
+          metadata?: Json
+          page_number?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "file_processing_staging_chunks_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "file_processing_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      file_cleanup_jobs: {
+        Row: {
+          attempts: number
+          completed_at: string | null
+          created_at: string
+          file_id: string
+          last_error: string | null
+          next_attempt_at: string
+          owner_id: string
+          storage_path: string
+          upload_key: string | null
+        }
+        Insert: {
+          attempts?: number
+          completed_at?: string | null
+          created_at?: string
+          file_id: string
+          last_error?: string | null
+          next_attempt_at?: string
+          owner_id: string
+          storage_path: string
+          upload_key?: string | null
+        }
+        Update: {
+          attempts?: number
+          completed_at?: string | null
+          created_at?: string
+          file_id?: string
+          last_error?: string | null
+          next_attempt_at?: string
+          owner_id?: string
+          storage_path?: string
+          upload_key?: string | null
+        }
+        Relationships: []
+      }
       files: {
         Row: {
           course_id: string
           created_at: string
+          error_code: string | null
           id: string
           mime_type: string
           original_filename: string
+          processed_at: string | null
+          processing_error: string | null
+          processing_status: string
           size_bytes: number
+          status: string
           storage_bucket: string
           storage_path: string
+          updated_at: string
+          upload_key: string | null
           uploaded_by: string
         }
         Insert: {
           course_id: string
           created_at?: string
+          error_code?: string | null
           id?: string
           mime_type: string
           original_filename: string
+          processed_at?: string | null
+          processing_error?: string | null
+          processing_status?: string
           size_bytes: number
+          status?: string
           storage_bucket: string
           storage_path: string
+          updated_at?: string
+          upload_key?: string | null
           uploaded_by: string
         }
         Update: {
           course_id?: string
           created_at?: string
+          error_code?: string | null
           id?: string
           mime_type?: string
           original_filename?: string
+          processed_at?: string | null
+          processing_error?: string | null
+          processing_status?: string
           size_bytes?: number
+          status?: string
           storage_bucket?: string
           storage_path?: string
+          updated_at?: string
+          upload_key?: string | null
           uploaded_by?: string
         }
         Relationships: [
@@ -608,7 +891,118 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      claim_file_processing_job: {
+        Args: { p_lease_seconds?: number; p_worker_id: string }
+        Returns: {
+          attempt: number
+          file_id: string
+          job_id: string
+          max_attempts: number
+          mime_type: string
+          size_bytes: number
+          storage_bucket: string
+          storage_path: string
+        }[]
+      }
+      complete_file_processing_job: {
+        Args: { p_embedding_model: string; p_job_id: string; p_worker_id: string }
+        Returns: undefined
+      }
+      fail_file_processing_job: {
+        Args: {
+          p_error_code: string
+          p_job_id: string
+          p_retry_after_seconds?: number
+          p_retryable: boolean
+          p_worker_id: string
+        }
+        Returns: undefined
+      }
+      renew_file_processing_lease: {
+        Args: { p_job_id: string; p_worker_id: string }
+        Returns: boolean
+      }
+      retry_file_processing: {
+        Args: { p_file_id: string }
+        Returns: undefined
+      }
+      stage_file_processing_chunks: {
+        Args: { p_chunks: Json; p_job_id: string; p_worker_id: string }
+        Returns: undefined
+      }
+      can_upload_learning_file: { Args: { p_path: string }; Returns: boolean }
+      configure_file_cleanup: {
+        Args: { p_api_url: string; p_service_key: string }
+        Returns: undefined
+      }
+      complete_chat_response: {
+        Args: {
+          p_content: string
+          p_input_tokens: number
+          p_message_id: string
+          p_output_tokens: number
+          p_sources?: Json
+        }
+        Returns: undefined
+      }
+      expire_file_uploads: { Args: never; Returns: undefined }
+      file_extension: { Args: { p_mime: string }; Returns: string }
+      fail_chat_response: {
+        Args: {
+          p_cancelled?: boolean
+          p_error_code: string | null
+          p_message_id: string
+          p_partial_content?: string
+        }
+        Returns: undefined
+      }
+      prepare_file_upload: {
+        Args: {
+          p_course_id: string
+          p_filename: string
+          p_mime: string
+          p_size: number
+          p_upload_key: string
+        }
+        Returns: {
+          course_id: string
+          created_at: string
+          error_code: string | null
+          id: string
+          mime_type: string
+          original_filename: string
+          size_bytes: number
+          status: string
+          storage_bucket: string
+          storage_path: string
+          updated_at: string
+          upload_key: string | null
+          uploaded_by: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "files"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      match_course_chunks: {
+        Args: {
+          match_count?: number
+          match_threshold?: number
+          query_embedding: string
+          requested_course_id: string
+        }
+        Returns: {
+          chunk_id: string
+          chunk_index: number
+          content: string
+          file_id: string
+          metadata: Json
+          page_number: number | null
+          similarity: number
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
@@ -744,3 +1138,4 @@ export const Constants = {
     Enums: {},
   },
 } as const
+
