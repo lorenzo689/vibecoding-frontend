@@ -1,14 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { authErrorMessage, validatePasswordReset } from "@/lib/auth/validation";
 import { createClient } from "@/lib/supabase/browser";
 import styles from "./auth.module.css";
 
 export default function ResetPasswordForm({ allowed }: { allowed: boolean }) {
-  const router = useRouter();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -29,10 +27,11 @@ export default function ResetPasswordForm({ allowed }: { allowed: boolean }) {
         setError(authErrorMessage(updateError, "password"));
         return;
       }
-      await fetch("/auth/recovery/complete", { method: "POST" });
-      await supabase.auth.signOut({ scope: "local" });
-      router.replace("/login?authNotice=passwordUpdated");
-      router.refresh();
+      const completion = await fetch("/auth/recovery/complete", { method: "POST" });
+      if (!completion.ok) throw new Error("Recovery cleanup failed");
+      const { error: signOutError } = await supabase.auth.signOut({ scope: "local" });
+      if (signOutError) throw signOutError;
+      window.location.replace("/login?authNotice=passwordUpdated");
     } catch {
       setError("Die Verbindung ist fehlgeschlagen. Bitte versuche es erneut.");
     } finally {

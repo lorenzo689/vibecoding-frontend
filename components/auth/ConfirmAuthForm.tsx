@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { SupportedEmailOtpType } from "@/lib/auth/confirmation";
 import styles from "./auth.module.css";
@@ -11,7 +10,6 @@ export default function ConfirmAuthForm({
 }: {
   type: SupportedEmailOtpType | null;
 }) {
-  const router = useRouter();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -28,8 +26,7 @@ export default function ConfirmAuthForm({
         setError("Der Link ist ungültig, abgelaufen oder wurde bereits verwendet.");
         return;
       }
-      router.replace(body.destination);
-      router.refresh();
+      window.location.replace(body.destination);
     } catch {
       setError("Die Bestätigung konnte wegen eines Netzwerkfehlers nicht abgeschlossen werden.");
     } finally {

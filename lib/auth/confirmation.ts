@@ -33,6 +33,7 @@ export function parsePendingConfirmation(value: string | undefined): PendingConf
 export function trustedOrigin(configuredSiteUrl: string | undefined, fallbackOrigin: string): string {
   if (!configuredSiteUrl) return new URL(fallbackOrigin).origin;
   const url = new URL(configuredSiteUrl);
+  if (!["http:", "https:"].includes(url.protocol)) throw new Error("AUTH_SITE_URL muss HTTP oder HTTPS verwenden.");
   if (url.pathname !== "/" || url.search || url.hash || url.username || url.password) {
     throw new Error("AUTH_SITE_URL muss eine Basisadresse sein.");
   }
@@ -47,3 +48,5 @@ export function requestHasTrustedOrigin(origin: string | null, trusted: string):
     return false;
   }
 }
+
+export const expiredAuthCookie = { path: "/auth", maxAge: 0, expires: new Date(0), httpOnly: true };

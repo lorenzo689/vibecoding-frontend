@@ -4,6 +4,7 @@ import {
   RECOVERY_SESSION_COOKIE,
   requestHasTrustedOrigin,
   trustedOrigin,
+  expiredAuthCookie,
 } from "@/lib/auth/confirmation";
 
 export async function POST(request: NextRequest) {
@@ -16,6 +17,6 @@ export async function POST(request: NextRequest) {
   if (!requestHasTrustedOrigin(request.headers.get("origin"), origin)) {
     return NextResponse.json({ error: "origin" }, { status: 403 });
   }
-  (await cookies()).delete(RECOVERY_SESSION_COOKIE);
+  (await cookies()).set(RECOVERY_SESSION_COOKIE, "", expiredAuthCookie);
   return NextResponse.json({ ok: true }, { headers: { "cache-control": "no-store" } });
 }
