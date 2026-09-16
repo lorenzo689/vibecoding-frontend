@@ -48,7 +48,7 @@ export default function ProfilePage({
       ? { status: "ready", profile: initialProfile }
       : { status: "error", message: initialError ?? "Dein Profil ist nicht verfügbar." }
   );
-  const [displayName, setDisplayName] = useState(initialProfile?.display_name ?? "");
+  const [displayName, setDisplayName] = useState(initialProfile?.name ?? "");
   const [saveState, setSaveState] = useState<SaveState>({ status: "idle" });
 
   async function loadProfile() {
@@ -66,8 +66,8 @@ export default function ProfilePage({
 
       const { data, error } = await supabase
         .from("profiles")
-        .select("display_name, created_at, updated_at")
-        .eq("id", userData.user.id)
+        .select("name, created_at, updated_at")
+        .eq("user_id", userData.user.id)
         .maybeSingle();
 
       if (error || !data) {
@@ -80,9 +80,9 @@ export default function ProfilePage({
         return;
       }
 
-      const profile = data as ProfileRecord;
+      const profile: ProfileRecord = data;
       setLoadState({ status: "ready", profile });
-      setDisplayName(profile.display_name);
+      setDisplayName(profile.name);
     } catch {
       setLoadState({
         status: "error",
@@ -112,9 +112,9 @@ export default function ProfilePage({
 
       const { data, error } = await supabase
         .from("profiles")
-        .update({ display_name: validated.value })
-        .eq("id", userData.user.id)
-        .select("display_name, created_at, updated_at")
+        .update({ name: validated.value })
+        .eq("user_id", userData.user.id)
+        .select("name, created_at, updated_at")
         .single();
 
       if (error || !data) {
@@ -125,10 +125,10 @@ export default function ProfilePage({
         return;
       }
 
-      const profile = data as ProfileRecord;
+      const profile: ProfileRecord = data;
       setLoadState({ status: "ready", profile });
-      setDisplayName(profile.display_name);
-      announceProfileUpdate(profile.display_name);
+      setDisplayName(profile.name);
+      announceProfileUpdate(profile.name);
       setSaveState({ status: "success", message: "Dein Anzeigename wurde gespeichert." });
       router.refresh();
     } catch {
@@ -170,9 +170,9 @@ export default function ProfilePage({
           </p>
         </div>
         <div className={s.identity}>
-          <span aria-hidden="true">{profileInitial(profile.display_name)}</span>
+          <span aria-hidden="true">{profileInitial(profile.name)}</span>
           <div>
-            <strong>{profile.display_name}</strong>
+            <strong>{profile.name}</strong>
             <small>{email}</small>
           </div>
         </div>

@@ -1,45 +1,19 @@
 "use client";
 
-import { useEffect, useState, useSyncExternalStore, type ChangeEvent } from "react";
+import { useEffect, useState, type ChangeEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { deleteCourse, getCourse, subscribe } from "@/lib/courses";
+import { deleteCourse, getCourse, type Course } from "@/lib/supabase/queries/courses";
 import {
-  addCourseFile,
   deleteCourseFile,
-  deleteCourseFiles,
-  getCourseFiles,
+  getCourseFileDownloadUrl,
+  listCourseFiles,
+  uploadCourseFile,
   type CourseFile,
-} from "@/lib/courseFiles";
+} from "@/lib/supabase/queries/files";
+import { deriveCourseBadge } from "@/lib/courseBadge";
 import dashboardStyles from "@/components/dashboard.module.css";
 import styles from "./courses.module.css";
-
-const ALLOWED_MIME_TYPES = [
-  "application/pdf",
-  "application/msword",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-  "application/vnd.ms-excel",
-  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-];
-const ALLOWED_EXTENSIONS = [
-  ".pdf",
-  ".doc",
-  ".docx",
-  ".xls",
-  ".xlsx",
-  ".png",
-  ".jpg",
-  ".jpeg",
-  ".gif",
-  ".webp",
-];
-
-function isAllowedFile(file: File): boolean {
-  if (file.type.startsWith("image/")) return true;
-  if (ALLOWED_MIME_TYPES.includes(file.type)) return true;
-  const lower = file.name.toLowerCase();
-  return ALLOWED_EXTENSIONS.some((ext) => lower.endsWith(ext));
-}
 
 function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -47,18 +21,51 @@ function formatSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+const UPLOAD_ERROR_MESSAGES: Record<string, string> = {
+  INVALID_FILE: "Nur PDF, PPTX, DOCX und TXT werden unterstützt.",
+  FILE_TOO_LARGE: "Die Datei ist größer als 50 MiB.",
+  COURSE_NOT_FOUND: "Dieser Kurs wurde nicht gefunden. Bitte lade die Seite neu.",
+  UPLOAD_KEY_CONFLICT: "Der Upload-Vorgang steht in Konflikt. Bitte versuche es erneut.",
+  UPLOAD_DELETED: "Dieser Upload wurde bereits gelöscht. Bitte versuche es erneut.",
+  UNAUTHENTICATED: "Deine Sitzung ist abgelaufen. Bitte melde dich erneut an.",
+};
+
+function uploadErrorMessage(error: unknown): string {
+  const code = error instanceof Error ? error.message : "";
+  return UPLOAD_ERROR_MESSAGES[code] ?? "Die Datei konnte nicht hochgeladen werden.";
+}
+
+function statusLabel(file: CourseFile): string | null {
+  if (file.status === "pending") return "Wird geprüft …";
+  if (file.status === "failed") return "Prüfung fehlgeschlagen";
+  if (file.status === "deleting") return "Wird gelöscht …";
+  if (file.status === "unverified") return "Ungeprüfter Altbestand";
+  return null;
+}
+
 export default function CourseDetailClient({ courseId }: { courseId: string }) {
   const router = useRouter();
-  const course = useSyncExternalStore(
-    subscribe,
-    () => getCourse(courseId) ?? null,
-    () => undefined
-  );
+  const [course, setCourse] = useState<Course | null | undefined>(undefined);
   const [files, setFiles] = useState<CourseFile[]>([]);
-  const [fileError, setFileError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [removingId, setRemovingId] = useState<string | null>(null);
 
   useEffect(() => {
-    getCourseFiles(courseId).then(setFiles);
+    let active = true;
+    Promise.all([getCourse(courseId), listCourseFiles(courseId)])
+      .then(([nextCourse, nextFiles]) => {
+        if (!active) return;
+        setCourse(nextCourse);
+        setFiles(nextFiles);
+      })
+      .catch(() => {
+        if (!active) return;
+        setLoadError("Der Kurs konnte nicht geladen werden. Bitte versuche es erneut.");
+        setCourse(null);
+      });
+    return () => { active = false; };
   }, [courseId]);
 
   async function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
@@ -66,39 +73,58 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
     event.target.value = "";
     if (selected.length === 0) return;
 
-    const allowed = selected.filter(isAllowedFile);
-    if (allowed.length < selected.length) {
-      setFileError("Nur PDF, Word, Excel und Bilddateien werden unterstützt.");
-    } else {
-      setFileError(null);
+    setActionError(null);
+    setUploading(true);
+    try {
+      for (const file of selected) {
+        const uploaded = await uploadCourseFile(courseId, file);
+        setFiles((prev) => [uploaded, ...prev]);
+      }
+    } catch (error) {
+      setActionError(uploadErrorMessage(error));
+    } finally {
+      setUploading(false);
     }
-    await Promise.all(allowed.map((file) => addCourseFile(courseId, file)));
-    setFiles(await getCourseFiles(courseId));
   }
 
-  function handleDownload(file: CourseFile) {
-    const url = URL.createObjectURL(file.blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = file.name;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+  async function handleDownload(file: CourseFile) {
+    setActionError(null);
+    try {
+      const url = await getCourseFileDownloadUrl(file.id, true);
+      window.open(url, "_blank", "noopener,noreferrer");
+    } catch {
+      setActionError(
+        file.status === "ready"
+          ? "Der Download konnte nicht gestartet werden."
+          : "Diese Datei ist noch nicht zum Download bereit."
+      );
+    }
   }
 
   async function handleRemoveFile(id: string) {
-    await deleteCourseFile(id);
-    setFiles(await getCourseFiles(courseId));
+    setActionError(null);
+    setRemovingId(id);
+    try {
+      await deleteCourseFile(id);
+      setFiles((prev) => prev.filter((file) => file.id !== id));
+    } catch {
+      setActionError("Der Dateieintrag konnte nicht entfernt werden.");
+    } finally {
+      setRemovingId(null);
+    }
   }
 
   async function handleDeleteCourse() {
     if (!window.confirm("Diesen Kurs wirklich löschen? Das kann nicht rückgängig gemacht werden.")) {
       return;
     }
-    await deleteCourseFiles(courseId);
-    deleteCourse(courseId);
-    router.push("/courses");
+    setActionError(null);
+    try {
+      await deleteCourse(courseId);
+      router.push("/courses");
+    } catch {
+      setActionError("Der Kurs konnte nicht gelöscht werden.");
+    }
   }
 
   if (course === undefined) return null;
@@ -107,11 +133,8 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
     return (
       <div className={styles.page}>
         <div className={styles.empty}>
-          <h2>Kurs nicht gefunden</h2>
-          <p>
-            Dieser Kurs existiert nicht in diesem Browser — lokale
-            Kurs-Daten werden nicht geräteübergreifend synchronisiert.
-          </p>
+          <h2>{loadError ? "Kurs nicht verfügbar" : "Kurs nicht gefunden"}</h2>
+          <p>{loadError ?? "Dieser Kurs existiert nicht oder du hast keinen Zugriff darauf."}</p>
           <Link href="/courses" className={styles.createButton}>
             Zurück zur Kursübersicht
           </Link>
@@ -119,6 +142,8 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
       </div>
     );
   }
+
+  const badge = deriveCourseBadge(course.title);
 
   return (
     <div className={styles.page}>
@@ -129,55 +154,64 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
       </div>
       <span
         className={`${dashboardStyles.badge} ${styles.badge}`}
-        data-color={course.color}
+        data-color={badge.color}
       >
-        {course.code}
+        {badge.code}
       </span>
-      <h1 style={{ marginTop: 16 }}>{course.name}</h1>
+      <h1 style={{ marginTop: 16 }}>{course.title}</h1>
       <p>{course.description || "Keine Beschreibung hinterlegt."}</p>
 
       <div className={styles.uploadSection}>
         <h2>
           Vorlesungsfolien & Übungen <small>{files.length}</small>
         </h2>
-        <label className={styles.uploadLabel}>
-          + Datei hochladen
+        <label className={styles.uploadLabel} aria-disabled={uploading}>
+          {uploading ? "Wird hochgeladen …" : "+ Datei hochladen"}
           <input
             type="file"
             multiple
-            accept=".pdf,.doc,.docx,.xls,.xlsx,image/*"
+            accept=".pdf,.pptx,.docx,.txt"
             onChange={handleFileChange}
+            disabled={uploading}
           />
         </label>
         <p className={styles.uploadHint}>
-          PDF, Word, Excel oder Bilder. Nur lokal in diesem Browser
-          gespeichert, solange es noch keinen Datei-Speicher im Backend gibt.
+          PDF, PowerPoint (.pptx), Word (.docx) oder Text (.txt), max. 50 MiB.
         </p>
-        {fileError && <p className={styles.uploadHint}>{fileError}</p>}
+        {actionError && <p className={styles.uploadHint} role="alert">{actionError}</p>}
 
         {files.length > 0 && (
           <ul className={styles.fileList}>
-            {files.map((file) => (
-              <li key={file.id} className={styles.fileRow}>
-                <button
-                  type="button"
-                  className={styles.fileName}
-                  onClick={() => handleDownload(file)}
-                  title="Herunterladen"
-                >
-                  {file.name}
-                </button>
-                <small>{formatSize(file.size)}</small>
-                <button
-                  type="button"
-                  className={styles.fileRemove}
-                  aria-label={`${file.name} entfernen`}
-                  onClick={() => handleRemoveFile(file.id)}
-                >
-                  ✕
-                </button>
-              </li>
-            ))}
+            {files.map((file) => {
+              const label = statusLabel(file);
+              return (
+                <li key={file.id} className={styles.fileRow}>
+                  {file.status === "ready" ? (
+                    <button
+                      type="button"
+                      className={styles.fileName}
+                      onClick={() => handleDownload(file)}
+                      title="Herunterladen"
+                    >
+                      {file.name}
+                    </button>
+                  ) : (
+                    <span className={styles.fileName}>{file.name}</span>
+                  )}
+                  {label && <small>{label}</small>}
+                  <small>{formatSize(file.size)}</small>
+                  <button
+                    type="button"
+                    className={styles.fileRemove}
+                    aria-label={`${file.name} entfernen`}
+                    onClick={() => handleRemoveFile(file.id)}
+                    disabled={removingId === file.id}
+                  >
+                    ✕
+                  </button>
+                </li>
+              );
+            })}
           </ul>
         )}
       </div>
@@ -187,9 +221,7 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
           <article className={styles.toolCard}>
             <span className={styles.toolIcon} data-tool="flashcards">KK</span>
             <div className={styles.toolBody}>
-              <h3>
-                Karteikarten <small>24</small>
-              </h3>
+              <h3>Karteikarten</h3>
               <p>Aus deinem Vorlesungsmaterial lernen.</p>
             </div>
             <span className={styles.toolArrow} aria-hidden="true">→</span>
@@ -199,9 +231,7 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
           <article className={styles.toolCard}>
             <span className={styles.toolIcon} data-tool="summary">ZF</span>
             <div className={styles.toolBody}>
-              <h3>
-                Zusammenfassung <small>3</small>
-              </h3>
+              <h3>Zusammenfassung</h3>
               <p>Das Wesentliche aus deinen Vorlesungen.</p>
             </div>
             <span className={styles.toolArrow} aria-hidden="true">→</span>

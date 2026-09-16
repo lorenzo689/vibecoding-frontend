@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useEffect, useState, type FormEvent } from "react";
-import { useRouter } from "next/navigation";
 import {
   authErrorMessage,
   safeAuthRedirect,
@@ -11,6 +10,7 @@ import {
   validateRegistrationPassword,
 } from "@/lib/auth/validation";
 import { createClient } from "@/lib/supabase/browser";
+import { loadLoginProfile, loginProfileMessages, registrationProfileMetadata } from "@/lib/auth/profile";
 import styles from "./auth.module.css";
 
 type Notice = { tone: "error" | "success"; message: string } | null;
@@ -20,21 +20,28 @@ const initialMessages: Record<string, string> = {
   configuration: "Die Supabase-Verbindung ist noch nicht konfiguriert. Bitte prüfe die öffentliche Frontend-Konfiguration.",
 };
 
-export default function AuthForm({ mode, next, initialError }: {
+const initialNotices: Record<string, string> = {
+  passwordUpdated: "Dein Passwort wurde geändert. Du kannst dich jetzt anmelden.",
+};
+
+export default function AuthForm({ mode, next, initialError, initialNotice }: {
   mode: "login" | "register";
   next?: string;
   initialError?: string;
+  initialNotice?: string;
 }) {
-  const router = useRouter();
   const registering = mode === "register";
   const destination = safeAuthRedirect(next);
   const [visible, setVisible] = useState(false);
   const [pending, setPending] = useState(false);
   const [confirmationEmail, setConfirmationEmail] = useState<string | null>(null);
+  const [profileUserId, setProfileUserId] = useState<string | null>(null);
   const [cooldown, setCooldown] = useState(0);
   const [notice, setNotice] = useState<Notice>(
     initialError && initialMessages[initialError]
       ? { tone: "error", message: initialMessages[initialError] }
+      : initialNotice && initialNotices[initialNotice]
+        ? { tone: "success", message: initialNotices[initialNotice] }
       : null
   );
 
@@ -45,12 +52,40 @@ export default function AuthForm({ mode, next, initialError }: {
   }, [cooldown]);
 
   async function verifyProfile(userId: string) {
-    const { data, error } = await createClient()
+    setProfileUserId(userId);
+    const result = await loadLoginProfile(() => createClient()
       .from("profiles")
-      .select("id, display_name")
-      .eq("id", userId)
-      .maybeSingle();
-    return !error && Boolean(data);
+      .select("id, name")
+      .eq("user_id", userId)
+      .maybeSingle());
+    if (result !== "ready") {
+      setNotice({ tone: "error", message: loginProfileMessages[result] });
+      return false;
+    }
+    return true;
+  }
+
+  async function retryProfile() {
+    if (!profileUserId) return;
+    setPending(true);
+    setNotice(null);
+    try {
+      if (await verifyProfile(profileUserId)) window.location.replace(destination);
+    } finally {
+      setPending(false);
+    }
+  }
+
+  async function restartLogin() {
+    setPending(true);
+    try {
+      const { error } = await createClient().auth.signOut({ scope: "local" });
+      if (error) throw error;
+      window.location.replace("/login");
+    } catch {
+      setNotice({ tone: "error", message: "Abmelden fehlgeschlagen. Bitte versuche es erneut." });
+      setPending(false);
+    }
   }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -78,8 +113,8 @@ export default function AuthForm({ mode, next, initialError }: {
           email,
           password,
           options: {
-            data: { display_name: displayName.value },
-            emailRedirectTo: `${window.location.origin}/auth/callback`,
+            data: registrationProfileMetadata(displayName.value),
+            emailRedirectTo: `${window.location.origin}/auth/confirm`,
           },
         });
         if (error) {
@@ -92,11 +127,7 @@ export default function AuthForm({ mode, next, initialError }: {
           setNotice({ tone: "success", message: "Wenn die Adresse registriert werden kann, erhältst du eine Bestätigungs-E-Mail. Prüfe auch deinen Spam-Ordner." });
           return;
         }
-        if (!data.user || !(await verifyProfile(data.user.id))) {
-          await supabase.auth.signOut({ scope: "local" });
-          setNotice({ tone: "error", message: "Dein Konto wurde erstellt, aber das Profil konnte nicht geladen werden. Bitte versuche die Anmeldung erneut." });
-          return;
-        }
+        if (!data.user || !(await verifyProfile(data.user.id))) return;
       } else {
         const passwordError = validateLoginPassword(password);
         if (passwordError) {
@@ -108,14 +139,9 @@ export default function AuthForm({ mode, next, initialError }: {
           setNotice({ tone: "error", message: authErrorMessage(error, "login") });
           return;
         }
-        if (!(await verifyProfile(data.user.id))) {
-          await supabase.auth.signOut({ scope: "local" });
-          setNotice({ tone: "error", message: "Die Anmeldung war erfolgreich, aber dein Profil konnte nicht geladen werden. Bitte versuche es erneut." });
-          return;
-        }
+        if (!(await verifyProfile(data.user.id))) return;
       }
-      router.replace(destination);
-      router.refresh();
+      window.location.replace(destination);
     } catch {
       setNotice({ tone: "error", message: "Die Verbindung konnte nicht hergestellt werden. Bitte prüfe deine Netzwerk- und Supabase-Konfiguration." });
     } finally {
@@ -131,7 +157,7 @@ export default function AuthForm({ mode, next, initialError }: {
       const { error } = await createClient().auth.resend({
         type: "signup",
         email: confirmationEmail,
-        options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+        options: { emailRedirectTo: `${window.location.origin}/auth/confirm` },
       });
       if (error) {
         setNotice({ tone: "error", message: authErrorMessage(error, "resend") });
@@ -162,6 +188,14 @@ export default function AuthForm({ mode, next, initialError }: {
           </button>
           <Link href="/login">Zur Anmeldung</Link>
         </section>
+      ) : profileUserId ? (
+        <section className={styles.confirmation} aria-label="Profil laden">
+          {notice && <p className={styles.notice} data-tone={notice.tone} role="alert">{notice.message}</p>}
+          <button type="button" className={styles.primary} disabled={pending} onClick={retryProfile}>
+            {pending ? "Profil wird geladen …" : "Profil erneut laden"}
+          </button>
+          <button type="button" className={styles.secondary} disabled={pending} onClick={restartLogin}>Abmelden und erneut anmelden</button>
+        </section>
       ) : (
         <form onSubmit={submit}>
           {registering && <div className={styles.field}>
@@ -181,12 +215,17 @@ export default function AuthForm({ mode, next, initialError }: {
                 <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" /><circle cx="12" cy="12" r="3" />{visible && <path d="m3 3 18 18" />}</svg>
               </button>
             </div>
+            {!registering && (
+              <Link className={styles.forgotPassword} href="/forgot-password">
+                Passwort vergessen?
+              </Link>
+            )}
           </div>
           {notice && <p className={styles.notice} data-tone={notice.tone} role="alert">{notice.message}</p>}
           <button className={styles.primary} type="submit" disabled={pending}>{pending ? "Bitte warten …" : registering ? "Konto erstellen" : "Anmelden"}<span aria-hidden="true">→</span></button>
         </form>
       )}
-      {!confirmationEmail && <p className={styles.alternative}>{registering ? "Du hast bereits ein Konto?" : "Du hast noch kein Konto?"}{" "}<Link href={registering ? "/login" : "/register"}>{registering ? "Anmelden" : "Jetzt registrieren"}</Link></p>}
+      {!confirmationEmail && !profileUserId && <p className={styles.alternative}>{registering ? "Du hast bereits ein Konto?" : "Du hast noch kein Konto?"}{" "}<Link href={registering ? "/login" : "/register"}>{registering ? "Anmelden" : "Jetzt registrieren"}</Link></p>}
     </div>
   );
 }

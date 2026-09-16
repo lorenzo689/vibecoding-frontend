@@ -1,11 +1,10 @@
 import type { Metadata } from "next";
-import SummaryWorkspace from "@/components/summaries/SummaryWorkspace";
+import CourseSummaryEditor from "@/components/summaries/CourseSummaryEditor";
 import shared from "@/components/dashboard.module.css";
-import s from "@/components/summaries/summaries.module.css";
 
 export const metadata: Metadata = {
-  title: "Zusammenfassungen | Lernapp",
-  description: "Zusammenfassungen mit Kurs-, Vorlesungs- und Quellenkontext.",
+  title: "Zusammenfassung | Lernapp",
+  description: "Deine eigene Zusammenfassung für diesen Kurs.",
 };
 
 export default async function CourseSummariesPage(
@@ -14,27 +13,18 @@ export default async function CourseSummariesPage(
   const { courseId } = await props.params;
 
   return (
-    <div className={`${shared.dashboard} ${s.page}`}>
+    <div className={shared.dashboard}>
       <section className={shared.intro}>
         <div>
           <p className={shared.eyebrow}>DEIN WISSEN, AUF DEN PUNKT</p>
-          <h1>Deine Zusammenfassungen.</h1>
-          <p>Das Wesentliche aus deinen Vorlesungen – mit dem Material verbunden.</p>
-        </div>
-        <div className={shared.semester}>
-          <small>BEISPIELSEMESTER</small>
-          <strong>Wintersemester 2026/27</strong>
-          <span>Verstehen beginnt beim Zusammenhang.</span>
+          <h1>Deine Zusammenfassung.</h1>
+          <p>Das Wesentliche aus diesem Kurs, in deinen eigenen Worten.</p>
         </div>
       </section>
-      <p className={shared.notice}>
-        Produktvorschau · Zusammenfassungen und Quellen sind illustrative, KI-generierte
-        Beispielinhalte. Bitte immer mit den Originalunterlagen abgleichen.
-      </p>
-      <SummaryWorkspace courseId={courseId} />
+      <CourseSummaryEditor courseId={courseId} />
       <footer className={shared.dashboardFooter}>
         <span>Lernapp · Dein Semester, verbunden.</span>
-        <span>Zusammenfassungsvorschau ohne Datenanbindung</span>
+        <span>Gespeichert in deinem Konto</span>
       </footer>
     </div>
   );

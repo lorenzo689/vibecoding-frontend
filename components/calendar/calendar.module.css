@@ -1,4 +1,20 @@
 .page { min-width: 0; }
+.createButton { display: inline-flex; align-items: center; gap: 8px; min-height: 42px; padding: 0 18px; border-radius: 8px; background: var(--green); color: #fff; font-size: 13px; font-weight: 550; border: none; cursor: pointer; flex-shrink: 0; }
+.createButton:hover { background: #173d31; }
+.eventActions { display: flex; gap: 8px; margin-left: auto; flex-shrink: 0; }
+.eventActions button { min-height: 32px; padding: 0 10px; border: 1px solid #dce3d3; border-radius: 6px; background: #fdfdf9; color: var(--green); font-size: 11px; cursor: pointer; }
+.eventActions button:hover { background: #eaf0df; }
+.eventList li { flex-wrap: wrap; }
+.courseDot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
+.courseDot[data-color="green"] { background: #3f6b2e; }
+.courseDot[data-color="amber"] { background: #8a5a12; }
+.courseDot[data-color="sage"] { background: #2f6b4d; }
+.courseDot[data-color="blue"] { background: #2c5490; }
+.courseDot[data-color="rose"] { background: #a13d3d; }
+.courseDot[data-color="violet"] { background: #5b3f8a; }
+.courseDot[data-color="teal"] { background: #1f6b5c; }
+.courseDot[data-color="coral"] { background: #a85a1f; }
+.courseDot[data-color="indigo"] { background: #3d4590; }
 .layout { display: grid; grid-template-columns: minmax(0, 1fr) 270px; gap: 30px; align-items: start; }
 .calendarColumn { min-width: 0; }
 .calendar { border: 1px solid #dfe5d7; border-radius: 10px; background: #fdfdf9; }

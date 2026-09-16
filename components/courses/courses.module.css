@@ -170,7 +170,8 @@
   margin-bottom: 8px;
 }
 .field input,
-.field textarea {
+.field textarea,
+.field select {
   display: block;
   width: 100%;
   border: 1px solid #d7ded6;
@@ -187,7 +188,8 @@
   min-height: 72px;
 }
 .field input:focus,
-.field textarea:focus {
+.field textarea:focus,
+.field select:focus {
   outline: none;
   border-color: var(--green);
   box-shadow: 0 0 0 3px #224f411c;
@@ -196,21 +198,6 @@
   margin-top: 6px;
   font-size: 11px;
   color: var(--muted);
-}
-.swatchRow {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-.swatch {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  border: 2px solid transparent;
-  cursor: pointer;
-}
-.swatch[aria-pressed="true"] {
-  border-color: var(--green);
 }
 .submitButton {
   width: 100%;
@@ -263,6 +250,8 @@
   background: #f0f3ea;
   border-color: #9daa9f;
 }
+.uploadLabel[aria-disabled="true"] { cursor: not-allowed; opacity: .58; }
+.uploadLabel[aria-disabled="true"]:hover { background: transparent; border-color: #d7ded6; }
 .uploadLabel input {
   position: absolute;
   width: 1px;
@@ -377,12 +366,6 @@
 .toolCard h3 {
   font-size: 14px;
   font-weight: 550;
-}
-.toolCard h3 small {
-  margin-left: 6px;
-  font-size: 10px;
-  font-weight: 500;
-  color: #6a7f5c;
 }
 .toolCard p {
   margin-top: 3px;

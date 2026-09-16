@@ -1,29 +1,66 @@
 "use client";
 
-import { useState, useSyncExternalStore } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import {
-  createCourse,
-  getCoursesServerSnapshot,
-  getCoursesSnapshot,
-  subscribe,
-  type Course,
-} from "@/lib/courses";
+import { createCourse, listCourses, type Course } from "@/lib/supabase/queries/courses";
+import { deriveCourseBadge } from "@/lib/courseBadge";
 import CreateCourseDialog from "@/components/courses/CreateCourseDialog";
 import dashboardStyles from "@/components/dashboard.module.css";
 import styles from "@/components/courses/courses.module.css";
 
 export default function CoursesPage() {
-  const courses = useSyncExternalStore(
-    subscribe,
-    getCoursesSnapshot,
-    getCoursesServerSnapshot
-  );
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  function handleCreate(input: Omit<Course, "id" | "createdAt">) {
-    createCourse(input);
-    setDialogOpen(false);
+  function fetchCourses() {
+    return listCourses()
+      .then((nextCourses) => {
+        setCourses(nextCourses);
+      })
+      .catch(() => {
+        setError("Deine Kurse konnten nicht geladen werden. Bitte versuche es erneut.");
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }
+
+  function loadCourses() {
+    setLoading(true);
+    setError(null);
+    fetchCourses();
+  }
+
+  useEffect(() => {
+    fetchCourses();
+  }, []);
+
+  async function handleCreate(input: { title: string; description: string }) {
+    setError(null);
+    try {
+      const course = await createCourse(input);
+      setCourses((prev) => [...prev, course]);
+      setDialogOpen(false);
+    } catch {
+      setError("Der Kurs konnte nicht erstellt werden.");
+      throw new Error("create-course-failed");
+    }
+  }
+
+  if (loading) return <div className={styles.page} aria-live="polite">Kurse werden geladen …</div>;
+
+  if (error && courses.length === 0) {
+    return (
+      <div className={styles.page}>
+        <div className={styles.empty} role="alert">
+          <h2>Kurse nicht verfügbar</h2>
+          <p>{error}</p>
+          <button type="button" className={styles.createButton} onClick={loadCourses}>Erneut versuchen</button>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -40,6 +77,7 @@ export default function CoursesPage() {
           </button>
         )}
       </div>
+      {error && <p className={styles.uploadHint} role="alert">{error}</p>}
 
       {courses.length === 0 ? (
         <div className={styles.empty}>
@@ -58,27 +96,30 @@ export default function CoursesPage() {
         </div>
       ) : (
         <div className={dashboardStyles.courseGrid}>
-          {courses.map((course) => (
-            <Link
-              key={course.id}
-              href={`/courses/${course.id}`}
-              className={styles.courseLink}
-            >
-              <article className={dashboardStyles.course}>
-                <div className={dashboardStyles.courseTop}>
-                  <span
-                    className={`${dashboardStyles.badge} ${styles.badge}`}
-                    data-color={course.color}
-                  >
-                    {course.code}
-                  </span>
-                  <small>KURS</small>
-                </div>
-                <h3>{course.name}</h3>
-                <p>{course.description || "Keine Beschreibung hinterlegt."}</p>
-              </article>
-            </Link>
-          ))}
+          {courses.map((course) => {
+            const badge = deriveCourseBadge(course.title);
+            return (
+              <Link
+                key={course.id}
+                href={`/courses/${course.id}`}
+                className={styles.courseLink}
+              >
+                <article className={dashboardStyles.course}>
+                  <div className={dashboardStyles.courseTop}>
+                    <span
+                      className={`${dashboardStyles.badge} ${styles.badge}`}
+                      data-color={badge.color}
+                    >
+                      {badge.code}
+                    </span>
+                    <small>KURS</small>
+                  </div>
+                  <h3>{course.title}</h3>
+                  <p>{course.description || "Keine Beschreibung hinterlegt."}</p>
+                </article>
+              </Link>
+            );
+          })}
         </div>
       )}
 
