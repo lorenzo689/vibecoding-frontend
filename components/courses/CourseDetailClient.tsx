@@ -152,14 +152,41 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
           ← Zurück zur Kursübersicht
         </Link>
       </div>
-      <span
-        className={`${dashboardStyles.badge} ${styles.badge}`}
-        data-color={badge.color}
-      >
-        {badge.code}
-      </span>
-      <h1 style={{ marginTop: 16 }}>{course.title}</h1>
-      <p>{course.description || "Keine Beschreibung hinterlegt."}</p>
+      <div className={styles.courseHeaderRow}>
+        <div className={styles.courseIdentity}>
+          <span
+            className={`${dashboardStyles.badge} ${styles.badge}`}
+            data-color={badge.color}
+          >
+            {badge.code}
+          </span>
+          <h1 style={{ marginTop: 16 }}>{course.title}</h1>
+          <p>{course.description || "Keine Beschreibung hinterlegt."}</p>
+        </div>
+
+        <div className={styles.toolGrid}>
+          <Link href={`/courses/${courseId}/flashcards`} className={styles.courseLink}>
+            <article className={styles.toolCard}>
+              <span className={styles.toolIcon} data-tool="flashcards">KK</span>
+              <div className={styles.toolBody}>
+                <h3>Karteikarten</h3>
+                <p>Aus deinem Vorlesungsmaterial lernen.</p>
+              </div>
+              <span className={styles.toolArrow} aria-hidden="true">→</span>
+            </article>
+          </Link>
+          <Link href={`/courses/${courseId}/summaries`} className={styles.courseLink}>
+            <article className={styles.toolCard}>
+              <span className={styles.toolIcon} data-tool="summary">ZF</span>
+              <div className={styles.toolBody}>
+                <h3>Zusammenfassung</h3>
+                <p>Das Wesentliche aus deinen Vorlesungen.</p>
+              </div>
+              <span className={styles.toolArrow} aria-hidden="true">→</span>
+            </article>
+          </Link>
+        </div>
+      </div>
 
       <div className={styles.uploadSection}>
         <h2>
@@ -214,29 +241,6 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
             })}
           </ul>
         )}
-      </div>
-
-      <div className={styles.toolGrid}>
-        <Link href={`/courses/${courseId}/flashcards`} className={styles.courseLink}>
-          <article className={styles.toolCard}>
-            <span className={styles.toolIcon} data-tool="flashcards">KK</span>
-            <div className={styles.toolBody}>
-              <h3>Karteikarten</h3>
-              <p>Aus deinem Vorlesungsmaterial lernen.</p>
-            </div>
-            <span className={styles.toolArrow} aria-hidden="true">→</span>
-          </article>
-        </Link>
-        <Link href={`/courses/${courseId}/summaries`} className={styles.courseLink}>
-          <article className={styles.toolCard}>
-            <span className={styles.toolIcon} data-tool="summary">ZF</span>
-            <div className={styles.toolBody}>
-              <h3>Zusammenfassung</h3>
-              <p>Das Wesentliche aus deinen Vorlesungen.</p>
-            </div>
-            <span className={styles.toolArrow} aria-hidden="true">→</span>
-          </article>
-        </Link>
       </div>
 
       <div className={styles.dangerZone}>

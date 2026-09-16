@@ -2,6 +2,14 @@
   --green: #224f41;
   --muted: #667369;
 }
+.topRow {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 10px;
+}
+.topRow .backLink {
+  margin-top: 0;
+}
 .headerButton {
   flex-shrink: 0;
   display: inline-flex;
@@ -176,16 +184,36 @@
 .deckColor[data-color="indigo"] { color: #3d4590; }
 
 /* Deck detail header */
+.deckTopRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 28px;
+}
 .deckHeader {
-  margin-bottom: 6px;
+  flex-shrink: 0;
+  margin-bottom: 0;
+}
+@media (max-width: 900px) {
+  .deckTopRow {
+    flex-direction: column;
+    gap: 14px;
+  }
+}
+.deckMeta {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--muted);
 }
 .deckHeader h2 {
-  margin-top: 8px;
+  margin-top: 2px;
   font-size: 20px;
   font-weight: 550;
   letter-spacing: -0.3px;
 }
 .backLink {
+  flex-shrink: 0;
+  margin-top: 8px;
+  margin-left: auto;
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -207,25 +235,33 @@
   gap: 10px;
 }
 .card {
+  position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 9px;
+  gap: 10px;
   border: 1px solid #dfe5d7;
-  background: #fdfdf9;
+  border-left: 3px solid #cbdcb8;
+  background: #fff;
   border-radius: 8px;
-  padding: 9px 9px 9px 12px;
+  padding: 10px 8px 10px 13px;
   cursor: pointer;
-  transition: border-color 150ms, box-shadow 150ms;
+  transition: border-color 150ms, box-shadow 150ms, transform 150ms;
 }
 .card:hover {
   border-color: #c9d4c1;
-  box-shadow: 0 8px 18px #08291f0f;
+  border-left-color: var(--green);
+  box-shadow: 0 10px 22px #08291f14;
+  transform: translateY(-1px);
 }
 .cardIcon {
   flex-shrink: 0;
   width: 15px;
   height: 15px;
-  color: #9db98a;
+  color: #8fae7c;
+  transition: color 150ms;
+}
+.card:hover .cardIcon {
+  color: var(--green);
 }
 .question {
   max-width: 220px;
@@ -239,7 +275,7 @@
 /* Study popup with flip card */
 .studyDialog {
   width: 100%;
-  max-width: 560px;
+  max-width: 760px;
   background: #fff;
   border-radius: 12px;
   padding: 20px 24px 24px;
@@ -286,7 +322,7 @@
 .flipCard {
   flex: 1;
   min-width: 0;
-  height: 240px;
+  height: 360px;
   perspective: 1200px;
   cursor: pointer;
 }
@@ -322,8 +358,9 @@
   background: #eef3e7;
 }
 .flipCardFace p {
-  font-size: 15px;
+  font-size: 18px;
   line-height: 1.6;
+  max-width: 46ch;
 }
 .flipCardLabel {
   font-size: 10px;
@@ -344,15 +381,24 @@
   place-items: center;
   border-radius: 6px;
   color: var(--muted);
+  opacity: 0.35;
+  transition: opacity 150ms, background 150ms, color 150ms;
+}
+.card:hover .removeButton,
+.removeButton:focus-visible {
+  opacity: 1;
 }
 .removeButton:hover {
+  opacity: 1;
   background: #f7e9e6;
   color: #a83d31;
 }
 .empty {
-  margin: 32px 0 0;
-  max-width: 380px;
+  margin: 40px 0 0;
+  max-width: 420px;
   padding: 0;
+  border-left: 3px solid #e3e9dc;
+  padding-left: 18px;
 }
 .empty h3 {
   font-size: 15px;
@@ -365,8 +411,10 @@
   line-height: 1.6;
 }
 .addForm {
+  flex: 1;
+  min-width: 0;
   max-width: 900px;
-  margin: 0 auto;
+  margin: 0;
   border: 1px solid #dfe5d7;
   background: #fdfdf9;
   border-radius: 10px;
@@ -391,9 +439,16 @@
 }
 .addForm label {
   display: block;
-  font-size: 12px;
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
   font-weight: 550;
-  margin-bottom: 6px;
+  color: #627b55;
+  margin-bottom: 7px;
+}
+.addForm input::placeholder,
+.addForm textarea::placeholder {
+  color: #a8b3a4;
 }
 .addForm input,
 .addForm textarea {
