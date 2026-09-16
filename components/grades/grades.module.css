@@ -1,4 +1,31 @@
 .page { min-width: 0; }
+.createButton { display: inline-flex; align-items: center; gap: 8px; min-height: 42px; padding: 0 18px; border-radius: 8px; background: var(--green); color: #fff; font-size: 13px; font-weight: 550; border: none; cursor: pointer; text-decoration: none; flex-shrink: 0; }
+.createButton:hover { background: #173d31; }
+.createButton:disabled { opacity: .6; cursor: not-allowed; }
+.empty { border: 1px dashed #dfe5d7; border-radius: 12px; padding: 26px; margin-top: 18px; }
+.empty h2 { font-size: 16px; font-weight: 550; }
+.empty p { font-size: 12px; color: var(--muted); line-height: 1.8; margin-block: 10px 16px; }
+.loading { padding: 18px 0; font-size: 12px; color: var(--muted); }
+.visuallyHidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+.courseSwitcher { display: flex; align-items: center; gap: 12px; margin-block: 22px 30px; flex-wrap: wrap; }
+.courseSwitcher label { font-size: 11px; font-weight: 550; color: #5b6c60; }
+.courseSwitcher select { min-height: 44px; padding: 0 12px; border: 1px solid #d7ded6; border-radius: 8px; background: #fff; font: inherit; font-size: 14px; color: inherit; }
+.courseSwitcher select:focus-visible { outline: 3px solid #67957a; outline-offset: 2px; }
+.courseBadge { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 8px; font-size: 11px; font-weight: 600; background: #e5ecd8; color: #49643c; }
+.courseBadge[data-color="green"] { background: #d7e8c7; color: #3f6b2e; }
+.courseBadge[data-color="amber"] { background: #f3dfae; color: #8a5a12; }
+.courseBadge[data-color="sage"] { background: #cfe3d6; color: #2f6b4d; }
+.courseBadge[data-color="blue"] { background: #cddced; color: #2c5490; }
+.courseBadge[data-color="rose"] { background: #f3d3d3; color: #a13d3d; }
+.courseBadge[data-color="violet"] { background: #ddd3ee; color: #5b3f8a; }
+.courseBadge[data-color="teal"] { background: #c9e8e2; color: #1f6b5c; }
+.courseBadge[data-color="coral"] { background: #f6dcc4; color: #a85a1f; }
+.courseBadge[data-color="indigo"] { background: #d6d9f5; color: #3d4590; }
+.kindTag { display: inline-block; font-size: 9px; font-weight: 550; letter-spacing: .6px; text-transform: uppercase; color: #526849; }
+.assessmentActions { display: flex; flex-direction: column; gap: 8px; flex-shrink: 0; }
+.assessmentActions button { min-height: 36px; padding: 0 12px; border: 1px solid #dce3d3; border-radius: 6px; background: #fdfdf9; color: var(--green); font-size: 11px; cursor: pointer; }
+.assessmentActions button:hover:not(:disabled) { background: #eaf0df; }
+.assessmentActions button:disabled { opacity: .6; cursor: not-allowed; }
 .overview { background: #fdfdf9; border: 1px solid #dfe5d7; border-radius: 10px; padding: 24px; margin-bottom: 34px; }
 .overview dl { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; }
 .overview dl > div + div { border-left: 1px solid #e1e6dc; padding-left: 24px; }
@@ -20,8 +47,9 @@
 .courseCode { display: grid; place-items: center; flex-shrink: 0; width: 40px; height: 40px; border-radius: 8px; background: #e5ecd8; color: #49643c; font-size: 12px; font-weight: 600; }
 .courseHeader h3 { font-size: 16px; font-weight: 550; letter-spacing: -.35px; line-height: 1.5; margin-top: 6px; }
 .status { display: inline-block; font-size: 9px; padding: 4px 7px; border-radius: 4px; color: #526849; background: #e7eedc; }
-.status[data-status="partial"] { background: #f0eadb; color: #75603b; }
+.status[data-status="partial"], .status[data-status="incomplete"] { background: #f0eadb; color: #75603b; }
 .status[data-status="ungraded"] { background: #edf0eb; color: #596952; }
+.status[data-status="invalid"] { background: #f3d3d3; color: #a13d3d; }
 .gradeSummary { display: flex; justify-content: space-between; gap: 24px; align-items: center; margin-block: 22px; }
 .gradeValue { font-size: 29px; color: var(--green); font-weight: 450; letter-spacing: -.8px; }
 .gradeValue + p { font-size: 10px; line-height: 1.8; color: var(--muted); margin-top: 6px; max-width: 240px; }
@@ -91,5 +119,8 @@
   .assessments li { flex-direction: column; gap: 8px; }
   .assessmentGrade { display: flex; gap: 12px; align-items: center; text-align: left; }
   .assessmentGrade span { margin-top: 0; }
+  .assessmentActions { flex-direction: row; }
   .pending > div { flex-wrap: wrap; }
+  .courseSwitcher { width: 100%; }
+  .courseSwitcher select { flex: 1; min-width: 0; }
 }

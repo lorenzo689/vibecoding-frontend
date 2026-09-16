@@ -91,6 +91,7 @@ Currently database-backed frontend features:
 - summaries serialized by the frontend as `{ "text": string }`
 - flashcard decks and flashcards
 - calendar events (own events only; optional course link)
+- grade assessments (own course's assessments only; weight, grade, status, points, notes; weighted current standing and target-grade calculator use real stored data)
 
 RLS remains the authorization boundary. Frontend filters and route parameters
 are not treated as authorization.
@@ -116,7 +117,6 @@ user records:
 - dashboard overview content
 - detected-date suggestion card on `/calendar` (confirm/discard buttons stay disabled; no detection backend exists)
 - global document-library preview
-- grade examples and target calculation
 - AI-assistant conversation
 
 ## Testing and CI

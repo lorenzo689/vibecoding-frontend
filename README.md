@@ -46,10 +46,11 @@ Aktiv angebunden sind:
 - Dateimetadaten
 - eigene Zusammenfassungen
 - eigene Karteikarten
+- eigene Kalendertermine
+- eigene Prüfungsleistungen und Noten (inklusive gewichtetem Zwischenstand und Zielnotenrechner)
 
-Dashboard, Kalender, Noten, die globale Unterlagenansicht und der KI-Assistent
-enthalten weiterhin deutlich gekennzeichnete Vorschau- beziehungsweise
-Beispieldaten.
+Dashboard, die globale Unterlagenansicht und der KI-Assistent enthalten
+weiterhin deutlich gekennzeichnete Vorschau- beziehungsweise Beispieldaten.
 
 Das Backend besitzt noch keinen freigegebenen Storage-Bucket samt Policies für
 Dateiinhalte. Deshalb ist der Upload im Frontend deaktiviert; es wird keine
