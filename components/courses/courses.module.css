@@ -318,12 +318,37 @@
   color: #a83d31;
 }
 
+/* Course header with tool tiles beside the title */
+.courseHeaderRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 40px;
+}
+.courseIdentity {
+  flex-shrink: 0;
+  min-width: 0;
+}
+
 /* Tool tiles (flashcards / summaries) */
 .toolGrid {
+  flex: 1;
+  min-width: 0;
   display: grid;
   grid-template-columns: 1fr 1fr;
+  align-items: stretch;
   gap: 16px;
-  margin-top: 24px;
+}
+.toolGrid .courseLink {
+  height: 100%;
+}
+.toolGrid .toolCard {
+  height: 100%;
+}
+@media (max-width: 900px) {
+  .courseHeaderRow {
+    flex-direction: column;
+    gap: 24px;
+  }
 }
 .toolCard {
   display: flex;

@@ -105,19 +105,21 @@ export default function FlashcardDeckDetail({
 
   return (
     <div className={s.manager}>
-      <div className={s.deckHeader}>
-        <Link href={`/courses/${courseId}/flashcards`} className={s.backLink}>
-          ← Zurück zu den Decks
-        </Link>
-        <h2>{deck.title}</h2>
-      </div>
+      <div className={s.deckTopRow}>
+        <div className={s.deckHeader}>
+          <h2>{deck.title}</h2>
+          <p className={s.deckMeta}>
+            {deck.cards.length} {deck.cards.length === 1 ? "Karte" : "Karten"}
+          </p>
+        </div>
 
-      <form className={s.addForm} onSubmit={handleAdd}>
+        <form className={s.addForm} onSubmit={handleAdd}>
         <div>
           <label htmlFor="card-question">Frage</label>
           <input
             id="card-question"
             value={question}
+            placeholder="z. B. Was ist Phishing?"
             onChange={(event) => setQuestion(event.target.value)}
             disabled={saving}
           />
@@ -128,6 +130,7 @@ export default function FlashcardDeckDetail({
             id="card-answer"
             rows={1}
             value={answer}
+            placeholder="Kurze, prägnante Antwort"
             onChange={(event) => setAnswer(event.target.value)}
             disabled={saving}
           />
@@ -135,8 +138,13 @@ export default function FlashcardDeckDetail({
         <button type="submit" className={s.submitButton} disabled={saving}>
           {saving ? "Wird gespeichert …" : "+ Karteikarte hinzufügen"}
         </button>
-        {error && <span className={s.status} role="alert">{error}</span>}
-      </form>
+          {error && <span className={s.status} role="alert">{error}</span>}
+        </form>
+
+        <Link href={`/courses/${courseId}/flashcards`} className={s.backLink}>
+          ← Zurück zu den Decks
+        </Link>
+      </div>
 
       {deck.cards.length === 0 ? (
         <div className={s.empty}>

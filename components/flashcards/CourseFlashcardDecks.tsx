@@ -16,8 +16,10 @@ import s from "./flashcards.module.css";
 function FolderIcon() {
   return (
     <svg viewBox="0 0 24 20" className={s.folderIcon} aria-hidden="true">
-      <rect x="1" y="2" width="10" height="5" rx="2" fill="currentColor" />
-      <rect x="1" y="5" width="22" height="13" rx="2.5" fill="currentColor" />
+      <path
+        fill="currentColor"
+        d="M2 5.6C2 4.4 3 3.4 4.2 3.4h5C9.8 3.4 10.4 3.7 10.8 4.2l1 1.3c.4.5 1 .8 1.6.8H19.8C21 6.3 22 7.3 22 8.5V15.8C22 17 21 18 19.8 18H4.2C3 18 2 17 2 15.8Z"
+      />
     </svg>
   );
 }
@@ -60,6 +62,12 @@ export default function CourseFlashcardDecks({ courseId }: { courseId: string })
 
   return (
     <div className={s.manager}>
+      <div className={s.topRow}>
+        <Link href={`/courses/${courseId}`} className={s.backLink}>
+          ← Zurück zum Kurs
+        </Link>
+      </div>
+
       <section className={dashboardStyles.intro}>
         <div>
           <p className={dashboardStyles.eyebrow}>DEIN WISSEN, KARTE FÜR KARTE</p>
