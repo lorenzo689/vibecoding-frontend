@@ -15,7 +15,9 @@ Der Indexstatus wird über die ausdrücklich benannte Materialbeziehung von
 `source_documents` geprüft. Die vorhandenen lokalen Kurse in localStorage und
 Dateien in IndexedDB werden nicht als Backend-Kurse oder indexierte Unterlagen
 ausgegeben und nicht automatisch migriert. Ein nutzereigener Backend-Kurs mit
-fertig indexiertem Material ist für neue Fragen erforderlich.
+fertig indexiertem Material ist für Antworten erforderlich. Die Index-Vorprüfung
+ist nur ein Hinweis und sperrt Senden nicht: Der Endpunkt prüft den aktuellen
+Materialstand beim Aufruf. Andere Sperrgründe stehen direkt unter der Eingabe.
 
 Eine Konversation wird beim ersten Senden angelegt. Nachrichten und Quellen
 schreibt ausschließlich das Backend. Die UI zeigt Texte ohne HTML-Ausführung

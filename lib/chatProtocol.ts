@@ -77,3 +77,16 @@ export function mergeExchange(history: ChatMessage[], exchange: ChatExchange): C
   }));
   return [...messages.values()].sort((a, b) => a.seq - b.seq);
 }
+
+/** Material readiness is advisory: only the backend can authoritatively check it at send time. */
+export function sendBlockedReason(state: {
+  courseId: string; busy: boolean; pending: boolean; loadFailed: boolean; waitSeconds: number; question: string;
+}): string | null {
+  if (!state.courseId) return "Wähle zuerst einen Kurs aus.";
+  if (state.busy) return "Bitte warte, bis der aktuelle Vorgang abgeschlossen ist.";
+  if (state.loadFailed) return "Die Chatdaten konnten nicht geladen werden. Klicke auf Aktualisieren.";
+  if (state.pending) return "Eine Anfrage ist noch offen. Klicke auf Anfrage wiederholen.";
+  if (state.waitSeconds > 0) return `Bitte warte noch ${state.waitSeconds} Sekunden.`;
+  if (!validateQuestion(state.question)) return "Gib eine Frage mit 1 bis 1800 Zeichen ein.";
+  return null;
+}

@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import type { AuthChangeEvent } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/browser";
 import { createConversation, hasIndexedMaterial, loadConversations, loadCourses, loadHistory, sendChat } from "@/lib/chat";
-import { ChatError, canDiscardRequest, mergeExchange, validateQuestion, type ChatCourse, type ChatMessage, type ChatRequest, type Conversation } from "@/lib/chatProtocol";
+import { ChatError, canDiscardRequest, mergeExchange, sendBlockedReason, type ChatCourse, type ChatMessage, type ChatRequest, type Conversation } from "@/lib/chatProtocol";
 import s from "./assistant.module.css";
 
 const storagePrefix = "lernapp.chat.pending:";
@@ -101,7 +101,7 @@ function CourseChat({ courseId, userId, setLocked }: { courseId: string; userId:
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [question, setQuestion] = useState(() => readPending(storageKey)?.question ?? "");
-  const [indexed, setIndexed] = useState(false);
+  const [indexed, setIndexed] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(Boolean(courseId));
   const [historyLoading, setHistoryLoading] = useState(false);
   const [sending, setSending] = useState(false);
@@ -116,6 +116,7 @@ function CourseChat({ courseId, userId, setLocked }: { courseId: string; userId:
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const busy = loading || historyLoading || sending;
   const waitSeconds = Math.max(0, Math.ceil((retryAt - now) / 1000));
+  const blockedReason = sendBlockedReason({ courseId, busy, pending: Boolean(pending), loadFailed, waitSeconds, question });
 
   useEffect(() => {
     alive.current = true;
@@ -136,7 +137,7 @@ function CourseChat({ courseId, userId, setLocked }: { courseId: string; userId:
     if (!courseId) return;
     let active = true;
     const client = createClient();
-    Promise.all([loadConversations(client, courseId), hasIndexedMaterial(client, courseId)])
+    Promise.all([loadConversations(client, courseId), hasIndexedMaterial(client, courseId).catch(() => null)])
       .then(([list, ready]) => {
         if (!active) return;
         setConversations(list);
@@ -176,7 +177,7 @@ function CourseChat({ courseId, userId, setLocked }: { courseId: string; userId:
   async function submit(event?: FormEvent) {
     event?.preventDefault();
     if (sendingRef.current || busy || waitSeconds > 0 || !courseId || loadFailed) return;
-    if (!pending && (!indexed || !validateQuestion(question))) return;
+    if (!pending && blockedReason) return;
     sendingRef.current = true;
     setSending(true);
     setError(null);
@@ -238,9 +239,9 @@ function CourseChat({ courseId, userId, setLocked }: { courseId: string; userId:
         setLoadFailed(false); setLoading(Boolean(courseId)); setHistoryLoading(Boolean(conversationId)); setError(null); setReload((value) => value + 1);
       }}>Aktualisieren</button>
     </div>
-    {!courseId && <p className={s.status}>In deinem Konto sind noch keine Backend-Kurse vorhanden. Lokal gespeicherte Kurse und Dateien stehen dem Chat noch nicht zur Verfügung.</p>}
+    {!courseId && <p className={s.status}>In deinem Konto sind noch keine Kurse vorhanden. <Link href="/courses">Lege einen Kurs an und lade deine Unterlagen hoch.</Link></p>}
     {loading || historyLoading ? <p className={s.status} role="status">Kurs und Unterhaltung werden geladen …</p>
-      : courseId && !indexed && !loadFailed && <p className={s.status}>Für diesen Kurs fehlen fertig indexierte Unterlagen. Sobald sie auf Staging verfügbar sind, klicke auf „Aktualisieren“. Dateien, die nur im Browser gespeichert sind, kann der Chat nicht lesen.</p>}
+      : courseId && indexed === false && !loadFailed && <p className={s.status}>Bei der letzten Prüfung waren noch keine durchsuchbaren Unterlagen verfügbar. Beim Senden prüft der Chat den aktuellen Stand. <Link href={`/courses/${courseId}`}>Unterlagen im Kurs verwalten</Link></p>}
     {!busy && indexed && !messages.length && !pending && <p className={s.status}>Stelle eine Frage zu deinen Kursunterlagen.</p>}
     <ul className={s.messages} aria-label="Chatverlauf">
       {messages.map((message) => <li key={message.id} className={s.messageRow} data-role={message.role}>
@@ -281,10 +282,11 @@ function CourseChat({ courseId, userId, setLocked }: { courseId: string; userId:
           }
         }} />
       <button type="submit" className={s.sendButton}
-        disabled={busy || Boolean(pending) || !indexed || loadFailed || !validateQuestion(question)}>
+        disabled={Boolean(blockedReason)} aria-describedby="assistant-send-status">
         {sending ? "Antwortet …" : "Senden"}
       </button>
     </form>
+    <p id="assistant-send-status" className={s.composerNote} role="status">{blockedReason ?? "Bereit zum Senden."}</p>
     <p id="assistant-composer-note" className={s.composerNote}>
       {question.length}/1800 Zeichen · Enter zum Senden, Umschalt + Enter für einen Absatz. KI-Antworten können Fehler enthalten; prüfe die Quellen.
     </p>
