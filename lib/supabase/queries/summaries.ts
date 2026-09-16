@@ -111,3 +111,9 @@ export async function saveCourseSummary(
     updatedAt: summary.updated_at,
   };
 }
+
+// Deleting the material cascades to the summary row (see core_erm migration).
+export async function deleteCourseSummary(materialId: string): Promise<void> {
+  const { error } = await createClient().from("materials").delete().eq("id", materialId);
+  if (error) throw error;
+}
