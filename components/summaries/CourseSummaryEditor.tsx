@@ -1,7 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getCourseSummary, saveCourseSummary } from "@/lib/supabase/queries/summaries";
+import {
+  deleteCourseSummary,
+  getCourseSummary,
+  saveCourseSummary,
+} from "@/lib/supabase/queries/summaries";
 import s from "./summaries.module.css";
 
 function formatDate(value: string) {
@@ -12,12 +16,19 @@ function formatDate(value: string) {
   });
 }
 
+function wordCount(text: string): number {
+  const trimmed = text.trim();
+  return trimmed ? trimmed.split(/\s+/).length : 0;
+}
+
 export default function CourseSummaryEditor({ courseId }: { courseId: string }) {
   const [loading, setLoading] = useState(true);
+  const [materialId, setMaterialId] = useState<string | null>(null);
   const [updatedAt, setUpdatedAt] = useState<string | null>(null);
   const [text, setText] = useState("");
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -26,6 +37,7 @@ export default function CourseSummaryEditor({ courseId }: { courseId: string }) 
       .then((summary) => {
         if (!active) return;
         if (summary) {
+          setMaterialId(summary.materialId);
           setText(summary.text);
           setUpdatedAt(summary.updatedAt);
         } else {
@@ -42,6 +54,7 @@ export default function CourseSummaryEditor({ courseId }: { courseId: string }) 
     setError(null);
     try {
       const summary = await saveCourseSummary(courseId, { title: "Zusammenfassung", text });
+      setMaterialId(summary.materialId);
       setUpdatedAt(summary.updatedAt);
       setEditing(false);
     } catch {
@@ -51,24 +64,66 @@ export default function CourseSummaryEditor({ courseId }: { courseId: string }) 
     }
   }
 
+  async function handleDelete() {
+    if (!materialId) return;
+    if (!window.confirm("Diese Zusammenfassung wirklich löschen? Das kann nicht rückgängig gemacht werden.")) {
+      return;
+    }
+    setDeleting(true);
+    setError(null);
+    try {
+      await deleteCourseSummary(materialId);
+      setMaterialId(null);
+      setUpdatedAt(null);
+      setText("");
+      setEditing(true);
+    } catch {
+      setError("Die Zusammenfassung konnte nicht gelöscht werden.");
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   if (loading) return <p className={s.status} aria-live="polite">Zusammenfassung wird geladen …</p>;
 
   if (error && !updatedAt && !editing) {
     return <div className={s.empty} role="alert"><h3>Nicht verfügbar</h3><p>{error} Bitte lade die Seite erneut.</p></div>;
   }
 
+  const busy = saving || deleting;
+
   return (
     <div className={s.editor}>
-      {updatedAt && (
-        <div className={s.meta}>
-          <span>Zuletzt bearbeitet: {formatDate(updatedAt)}</span>
-          {!editing && (
+      <div className={s.meta}>
+        <span className={s.metaInfo}>
+          {updatedAt ? (
+            <>
+              <span>Zuletzt bearbeitet: {formatDate(updatedAt)}</span>
+              <span className={s.dot} aria-hidden="true">·</span>
+              <span>{wordCount(text)} Wörter</span>
+            </>
+          ) : (
+            <span>Noch nicht gespeichert</span>
+          )}
+        </span>
+        {!editing && (
+          <span className={s.metaActions}>
             <button type="button" className={s.secondaryButton} onClick={() => setEditing(true)}>
               Bearbeiten
             </button>
-          )}
-        </div>
-      )}
+            {materialId && (
+              <button
+                type="button"
+                className={s.dangerButton}
+                onClick={handleDelete}
+                disabled={busy}
+              >
+                {deleting ? "Wird gelöscht …" : "Löschen"}
+              </button>
+            )}
+          </span>
+        )}
+      </div>
 
       {editing ? (
         <>
@@ -77,7 +132,7 @@ export default function CourseSummaryEditor({ courseId }: { courseId: string }) 
               value={text}
               onChange={(event) => setText(event.target.value)}
               placeholder="Schreib hier deine Zusammenfassung für diesen Kurs …"
-              disabled={saving}
+              disabled={busy}
             />
           </label>
           <div className={s.actions}>
@@ -85,7 +140,7 @@ export default function CourseSummaryEditor({ courseId }: { courseId: string }) 
               type="button"
               className={s.primaryButton}
               onClick={handleSave}
-              disabled={saving || !text.trim()}
+              disabled={busy || !text.trim()}
             >
               {saving ? "Wird gespeichert …" : "Speichern"}
             </button>
@@ -94,7 +149,7 @@ export default function CourseSummaryEditor({ courseId }: { courseId: string }) 
                 type="button"
                 className={s.secondaryButton}
                 onClick={() => setEditing(false)}
-                disabled={saving}
+                disabled={busy}
               >
                 Abbrechen
               </button>
@@ -107,7 +162,14 @@ export default function CourseSummaryEditor({ courseId }: { courseId: string }) 
           </div>
         </>
       ) : (
-        <p className={s.readOnlyText}>{text}</p>
+        <>
+          <p className={s.readOnlyText}>{text}</p>
+          {error && (
+            <p className={s.status} data-tone="error" role="alert">
+              {error}
+            </p>
+          )}
+        </>
       )}
     </div>
   );

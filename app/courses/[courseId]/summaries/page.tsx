@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import CourseSummaryEditor from "@/components/summaries/CourseSummaryEditor";
 import shared from "@/components/dashboard.module.css";
+import s from "@/components/summaries/summaries.module.css";
 
 export const metadata: Metadata = {
   title: "Zusammenfassung | Lernapp",
@@ -14,6 +16,11 @@ export default async function CourseSummariesPage(
 
   return (
     <div className={shared.dashboard}>
+      <div className={s.topRow}>
+        <Link href={`/courses/${courseId}`} className={s.backLink}>
+          ← Zurück zum Kurs
+        </Link>
+      </div>
       <section className={shared.intro}>
         <div>
           <p className={shared.eyebrow}>DEIN WISSEN, AUF DEN PUNKT</p>

@@ -1,34 +1,94 @@
+.topRow {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 10px;
+}
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 550;
+  color: #667369;
+}
+.backLink:hover {
+  color: #224f41;
+}
 .editor {
   --green: #224f41;
   --muted: #667369;
+  max-width: 860px;
+  margin-top: 32px;
   border: 1px solid #dfe5d7;
-  background: #fdfdf9;
-  border-radius: 10px;
-  padding: 24px;
+  background: #fff;
+  border-radius: 12px;
+  padding: 26px 32px 30px;
 }
 .meta {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 12px;
+  gap: 16px;
+  flex-wrap: wrap;
   font-size: 11px;
   color: var(--muted);
-  margin-bottom: 14px;
+  margin-bottom: 18px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #e9ede2;
+}
+.metaInfo {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.dot {
+  color: #c2cbbb;
+}
+.metaActions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.metaActions .secondaryButton {
+  min-height: 34px;
+  padding: 0 14px;
+  font-size: 12px;
+}
+.dangerButton {
+  min-height: 34px;
+  padding: 0 14px;
+  border-radius: 8px;
+  border: 1px solid #e3c4bd;
+  background: #fff;
+  color: #a83d31;
+  font-size: 12px;
+  font-weight: 550;
+  cursor: pointer;
+  transition: background 150ms;
+}
+.dangerButton:hover {
+  background: #f7e9e6;
+}
+.dangerButton:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 .field {
   display: block;
 }
 .field textarea {
+  display: block;
+  box-sizing: border-box;
   width: 100%;
-  min-height: 260px;
+  min-height: 300px;
   resize: vertical;
-  border: 1px solid #d7ded6;
-  border-radius: 8px;
-  background: #fff;
-  padding: 14px 16px;
+  border: 1px solid #e0e6da;
+  border-radius: 10px;
+  background: #fcfdfa;
+  padding: 18px 20px;
   font: inherit;
-  font-size: 14px;
-  line-height: 1.7;
+  font-size: 15px;
+  line-height: 1.85;
   color: inherit;
 }
 .field textarea:focus {
@@ -42,8 +102,13 @@
 }
 .readOnlyText {
   white-space: pre-wrap;
-  font-size: 14px;
-  line-height: 1.8;
+  max-width: 68ch;
+  font-size: 15px;
+  line-height: 1.85;
+  color: #26382f;
+}
+.field textarea::placeholder {
+  color: #a8b3a4;
 }
 .actions {
   display: flex;
