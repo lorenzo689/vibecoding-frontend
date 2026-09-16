@@ -1,4 +1,5 @@
-// Synchronized from ../backend/types/database.types.ts at backend dev 1bf6374.
+// Synchronized from ../backend/types/database.types.ts at backend dev 4974a4e,
+// plus the uncommitted grade_assessments migration (20260916161514_grade_assessments.sql).
 // Keep this copy local so the standalone frontend CI does not depend on a sibling checkout.
 export type Json =
   | string
@@ -872,6 +873,62 @@ export type Database = {
             columns: ["deck_id"]
             isOneToOne: false
             referencedRelation: "flashcard_decks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      grade_assessments: {
+        Row: {
+          assessment_date: string | null
+          course_id: string
+          created_at: string
+          grade: number | null
+          id: string
+          kind: string
+          notes: string | null
+          points_earned: number | null
+          points_max: number | null
+          status: string
+          title: string
+          updated_at: string
+          weight: number
+        }
+        Insert: {
+          assessment_date?: string | null
+          course_id: string
+          created_at?: string
+          grade?: number | null
+          id?: string
+          kind: string
+          notes?: string | null
+          points_earned?: number | null
+          points_max?: number | null
+          status: string
+          title: string
+          updated_at?: string
+          weight: number
+        }
+        Update: {
+          assessment_date?: string | null
+          course_id?: string
+          created_at?: string
+          grade?: number | null
+          id?: string
+          kind?: string
+          notes?: string | null
+          points_earned?: number | null
+          points_max?: number | null
+          status?: string
+          title?: string
+          updated_at?: string
+          weight?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "grade_assessments_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
             referencedColumns: ["id"]
           },
         ]
