@@ -1,5 +1,7 @@
-// Synchronized from ../backend/types/database.types.ts at backend dev 4974a4e,
-// plus the uncommitted grade_assessments migration (20260916161514_grade_assessments.sql).
+// Synchronized from ../backend/types/database.types.ts at backend dev 367a8c9,
+// plus uncommitted follow-up migrations: grade_assessments_ects.sql (weight -> ects_credits),
+// calendar_events_end_after_start.sql (ends_at > starts_at constraint),
+// and calendar_events_all_day.sql (all_day flag).
 // Keep this copy local so the standalone frontend CI does not depend on a sibling checkout.
 export type Json =
   | string
@@ -39,6 +41,7 @@ export type Database = {
     Tables: {
       calendar_events: {
         Row: {
+          all_day: boolean
           course_id: string | null
           created_at: string
           description: string | null
@@ -51,6 +54,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          all_day?: boolean
           course_id?: string | null
           created_at?: string
           description?: string | null
@@ -63,6 +67,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          all_day?: boolean
           course_id?: string | null
           created_at?: string
           description?: string | null
@@ -882,6 +887,7 @@ export type Database = {
           assessment_date: string | null
           course_id: string
           created_at: string
+          ects_credits: number
           grade: number | null
           id: string
           kind: string
@@ -891,12 +897,12 @@ export type Database = {
           status: string
           title: string
           updated_at: string
-          weight: number
         }
         Insert: {
           assessment_date?: string | null
           course_id: string
           created_at?: string
+          ects_credits: number
           grade?: number | null
           id?: string
           kind: string
@@ -906,12 +912,12 @@ export type Database = {
           status: string
           title: string
           updated_at?: string
-          weight: number
         }
         Update: {
           assessment_date?: string | null
           course_id?: string
           created_at?: string
+          ects_credits?: number
           grade?: number | null
           id?: string
           kind?: string
@@ -921,7 +927,6 @@ export type Database = {
           status?: string
           title?: string
           updated_at?: string
-          weight?: number
         }
         Relationships: [
           {
@@ -1301,16 +1306,6 @@ export type Database = {
         Returns: boolean
       }
       file_extension: { Args: { p_mime: string }; Returns: string }
-      finish_document_indexing: {
-        Args: {
-          p_chunks?: Json
-          p_document_id: string
-          p_error_code?: string
-          p_lease_token: string
-          p_total_chunks?: number
-        }
-        Returns: boolean
-      }
       finish_document_indexing_batch: {
         Args: {
           p_chunks?: Json
@@ -1333,24 +1328,6 @@ export type Database = {
           p_text?: string
         }
         Returns: boolean
-      }
-      match_document_chunks: {
-        Args: {
-          p_course_id: string
-          p_embedding: string
-          p_limit?: number
-          p_min_similarity?: number
-        }
-        Returns: {
-          chunk_index: number
-          content: string
-          document_id: string
-          id: string
-          material_id: string
-          metadata: Json
-          page_number: number
-          similarity: number
-        }[]
       }
       prepare_file_upload: {
         Args: {

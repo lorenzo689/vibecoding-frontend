@@ -9,7 +9,7 @@ import {
   type Assessment,
   type AssessmentInput,
 } from "@/lib/supabase/queries/grades";
-import { courseGradeSummary, formatGrade, formatWeight } from "./calculations";
+import { courseGradeSummary, formatGrade, formatEcts } from "./calculations";
 import AssessmentDialog from "./AssessmentDialog";
 import TargetCalculator from "./TargetCalculator";
 import shared from "@/components/dashboard.module.css";
@@ -30,12 +30,6 @@ export const STATUS_LABELS: Record<Assessment["status"], string> = {
   submitted: "Eingereicht",
   graded: "Bewertet",
 };
-
-const WEIGHT_STATUS_LABELS = {
-  complete: "Vollständig · 100 %",
-  incomplete: "Unvollständig · unter 100 %",
-  invalid: "Ungültig · über 100 %",
-} as const;
 
 function formatDate(date: string | null): string {
   if (!date) return "";
@@ -143,22 +137,21 @@ export default function CourseAssessments({ courseId, courseName }: { courseId: 
 
   return (
     <>
-      <section className={s.overview} aria-label={`Gewichtungsübersicht für ${courseName}`}>
+      <section className={s.overview} aria-label={`ECTS-Übersicht für ${courseName}`}>
         <dl>
           <div><dt>PRÜFUNGSLEISTUNGEN</dt><dd>{assessments.length}</dd></div>
-          <div><dt>GESAMTGEWICHTUNG</dt><dd>{formatWeight(summary.totalWeight)} %</dd></div>
-          <div><dt>OFFENE GEWICHTUNG</dt><dd>{formatWeight(summary.openWeight)} %</dd></div>
+          <div><dt>ERFASSTE ECTS</dt><dd>{formatEcts(summary.totalEcts)}</dd></div>
+          <div><dt>BEWERTET</dt><dd>{formatEcts(summary.gradedEcts)} <span>ECTS</span></dd></div>
+          <div><dt>OFFEN</dt><dd>{formatEcts(summary.openEcts)} <span>ECTS</span></dd></div>
           <div>
-            <dt>ZWISCHENSTAND</dt>
+            <dt>ECTS-GEWICHTETER ZWISCHENSTAND</dt>
             <dd>{summary.average === null ? "—" : `≈ ${formatGrade(summary.average)}`}</dd>
           </div>
         </dl>
         <p>
-          <span className={s.status} data-status={summary.weightStatus}>{WEIGHT_STATUS_LABELS[summary.weightStatus]}</span>
-          {" · "}
           {summary.average === null
             ? "Noch keine bewertete Leistung."
-            : "Zwischenstand berücksichtigt ausschließlich bereits bewertete Leistungen, keine finale Kursnote."}
+            : "Der Zwischenstand berücksichtigt nur bereits bewertete Leistungen (nicht bewertete ECTS fließen nicht ein) und ist keine offizielle Hochschulnote."}
         </p>
       </section>
 
@@ -194,11 +187,11 @@ export default function CourseAssessments({ courseId, courseName }: { courseId: 
                   </div>
                   <div className={s.assessmentGrade}>
                     <strong>{item.grade === null ? "Noch nicht bewertet" : formatGrade(item.grade)}</strong>
-                    <span>{formatWeight(item.weight)} % Gewichtung</span>
+                    <span>{formatEcts(item.ectsCredits)} ECTS</span>
                   </div>
                   <div className={s.assessmentActions}>
                     <button type="button" onClick={() => setEditingAssessment(item)} disabled={deletingId === item.id}>Bearbeiten</button>
-                    <button type="button" onClick={() => handleDelete(item)} disabled={deletingId === item.id}>
+                    <button type="button" className={s.dangerAction} onClick={() => handleDelete(item)} disabled={deletingId === item.id}>
                       {deletingId === item.id ? "Wird gelöscht …" : "Löschen"}
                     </button>
                   </div>

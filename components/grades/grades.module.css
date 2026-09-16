@@ -23,9 +23,12 @@
 .courseBadge[data-color="indigo"] { background: #d6d9f5; color: #3d4590; }
 .kindTag { display: inline-block; font-size: 9px; font-weight: 550; letter-spacing: .6px; text-transform: uppercase; color: #526849; }
 .assessmentActions { display: flex; flex-direction: column; gap: 8px; flex-shrink: 0; }
-.assessmentActions button { min-height: 36px; padding: 0 12px; border: 1px solid #dce3d3; border-radius: 6px; background: #fdfdf9; color: var(--green); font-size: 11px; cursor: pointer; }
+.assessmentActions button { min-height: 36px; padding: 0 12px; border: 1px solid #dce3d3; border-radius: 6px; background: #fdfdf9; color: var(--green); font-size: 11px; cursor: pointer; transition: background 150ms, border-color 150ms; }
 .assessmentActions button:hover:not(:disabled) { background: #eaf0df; }
 .assessmentActions button:disabled { opacity: .6; cursor: not-allowed; }
+.assessmentActions button:focus-visible, .createButton:focus-visible { outline: 3px solid #67957a; outline-offset: 2px; }
+.dangerAction { color: #8a4a3f !important; border-color: #e3cfc7 !important; }
+.dangerAction:hover:not(:disabled) { background: #fbeeea !important; border-color: #d8ab9a !important; }
 .overview { background: #fdfdf9; border: 1px solid #dfe5d7; border-radius: 10px; padding: 24px; margin-bottom: 34px; }
 .overview dl { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; }
 .overview dl > div + div { border-left: 1px solid #e1e6dc; padding-left: 24px; }
@@ -123,4 +126,7 @@
   .pending > div { flex-wrap: wrap; }
   .courseSwitcher { width: 100%; }
   .courseSwitcher select { flex: 1; min-width: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .createButton, .assessmentActions button, .courseSwitcher select { transition: none; }
 }

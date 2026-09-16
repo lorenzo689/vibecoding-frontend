@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { courseGradeSummary, formatGrade, formatWeight, parseTarget, targetGrade, type WeightedAssessment } from "./calculations";
+import { courseGradeSummary, formatGrade, formatEcts, parseTarget, targetGrade, type EctsAssessment } from "./calculations";
 import s from "./grades.module.css";
 
-export default function TargetCalculator({ courseName, assessments }: { courseName: string; assessments: WeightedAssessment[] }) {
+export default function TargetCalculator({ courseName, assessments }: { courseName: string; assessments: EctsAssessment[] }) {
   const [input, setInput] = useState("2,0");
   const target = parseTarget(input);
   const result = targetGrade(assessments, target);
@@ -33,38 +33,34 @@ export default function TargetCalculator({ courseName, assessments }: { courseNa
 
       <div id="target-result" className={s.targetResult} role="status" aria-atomic="true">
         {result.kind === "invalid" && <p>{result.message}</p>}
-        {result.kind === "overWeight" && <>
-          <strong>Berechnung nicht sinnvoll</strong>
-          <p>Die Gesamtgewichtung dieses Kurses liegt bei {formatWeight(summary.totalWeight)} % und damit über 100 %. Bitte zuerst die Gewichtungen korrigieren.</p>
-        </>}
         {result.kind === "noOpenAssessments" && <>
-          <strong>Keine offene Leistung</strong>
-          <p>Alle 100 % der Gewichtung sind bereits bewertet. Es gibt nichts mehr zu berechnen.</p>
+          <strong>{summary.totalEcts === 0 ? "Keine Leistungen erfasst" : "Keine offene Leistung"}</strong>
+          <p>
+            {summary.totalEcts === 0
+              ? "Für diesen Kurs sind noch keine Prüfungsleistungen erfasst — leg zuerst eine an."
+              : "Alle erfassten ECTS sind bereits bewertet. Es gibt nichts mehr zu berechnen."}
+          </p>
         </>}
         {result.kind === "impossible" && <>
           <strong>Ziel rechnerisch nicht erreichbar</strong>
-          <p>Selbst mit 1,0 in den verbleibenden Leistungen lässt sich diese Zielnote nicht mehr erreichen.</p>
+          <p>Selbst mit 1,0 in den verbleibenden {formatEcts(summary.openEcts)} offenen ECTS lässt sich diese Zielnote nicht mehr erreichen.</p>
         </>}
         {result.kind === "any" && <>
           <strong>Rechnerisch auch mit 5,0 erreichbar</strong>
-          <p>Die Zielnote wird selbst mit 5,0 in den verbleibenden Leistungen erreicht. Das ist keine Aussage zum Bestehen der Prüfung.</p>
+          <p>Die Zielnote wird selbst mit 5,0 in den verbleibenden {formatEcts(summary.openEcts)} offenen ECTS erreicht. Das ist keine Aussage zum Bestehen der Prüfung.</p>
         </>}
         {result.kind === "required" && <>
-          <span>DURCHSCHNITT ÜBER DIE VERBLEIBENDEN {formatWeight(result.remainingWeight)} %</span>
+          <span>DURCHSCHNITT ÜBER DIE OFFENEN {formatEcts(result.openEcts)} ECTS</span>
           <strong className={s.requiredGrade}>{formatGrade(result.safeGrade)} <small>oder besser</small></strong>
-          <p>Damit erreichst du rechnerisch die Gesamtnote {formatGrade(target!)} oder besser.</p>
+          <p>Damit erreichst du rechnerisch die Gesamtnote {formatGrade(target!)} oder besser — bezogen auf die bisher erfassten {formatEcts(summary.totalEcts)} ECTS.</p>
           {result.conservative && <p>Konservativ auf zwei Nachkommastellen abgerundet: Die exakte Obergrenze wird nicht gelockert.</p>}
         </>}
       </div>
 
-      {summary.totalWeight < 100 && result.kind !== "overWeight" && (
-        <p className={s.calculatorHelp}>Hinweis: Für diesen Kurs sind bisher nur {formatWeight(summary.totalWeight)} % der Gewichtung als Prüfungsleistungen erfasst. Die Rechnung geht trotzdem von 100 % Gesamtgewicht aus.</p>
-      )}
-
       <details className={s.calculationMethod}>
         <summary>Wie wird gerechnet?</summary>
-        <p>(Zielnote × 100 − Summe aus Note × Gewicht der bewerteten Leistungen) ÷ verbleibendes Gewicht bis 100 %.</p>
-        <p>Lineare Gewichtung; 1,0 ist die beste und 5,0 die schlechteste Note. Alle Werte zwischen diesen Grenzen sind zulässig.</p>
+        <p>(Zielnote × erfasste ECTS − Summe aus Note × ECTS der bewerteten Leistungen) ÷ offene ECTS.</p>
+        <p>Es wird kein Gesamtziel von 100 % oder einer festen ECTS-Summe angenommen — nur bereits erfasste Leistungen zählen. Jede Note fließt linear mit ihren ECTS ein; 1,0 ist die beste und 5,0 die schlechteste Note.</p>
       </details>
       <p className={s.calculatorHelp}>Unverbindliche Rechnung. Hochschulspezifische Notenstufen, Rundungs-, Bestehens- und Prüfungsordnungsregeln werden nicht berücksichtigt.</p>
     </section>

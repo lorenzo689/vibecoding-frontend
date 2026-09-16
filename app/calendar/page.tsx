@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import CalendarPreview from "@/components/calendar/CalendarPreview";
+import CalendarWorkspace from "@/components/calendar/CalendarWorkspace";
 
 export const metadata: Metadata = {
   title: "Kalender | Lernapp",
@@ -7,5 +7,5 @@ export const metadata: Metadata = {
 };
 
 export default function CalendarPage() {
-  return <CalendarPreview />;
+  return <CalendarWorkspace />;
 }
