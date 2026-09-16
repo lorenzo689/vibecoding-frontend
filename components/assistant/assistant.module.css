@@ -57,6 +57,8 @@
   border-radius: 12px;
   font-size: 13px;
   line-height: 1.7;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
 }
 .messageRow[data-role="user"] .bubble {
   background: #e5ecd8;
@@ -101,7 +103,7 @@
   font-size: 12px;
   color: var(--green);
   background: #fff;
-  cursor: not-allowed;
+  cursor: pointer;
 }
 
 /* Composer */
@@ -137,8 +139,64 @@
   color: #fff;
   font-size: 13px;
   font-weight: 550;
+  cursor: pointer;
+}
+
+.workspace button:disabled,
+.workspace select:disabled {
   opacity: 0.55;
   cursor: not-allowed;
+}
+
+.workspace :is(button, select, textarea, a):focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: 3px;
+}
+
+.status {
+  padding: 18px 22px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.error {
+  margin: 16px 22px;
+  padding: 14px;
+  border: 1px solid #d8afa6;
+  border-radius: 8px;
+  background: #fff5f1;
+  color: #793e30;
+  font-size: 13px;
+}
+
+.action {
+  border: 1px solid #d7ded6;
+  border-radius: 7px;
+  padding: 8px 12px;
+  background: #fff;
+  color: var(--green);
+  font: inherit;
+  cursor: pointer;
+}
+
+.sources {
+  margin-top: 12px;
+  font-size: 12px;
+  white-space: normal;
+}
+
+.sources summary {
+  cursor: pointer;
+}
+
+.sources blockquote {
+  margin: 8px 0;
+  padding-left: 12px;
+  border-left: 2px solid #c7d2c2;
+}
+
+.composer textarea {
+  min-width: 0;
 }
 .composerNote {
   padding: 0 22px 18px;
@@ -159,4 +217,18 @@
   .composer {
     padding-inline: 16px;
   }
+}
+
+.inputLabel {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.contextBar select {
+  max-width: 100%;
 }
