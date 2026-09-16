@@ -82,8 +82,7 @@ export default function AuthenticatedProfile({ onNavigate }: { onNavigate?: () =
         setSigningOut(false);
         return;
       }
-      router.replace("/login");
-      router.refresh();
+      window.location.replace("/login");
     } catch {
       setProfile({ status: "error", message: "Abmelden fehlgeschlagen" });
       setSigningOut(false);

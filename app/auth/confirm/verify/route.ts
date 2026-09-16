@@ -6,6 +6,7 @@ import {
   RECOVERY_SESSION_COOKIE,
   requestHasTrustedOrigin,
   trustedOrigin,
+  expiredAuthCookie,
 } from "@/lib/auth/confirmation";
 import { createClient } from "@/lib/supabase/server";
 
@@ -36,7 +37,7 @@ export async function POST(request: NextRequest) {
     token_hash: pending.tokenHash,
     type: pending.type,
   });
-  cookieStore.delete(PENDING_CONFIRMATION_COOKIE);
+  cookieStore.set(PENDING_CONFIRMATION_COOKIE, "", expiredAuthCookie);
 
   if (error) {
     return NextResponse.json({ error: "invalid" }, { status: 400, headers: responseHeaders });
@@ -46,7 +47,7 @@ export async function POST(request: NextRequest) {
     cookieStore.set(RECOVERY_SESSION_COOKIE, "active", {
       httpOnly: true,
       sameSite: "strict",
-      secure: request.nextUrl.protocol === "https:",
+      secure: new URL(origin).protocol === "https:",
       path: "/auth",
       maxAge: 10 * 60,
     });

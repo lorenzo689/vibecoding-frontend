@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useEffect, useState, type FormEvent } from "react";
-import { useRouter } from "next/navigation";
 import {
   authErrorMessage,
   safeAuthRedirect,
@@ -11,7 +10,7 @@ import {
   validateRegistrationPassword,
 } from "@/lib/auth/validation";
 import { createClient } from "@/lib/supabase/browser";
-import { registrationProfileMetadata } from "@/lib/auth/profile";
+import { loadLoginProfile, loginProfileMessages, registrationProfileMetadata } from "@/lib/auth/profile";
 import styles from "./auth.module.css";
 
 type Notice = { tone: "error" | "success"; message: string } | null;
@@ -31,12 +30,12 @@ export default function AuthForm({ mode, next, initialError, initialNotice }: {
   initialError?: string;
   initialNotice?: string;
 }) {
-  const router = useRouter();
   const registering = mode === "register";
   const destination = safeAuthRedirect(next);
   const [visible, setVisible] = useState(false);
   const [pending, setPending] = useState(false);
   const [confirmationEmail, setConfirmationEmail] = useState<string | null>(null);
+  const [profileUserId, setProfileUserId] = useState<string | null>(null);
   const [cooldown, setCooldown] = useState(0);
   const [notice, setNotice] = useState<Notice>(
     initialError && initialMessages[initialError]
@@ -53,12 +52,40 @@ export default function AuthForm({ mode, next, initialError, initialNotice }: {
   }, [cooldown]);
 
   async function verifyProfile(userId: string) {
-    const { data, error } = await createClient()
+    setProfileUserId(userId);
+    const result = await loadLoginProfile(() => createClient()
       .from("profiles")
       .select("id, name")
       .eq("user_id", userId)
-      .maybeSingle();
-    return !error && Boolean(data);
+      .maybeSingle());
+    if (result !== "ready") {
+      setNotice({ tone: "error", message: loginProfileMessages[result] });
+      return false;
+    }
+    return true;
+  }
+
+  async function retryProfile() {
+    if (!profileUserId) return;
+    setPending(true);
+    setNotice(null);
+    try {
+      if (await verifyProfile(profileUserId)) window.location.replace(destination);
+    } finally {
+      setPending(false);
+    }
+  }
+
+  async function restartLogin() {
+    setPending(true);
+    try {
+      const { error } = await createClient().auth.signOut({ scope: "local" });
+      if (error) throw error;
+      window.location.replace("/login");
+    } catch {
+      setNotice({ tone: "error", message: "Abmelden fehlgeschlagen. Bitte versuche es erneut." });
+      setPending(false);
+    }
   }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -100,11 +127,7 @@ export default function AuthForm({ mode, next, initialError, initialNotice }: {
           setNotice({ tone: "success", message: "Wenn die Adresse registriert werden kann, erhältst du eine Bestätigungs-E-Mail. Prüfe auch deinen Spam-Ordner." });
           return;
         }
-        if (!data.user || !(await verifyProfile(data.user.id))) {
-          await supabase.auth.signOut({ scope: "local" });
-          setNotice({ tone: "error", message: "Dein Konto wurde erstellt, aber das Profil konnte nicht geladen werden. Bitte versuche die Anmeldung erneut." });
-          return;
-        }
+        if (!data.user || !(await verifyProfile(data.user.id))) return;
       } else {
         const passwordError = validateLoginPassword(password);
         if (passwordError) {
@@ -116,14 +139,9 @@ export default function AuthForm({ mode, next, initialError, initialNotice }: {
           setNotice({ tone: "error", message: authErrorMessage(error, "login") });
           return;
         }
-        if (!(await verifyProfile(data.user.id))) {
-          await supabase.auth.signOut({ scope: "local" });
-          setNotice({ tone: "error", message: "Die Anmeldung war erfolgreich, aber dein Profil konnte nicht geladen werden. Bitte versuche es erneut." });
-          return;
-        }
+        if (!(await verifyProfile(data.user.id))) return;
       }
-      router.replace(destination);
-      router.refresh();
+      window.location.replace(destination);
     } catch {
       setNotice({ tone: "error", message: "Die Verbindung konnte nicht hergestellt werden. Bitte prüfe deine Netzwerk- und Supabase-Konfiguration." });
     } finally {
@@ -170,6 +188,14 @@ export default function AuthForm({ mode, next, initialError, initialNotice }: {
           </button>
           <Link href="/login">Zur Anmeldung</Link>
         </section>
+      ) : profileUserId ? (
+        <section className={styles.confirmation} aria-label="Profil laden">
+          {notice && <p className={styles.notice} data-tone={notice.tone} role="alert">{notice.message}</p>}
+          <button type="button" className={styles.primary} disabled={pending} onClick={retryProfile}>
+            {pending ? "Profil wird geladen …" : "Profil erneut laden"}
+          </button>
+          <button type="button" className={styles.secondary} disabled={pending} onClick={restartLogin}>Abmelden und erneut anmelden</button>
+        </section>
       ) : (
         <form onSubmit={submit}>
           {registering && <div className={styles.field}>
@@ -199,7 +225,7 @@ export default function AuthForm({ mode, next, initialError, initialNotice }: {
           <button className={styles.primary} type="submit" disabled={pending}>{pending ? "Bitte warten …" : registering ? "Konto erstellen" : "Anmelden"}<span aria-hidden="true">→</span></button>
         </form>
       )}
-      {!confirmationEmail && <p className={styles.alternative}>{registering ? "Du hast bereits ein Konto?" : "Du hast noch kein Konto?"}{" "}<Link href={registering ? "/login" : "/register"}>{registering ? "Anmelden" : "Jetzt registrieren"}</Link></p>}
+      {!confirmationEmail && !profileUserId && <p className={styles.alternative}>{registering ? "Du hast bereits ein Konto?" : "Du hast noch kein Konto?"}{" "}<Link href={registering ? "/login" : "/register"}>{registering ? "Anmelden" : "Jetzt registrieren"}</Link></p>}
     </div>
   );
 }

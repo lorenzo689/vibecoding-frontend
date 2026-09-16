@@ -15,7 +15,10 @@ AUTH_SITE_URL=http://127.0.0.1:3000
 
 `AUTH_SITE_URL` muss eine Basisadresse ohne Pfad sein und in Staging und
 Produktion der echten HTTPS-Frontend-Domain entsprechen. Sie wird serverseitig
-für Recovery-Redirects und Same-Origin-Prüfungen verwendet.
+für Proxy-/Callback-Redirects, Recovery-Links und Same-Origin-Prüfungen verwendet.
+Lokal exakt dieselbe Adresse benutzen (auch `localhost` und `127.0.0.1`
+nicht mischen). Ohne gesetzten Wert wird die Request-Origin verwendet; hinter
+einem Reverse Proxy deshalb unbedingt die öffentliche `AUTH_SITE_URL` setzen.
 
 Niemals Service-Role-Key, Secret-Key, Datenbankpasswort oder Management-Token in
 das Frontend eintragen. `.env.local` ist gitignored; `.env.example` enthält nur
@@ -89,3 +92,29 @@ geleitet. Externe, protokollrelative und öffentliche Ziele werden verworfen.
 8. Staging-/Produktions-Site-URL, Redirect-Allowlist und SMTP separat abnehmen.
 
 Remote-Einstellungen werden durch dieses Frontend nicht automatisch geändert.
+
+## Fehler nach erfolgreichem Login
+
+Authentifizierung und Profilverfügbarkeit werden getrennt behandelt. Die Abfrage
+von `profiles` meldet den Nutzer bei Fehlern nicht ab. Netzwerkfehler sowie HTTP
+408, 429 und 5xx werden einmal nach kurzer Pause wiederholt. Danach bietet die
+Oberfläche einen erneuten Profilabruf oder eine ausdrückliche Abmeldung an.
+Fehlende Profile, ungültige Sessions und Schema-/Berechtigungsfehler erhalten
+getrennte Meldungen und werden nicht automatisch wiederholt.
+
+Login, E-Mail-Bestätigung und abgeschlossener Passwort-Reset laden das Ziel als
+neues Dokument, damit die serverseitige Prüfung die aktuellen Session-Cookies
+verwendet. Kurzlebige Auth-Cookies werden ausdrücklich mit `Path=/auth` gelöscht.
+
+Das Frontend benötigt die Backend-Migration `20260910180000_core_erm.sql` sowie
+die vorhergehenden Auth-/Profil-Migrationen. Ein Backend mit ausschließlich dem
+alten `display_name`-/`id`-Schema ist nicht kompatibel. Fehlende Migrationen und
+Remote-Site-URL/Allowlist müssen im Backend geprüft und ausgerollt werden.
+
+Bei weiteren Ausfällen im Browser-Netzwerkprotokoll den HTTP-Status und den
+Fehlercode von `/rest/v1/profiles` prüfen. Keine Passwörter, Cookies oder
+Authorization-Header weitergeben.
+
+`npm test` prüft unter anderem begrenzte Profil-Retries, getrennte Fehlerfälle,
+Redirect-Origin-Validierung und das Löschen der Auth-Cookies. Diese Tests ersetzen
+keinen Browser-Test gegen das tatsächlich verwendete Supabase-Projekt.
