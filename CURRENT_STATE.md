@@ -1,6 +1,6 @@
 # CURRENT_STATE.md
 
-Last reviewed: 2026-09-11
+Last reviewed: 2026-09-14
 
 This document is an advisory snapshot and may become outdated. Repository
 contents, installed dependencies, migrations and generated types remain
@@ -18,7 +18,7 @@ Selected backend contract:
 
 - Repository: `../backend`
 - Branch: `dev`
-- Commit: `2549698`
+- Commit: `1bf6374`
 
 The backend was inspected read-only. This task explicitly selected `dev`; that
 does not permanently replace the default branch rule in `AGENTS.md`.
@@ -68,7 +68,7 @@ Protected product areas:
 ## Database Contract
 
 Frontend Supabase clients use the synchronized types in
-`lib/supabase/database.types.ts`, copied from backend `dev` at `2549698`.
+`lib/supabase/database.types.ts`, copied from backend `dev` at `1bf6374`.
 
 The current profile contract is:
 
@@ -90,6 +90,7 @@ Currently database-backed frontend features:
 - materials used for summaries and flashcard decks
 - summaries serialized by the frontend as `{ "text": string }`
 - flashcard decks and flashcards
+- calendar events (own events only; optional course link)
 
 RLS remains the authorization boundary. Frontend filters and route parameters
 are not treated as authorization.
@@ -113,7 +114,7 @@ The following remain explicit UI previews or examples rather than persisted
 user records:
 
 - dashboard overview content
-- calendar events and detected-date example
+- detected-date suggestion card on `/calendar` (confirm/discard buttons stay disabled; no detection backend exists)
 - global document-library preview
 - grade examples and target calculation
 - AI-assistant conversation
