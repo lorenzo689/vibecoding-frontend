@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import type { Assessment, AssessmentInput, AssessmentKind, AssessmentStatus } from "@/lib/supabase/queries/grades";
-import { parseGermanDecimal, validGrade, validWeight, pointsConsistent } from "./calculations";
+import { parseGermanDecimal, validGrade, validEcts, pointsConsistent } from "./calculations";
+import { useDialogA11y } from "@/components/useDialogA11y";
 import { KIND_LABELS, STATUS_LABELS } from "./CourseAssessments";
 import styles from "@/components/courses/courses.module.css";
 
@@ -18,7 +19,7 @@ export default function AssessmentDialog({
   const [title, setTitle] = useState(initial?.title ?? "");
   const [kind, setKind] = useState<AssessmentKind>(initial?.kind ?? "exam");
   const [status, setStatus] = useState<AssessmentStatus>(initial?.status ?? "planned");
-  const [weight, setWeight] = useState(initial ? String(initial.weight).replace(".", ",") : "");
+  const [ects, setEcts] = useState(initial ? String(initial.ectsCredits).replace(".", ",") : "");
   const [grade, setGrade] = useState(initial?.grade !== null && initial?.grade !== undefined ? String(initial.grade).replace(".", ",") : "");
   const [date, setDate] = useState(initial?.assessmentDate ?? "");
   const [pointsEarned, setPointsEarned] = useState(
@@ -32,14 +33,11 @@ export default function AssessmentDialog({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const { containerRef, handleBackdropClick } = useDialogA11y({ onClose, disabled: saving });
+
   useEffect(() => {
     titleInputRef.current?.focus();
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") onClose();
-    }
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [onClose]);
+  }, []);
 
   function handleStatusChange(next: AssessmentStatus) {
     if (status === "graded" && next !== "graded" && grade.trim() !== "") {
@@ -50,19 +48,19 @@ export default function AssessmentDialog({
     setStatus(next);
   }
 
-  const parsedWeight = parseGermanDecimal(weight);
+  const parsedEcts = parseGermanDecimal(ects);
   const parsedGrade = grade.trim() === "" ? null : parseGermanDecimal(grade);
   const parsedPointsEarned = pointsEarned.trim() === "" ? null : parseGermanDecimal(pointsEarned);
   const parsedPointsMax = pointsMax.trim() === "" ? null : parseGermanDecimal(pointsMax);
 
-  const weightValid = parsedWeight !== null && validWeight(parsedWeight);
+  const ectsValid = parsedEcts !== null && validEcts(parsedEcts);
   const gradeValid = status === "graded" ? parsedGrade !== null && validGrade(parsedGrade) : parsedGrade === null;
   const pointsValid = pointsConsistent(parsedPointsEarned, parsedPointsMax);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (saving) return;
-    if (!title.trim() || !weightValid || !gradeValid || !pointsValid) return;
+    if (!title.trim() || !ectsValid || !gradeValid || !pointsValid) return;
 
     setSaving(true);
     setError(null);
@@ -71,7 +69,7 @@ export default function AssessmentDialog({
         title: title.trim(),
         kind,
         status,
-        weight: parsedWeight!,
+        ectsCredits: parsedEcts!,
         grade: status === "graded" ? parsedGrade : null,
         assessmentDate: date || null,
         pointsEarned: parsedPointsEarned,
@@ -85,16 +83,11 @@ export default function AssessmentDialog({
   }
 
   return (
-    <div
-      className={styles.backdrop}
-      onClick={(event) => {
-        if (event.target === event.currentTarget) onClose();
-      }}
-    >
-      <div className={styles.dialog} role="dialog" aria-modal="true" aria-labelledby="assessment-dialog-heading">
+    <div className={styles.backdrop} onClick={handleBackdropClick}>
+      <div ref={containerRef} className={styles.dialog} role="dialog" aria-modal="true" aria-labelledby="assessment-dialog-heading">
         <div className={styles.dialogHeader}>
           <h2 id="assessment-dialog-heading">{initial ? "Prüfungsleistung bearbeiten" : "Prüfungsleistung anlegen"}</h2>
-          <button type="button" className={styles.closeButton} aria-label="Schließen" onClick={onClose}>✕</button>
+          <button type="button" className={styles.closeButton} aria-label="Schließen" onClick={onClose} disabled={saving}>✕</button>
         </div>
         <form onSubmit={submit}>
           <div className={styles.field}>
@@ -128,19 +121,19 @@ export default function AssessmentDialog({
             </select>
           </div>
           <div className={styles.field}>
-            <label htmlFor="assessment-weight">Gewichtung (%)</label>
+            <label htmlFor="assessment-ects">ECTS</label>
             <input
-              id="assessment-weight"
+              id="assessment-ects"
               inputMode="decimal"
-              value={weight}
-              onChange={(event) => setWeight(event.target.value)}
-              placeholder="z. B. 30 oder 33,33"
+              value={ects}
+              onChange={(event) => setEcts(event.target.value)}
+              placeholder="z. B. 6 oder 4,5"
               required
-              aria-invalid={weight.trim() !== "" && !weightValid}
-              aria-describedby="assessment-weight-hint"
+              aria-invalid={ects.trim() !== "" && !ectsValid}
+              aria-describedby="assessment-ects-hint"
               disabled={saving}
             />
-            <p id="assessment-weight-hint" className={styles.hint}>Größer als 0, höchstens 100. Komma oder Punkt möglich.</p>
+            <p id="assessment-ects-hint" className={styles.hint}>Größer als 0, höchstens 60, höchstens eine Nachkommastelle.</p>
           </div>
           <div className={styles.field}>
             <label htmlFor="assessment-grade">Note{status !== "graded" && " (erst bei Status „Bewertet“)"}</label>

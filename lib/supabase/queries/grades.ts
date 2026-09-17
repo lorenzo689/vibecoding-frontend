@@ -4,7 +4,7 @@ import { mapAssessment, type Assessment, type AssessmentInput } from "./grades-m
 export type { Assessment, AssessmentInput, AssessmentKind, AssessmentStatus } from "./grades-map";
 
 const COLUMNS =
-  "id, course_id, title, kind, status, weight, grade, assessment_date, points_earned, points_max, notes, created_at, updated_at";
+  "id, course_id, title, kind, status, ects_credits, grade, assessment_date, points_earned, points_max, notes, created_at, updated_at";
 
 export async function listCourseAssessments(courseId: string): Promise<Assessment[]> {
   const { data, error } = await createClient()
@@ -26,7 +26,7 @@ export async function createAssessment(courseId: string, input: AssessmentInput)
       title: input.title,
       kind: input.kind,
       status: input.status,
-      weight: input.weight,
+      ects_credits: input.ectsCredits,
       grade: input.grade,
       assessment_date: input.assessmentDate,
       points_earned: input.pointsEarned,
@@ -47,7 +47,7 @@ export async function updateAssessment(id: string, input: AssessmentInput): Prom
       title: input.title,
       kind: input.kind,
       status: input.status,
-      weight: input.weight,
+      ects_credits: input.ectsCredits,
       grade: input.grade,
       assessment_date: input.assessmentDate,
       points_earned: input.pointsEarned,
@@ -63,12 +63,15 @@ export async function updateAssessment(id: string, input: AssessmentInput): Prom
 }
 
 export async function deleteAssessment(id: string): Promise<void> {
+  // Without .select(), a delete that matches zero rows (wrong id, or the row
+  // is hidden by RLS) still reports no error - it would silently look like
+  // success. Request the deleted row back and fail loudly if none came back.
   const { data, error } = await createClient()
     .from("grade_assessments")
     .delete()
     .eq("id", id)
-    .select("id")
-    .maybeSingle();
+    .select("id");
+
   if (error) throw error;
-  if (!data) throw new Error("ASSESSMENT_NOT_FOUND");
+  if (!data || data.length === 0) throw new Error("Kein Datensatz gelöscht.");
 }

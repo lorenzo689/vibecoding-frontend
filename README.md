@@ -46,8 +46,8 @@ Aktiv angebunden sind:
 - Dateimetadaten
 - eigene Zusammenfassungen
 - eigene Karteikarten
-- eigene Kalendertermine
-- eigene Prüfungsleistungen und Noten (inklusive gewichtetem Zwischenstand und Zielnotenrechner)
+- eigene Kalendertermine (inklusive optionalem Ende, Ganztägig-Option und Detailkarte per Klick)
+- eigene Prüfungsleistungen und Noten in ECTS (inklusive ECTS-gewichtetem Zwischenstand und Zielnotenrechner)
 
 Dashboard, die globale Unterlagenansicht und der KI-Assistent enthalten
 weiterhin deutlich gekennzeichnete Vorschau- beziehungsweise Beispieldaten.

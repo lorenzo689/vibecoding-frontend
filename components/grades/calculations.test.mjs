@@ -12,88 +12,88 @@ import {
 } from "./calculations.ts";
 import { mapAssessment } from "../../lib/supabase/queries/grades-map.ts";
 
-// Mixed course: two graded, one open (50% still open).
+// Mixed course: two graded, one open (5 ECTS still open).
 const mixed = [
-  { weight: 30, grade: 2.0, status: "graded" },
-  { weight: 20, grade: 1.7, status: "graded" },
-  { weight: 50, grade: null, status: "planned" },
+  { ectsCredits: 3, grade: 2.0, status: "graded" },
+  { ectsCredits: 2, grade: 1.7, status: "graded" },
+  { ectsCredits: 5, grade: null, status: "planned" },
 ];
 // Fully graded course: nothing open.
 const fullyGraded = [
-  { weight: 70, grade: 2.3, status: "graded" },
-  { weight: 30, grade: 1.7, status: "graded" },
+  { ectsCredits: 7, grade: 2.3, status: "graded" },
+  { ectsCredits: 3, grade: 1.7, status: "graded" },
 ];
-// Fully entered but entirely ungraded.
+// Fully ungraded.
 const ungraded = [
-  { weight: 40, grade: null, status: "submitted" },
-  { weight: 60, grade: null, status: "planned" },
-];
-// Under 100% total weight (only 50% of the course entered so far).
-const underWeighted = [{ weight: 50, grade: 2.0, status: "graded" }];
-// Over 100% total weight.
-const overWeighted = [
-  { weight: 60, grade: 2.0, status: "graded" },
-  { weight: 50, grade: null, status: "planned" },
+  { ectsCredits: 4, grade: null, status: "submitted" },
+  { ectsCredits: 6, grade: null, status: "planned" },
 ];
 
-test("weighted current standing only includes graded assessments", () => {
+test("ECTS-weighted current standing only includes graded assessments", () => {
   const summary = courseGradeSummary(mixed);
   assert.equal(summary.average, 1.88);
-  assert.equal(summary.gradedWeight, 50);
-  assert.equal(summary.totalWeight, 100);
-  assert.equal(summary.openWeight, 50);
+  assert.equal(summary.gradedEcts, 5);
+  assert.equal(summary.totalEcts, 10);
+  assert.equal(summary.openEcts, 5);
 });
 
 test("a course with nothing graded yet has no numeric average", () => {
   const summary = courseGradeSummary(ungraded);
   assert.equal(summary.average, null);
-  assert.equal(summary.gradedWeight, 0);
-  assert.equal(summary.openWeight, 100);
+  assert.equal(summary.gradedEcts, 0);
+  assert.equal(summary.openEcts, 10);
 });
 
-test("total weight under, at, and over 100% is detected", () => {
-  assert.equal(courseGradeSummary(underWeighted).weightStatus, "incomplete");
-  assert.equal(courseGradeSummary(mixed).weightStatus, "complete");
-  assert.equal(courseGradeSummary(overWeighted).weightStatus, "invalid");
-  assert.equal(courseGradeSummary([]).weightStatus, "incomplete");
-  assert.equal(courseGradeSummary([]).totalWeight, 0);
+test("total/graded/open ECTS sums over an empty course are all zero", () => {
+  const summary = courseGradeSummary([]);
+  assert.equal(summary.totalEcts, 0);
+  assert.equal(summary.gradedEcts, 0);
+  assert.equal(summary.openEcts, 0);
+  assert.equal(summary.average, null);
 });
 
-test("target grade with multiple still-open assessments sums their combined weight", () => {
+test("target grade with multiple still-open assessments sums their combined ECTS", () => {
   const twoOpen = [
-    { weight: 30, grade: 2.0, status: "graded" },
-    { weight: 20, grade: null, status: "planned" },
-    { weight: 50, grade: null, status: "planned" },
+    { ectsCredits: 3, grade: 2.0, status: "graded" },
+    { ectsCredits: 2, grade: null, status: "planned" },
+    { ectsCredits: 5, grade: null, status: "planned" },
   ];
   const result = targetGrade(twoOpen, 2);
   assert.equal(result.kind, "required");
-  assert.equal(result.remainingWeight, 70);
+  assert.equal(result.openEcts, 7);
   assert.equal(result.safeGrade, 2);
   assert.equal(result.conservative, false);
 });
 
+test("no assessments at all leaves nothing to calculate, without inventing a remaining weight", () => {
+  assert.equal(targetGrade([], 2).kind, "noOpenAssessments");
+});
+
+test("no graded assessment yet: the required average equals the target itself", () => {
+  const result = targetGrade(ungraded, 2);
+  assert.equal(result.kind, "required");
+  assert.equal(result.safeGrade, 2);
+  assert.equal(result.openEcts, 10);
+});
+
 test("an unreachable target is reported as impossible", () => {
   const result = targetGrade([
-    { weight: 90, grade: 4.0, status: "graded" },
-    { weight: 10, grade: null, status: "planned" },
+    { ectsCredits: 9, grade: 4.0, status: "graded" },
+    { ectsCredits: 1, grade: null, status: "planned" },
   ], 2);
   assert.equal(result.kind, "impossible");
 });
 
 test("a target already guaranteed even with the worst remaining grade is reported as reachable", () => {
   const result = targetGrade([
-    { weight: 90, grade: 1.0, status: "graded" },
-    { weight: 10, grade: null, status: "planned" },
+    { ectsCredits: 9, grade: 1.0, status: "graded" },
+    { ectsCredits: 1, grade: null, status: "planned" },
   ], 1.5);
   assert.equal(result.kind, "any");
 });
 
-test("a fully graded course has no open assessments left for the target calculator", () => {
+test("a fully graded course has no open ECTS left for the target calculator", () => {
   assert.equal(targetGrade(fullyGraded, 2).kind, "noOpenAssessments");
-});
-
-test("a course weighted over 100% makes the target calculation invalid", () => {
-  assert.equal(targetGrade(overWeighted, 2).kind, "overWeight");
 });
 
 test("invalid target inputs never produce a numeric requirement", () => {
@@ -120,27 +120,40 @@ test("German-locale decimal input is accepted and normalized", () => {
 
 test("a rounded requirement never relaxes the exact grade threshold (conservative rounding)", () => {
   const thirds = [
-    { weight: 30, grade: 1.7, status: "graded" },
-    { weight: 70, grade: null, status: "planned" },
+    { ectsCredits: 3, grade: 1.7, status: "graded" },
+    { ectsCredits: 7, grade: null, status: "planned" },
   ];
   const result = targetGrade(thirds, 2);
   assert.equal(result.kind, "required");
   assert.equal(result.conservative, true);
   assert.equal(result.safeGrade, 2.12);
   assert.ok(result.safeGrade <= result.threshold);
-  assert.ok((1.7 * 30 + result.safeGrade * 70) / 100 <= 2);
-  assert.ok((1.7 * 30 + (result.safeGrade + 0.01) * 70) / 100 > 2);
+  assert.ok((1.7 * 3 + result.safeGrade * 7) / 10 <= 2);
+  assert.ok((1.7 * 3 + (result.safeGrade + 0.01) * 7) / 10 > 2);
 });
 
 test("exact boundary requirements 1.0 and 5.0 remain reachable", () => {
   const single = [
-    { weight: 30, grade: 1.7, status: "graded" },
-    { weight: 70, grade: null, status: "planned" },
+    { ectsCredits: 3, grade: 1.7, status: "graded" },
+    { ectsCredits: 7, grade: null, status: "planned" },
   ];
   assert.equal(targetGrade(single, 1.21).safeGrade, 1);
   assert.equal(targetGrade(single, 4.01).safeGrade, 5);
   assert.equal(targetGrade(single, 1.20).kind, "impossible");
   assert.equal(targetGrade(single, 4.02).kind, "any");
+});
+
+test("ECTS validation: half-credits accepted, out-of-range or too-precise values rejected via validEcts", async () => {
+  const { validEcts } = await import("./calculations.ts");
+  assert.equal(validEcts(6), true);
+  assert.equal(validEcts(4.5), true);
+  assert.equal(validEcts(0.1), true);
+  assert.equal(validEcts(60), true);
+  assert.equal(validEcts(0), false);
+  assert.equal(validEcts(-1), false);
+  assert.equal(validEcts(60.1), false);
+  assert.equal(validEcts(2.55), false);
+  assert.equal(validEcts(NaN), false);
 });
 
 test("points must be both present or both absent, earned within [0, max], and max positive", () => {
@@ -173,12 +186,12 @@ test("formatGrade renders German-locale decimals", () => {
 test("database rows map to the frontend model with numeric coercion", () => {
   const row = {
     id: "a1", course_id: "c1", title: "Klausur", kind: "exam", status: "graded",
-    weight: "50.00", grade: "2.30", assessment_date: "2026-11-20",
+    ects_credits: "6.0", grade: "2.30", assessment_date: "2026-11-20",
     points_earned: "45.00", points_max: "50.00", notes: null,
     created_at: "2026-09-01T00:00:00Z", updated_at: "2026-09-02T00:00:00Z",
   };
   const mapped = mapAssessment(row);
-  assert.equal(mapped.weight, 50);
+  assert.equal(mapped.ectsCredits, 6);
   assert.equal(mapped.grade, 2.3);
   assert.equal(mapped.pointsEarned, 45);
   assert.equal(mapped.pointsMax, 50);

@@ -1,56 +1,10 @@
 import { createClient } from "@/lib/supabase/browser";
-import type { Tables } from "@/lib/supabase/database.types";
+import { mapEvent, type CalendarEvent, type CalendarEventInput } from "./calendar-map";
 
-export type CalendarEventKind =
-  | "lecture"
-  | "exercise"
-  | "study"
-  | "presentation"
-  | "exam"
-  | "deadline"
-  | "other";
-
-export type CalendarEvent = {
-  id: string;
-  ownerId: string;
-  courseId: string | null;
-  title: string;
-  description: string;
-  kind: CalendarEventKind;
-  startsAt: string;
-  endsAt: string | null;
-  createdAt: string;
-  updatedAt: string;
-};
-
-export type CalendarEventInput = {
-  courseId: string | null;
-  title: string;
-  description: string;
-  kind: CalendarEventKind;
-  startsAt: string;
-  endsAt: string | null;
-};
-
-type CalendarEventRow = Tables<"calendar_events">;
+export type { CalendarEvent, CalendarEventInput, CalendarEventKind } from "./calendar-map";
 
 const COLUMNS =
-  "id, owner_id, course_id, title, description, kind, starts_at, ends_at, created_at, updated_at";
-
-function mapEvent(row: CalendarEventRow): CalendarEvent {
-  return {
-    id: row.id,
-    ownerId: row.owner_id,
-    courseId: row.course_id,
-    title: row.title,
-    description: row.description ?? "",
-    kind: row.kind as CalendarEventKind,
-    startsAt: row.starts_at,
-    endsAt: row.ends_at,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-  };
-}
+  "id, owner_id, course_id, title, description, kind, starts_at, ends_at, all_day, created_at, updated_at";
 
 export async function listEvents(): Promise<CalendarEvent[]> {
   const { data, error } = await createClient()
@@ -77,6 +31,7 @@ export async function createEvent(input: CalendarEventInput): Promise<CalendarEv
       kind: input.kind,
       starts_at: input.startsAt,
       ends_at: input.endsAt,
+      all_day: input.allDay,
     })
     .select(COLUMNS)
     .single();
@@ -95,6 +50,7 @@ export async function updateEvent(id: string, input: CalendarEventInput): Promis
       kind: input.kind,
       starts_at: input.startsAt,
       ends_at: input.endsAt,
+      all_day: input.allDay,
     })
     .eq("id", id)
     .select(COLUMNS)
@@ -105,6 +61,15 @@ export async function updateEvent(id: string, input: CalendarEventInput): Promis
 }
 
 export async function deleteEvent(id: string): Promise<void> {
-  const { error } = await createClient().from("calendar_events").delete().eq("id", id);
+  // Without .select(), a delete that matches zero rows (wrong id, or the row
+  // is hidden by RLS) still reports no error - it would silently look like
+  // success. Request the deleted row back and fail loudly if none came back.
+  const { data, error } = await createClient()
+    .from("calendar_events")
+    .delete()
+    .eq("id", id)
+    .select("id");
+
   if (error) throw error;
+  if (!data || data.length === 0) throw new Error("Kein Termin gelöscht.");
 }

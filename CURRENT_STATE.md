@@ -1,6 +1,6 @@
 # CURRENT_STATE.md
 
-Last reviewed: 2026-09-14
+Last reviewed: 2026-09-16
 
 This document is an advisory snapshot and may become outdated. Repository
 contents, installed dependencies, migrations and generated types remain
@@ -18,7 +18,10 @@ Selected backend contract:
 
 - Repository: `../backend`
 - Branch: `dev`
-- Commit: `1bf6374`
+- Commit: `367a8c9`, plus two uncommitted follow-up migrations at the time of
+  this review: `grade_assessments_ects.sql` (`weight` → `ects_credits`),
+  `calendar_events_end_after_start.sql` (`ends_at > starts_at` check), and
+  `calendar_events_all_day.sql` (`all_day` flag)
 
 The backend was inspected read-only. This task explicitly selected `dev`; that
 does not permanently replace the default branch rule in `AGENTS.md`.
@@ -90,8 +93,8 @@ Currently database-backed frontend features:
 - materials used for summaries and flashcard decks
 - summaries serialized by the frontend as `{ "text": string }`
 - flashcard decks and flashcards
-- calendar events (own events only; optional course link)
-- grade assessments (own course's assessments only; weight, grade, status, points, notes; weighted current standing and target-grade calculator use real stored data)
+- calendar events (own events only; optional course link, optional end, all-day flag; click-to-view detail card before editing)
+- grade assessments (own course's assessments only; ECTS credits, grade, status, points, notes; ECTS-weighted current standing and target-grade calculator use real stored data, no assumed 100% target)
 
 RLS remains the authorization boundary. Frontend filters and route parameters
 are not treated as authorization.
@@ -115,9 +118,12 @@ The following remain explicit UI previews or examples rather than persisted
 user records:
 
 - dashboard overview content
-- detected-date suggestion card on `/calendar` (confirm/discard buttons stay disabled; no detection backend exists)
 - global document-library preview
 - AI-assistant conversation
+
+`/calendar` no longer has a mock detected-date suggestion section; automatic
+date detection has no backend contract yet and was removed entirely rather
+than left as a disabled placeholder.
 
 ## Testing and CI
 

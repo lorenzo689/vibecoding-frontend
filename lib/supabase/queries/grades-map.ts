@@ -17,7 +17,7 @@ export type Assessment = {
   title: string;
   kind: AssessmentKind;
   status: AssessmentStatus;
-  weight: number;
+  ectsCredits: number;
   grade: number | null;
   assessmentDate: string | null;
   pointsEarned: number | null;
@@ -31,7 +31,7 @@ export type AssessmentInput = {
   title: string;
   kind: AssessmentKind;
   status: AssessmentStatus;
-  weight: number;
+  ectsCredits: number;
   grade: number | null;
   assessmentDate: string | null;
   pointsEarned: number | null;
@@ -41,7 +41,7 @@ export type AssessmentInput = {
 
 type AssessmentRow = Tables<"grade_assessments">;
 
-// grade/weight/points are numeric columns; the generated client type is
+// grade/ects_credits/points are numeric columns; the generated client type is
 // `number` but the driver can hand back a numeric string for large/precise
 // values. Normalize defensively so callers always get a real number.
 function toNumber(value: number | string): number {
@@ -55,7 +55,7 @@ export function mapAssessment(row: AssessmentRow): Assessment {
     title: row.title,
     kind: row.kind as AssessmentKind,
     status: row.status as AssessmentStatus,
-    weight: toNumber(row.weight),
+    ectsCredits: toNumber(row.ects_credits),
     grade: row.grade === null ? null : toNumber(row.grade),
     assessmentDate: row.assessment_date,
     pointsEarned: row.points_earned === null ? null : toNumber(row.points_earned),
