@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type ChangeEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { deleteCourse, getCourse, type Course } from "@/lib/supabase/queries/courses";
@@ -11,7 +11,14 @@ import {
   uploadCourseFile,
   type CourseFile,
 } from "@/lib/supabase/queries/files";
+import {
+  indexDocumentStatusesByFile,
+  listCourseDocumentStatuses,
+  type CourseDocumentStatus,
+} from "@/lib/supabase/queries/documents";
 import { deriveCourseBadge } from "@/lib/courseBadge";
+import DocumentIndexingStatus from "./DocumentIndexingStatus";
+import { describeIndexingProgress } from "./documentIndexing";
 import dashboardStyles from "@/components/dashboard.module.css";
 import styles from "./courses.module.css";
 
@@ -35,13 +42,12 @@ function uploadErrorMessage(error: unknown): string {
   return UPLOAD_ERROR_MESSAGES[code] ?? "Die Datei konnte nicht hochgeladen werden.";
 }
 
-function statusLabel(file: CourseFile): string | null {
-  if (file.status === "pending") return "Wird geprüft …";
-  if (file.status === "failed") return "Prüfung fehlgeschlagen";
-  if (file.status === "deleting") return "Wird gelöscht …";
-  if (file.status === "unverified") return "Ungeprüfter Altbestand";
-  return null;
-}
+// The backend publishes no realtime channel for document processing
+// (../lernapp_backend/docs/documents.md), so unfinished documents are polled.
+// The regular cron worker runs once a minute; the cap keeps a document that
+// never reaches a final state from polling for the whole session.
+const STATUS_POLL_INTERVAL_MS = 5000;
+const STATUS_POLL_MAX_ATTEMPTS = 120;
 
 export default function CourseDetailClient({ courseId }: { courseId: string }) {
   const router = useRouter();
@@ -51,14 +57,17 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
   const [actionError, setActionError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [removingId, setRemovingId] = useState<string | null>(null);
+  const [documentStatuses, setDocumentStatuses] = useState<CourseDocumentStatus[]>([]);
+  const pollAttemptsRef = useRef(0);
 
   useEffect(() => {
     let active = true;
-    Promise.all([getCourse(courseId), listCourseFiles(courseId)])
-      .then(([nextCourse, nextFiles]) => {
+    Promise.all([getCourse(courseId), listCourseFiles(courseId), listCourseDocumentStatuses(courseId)])
+      .then(([nextCourse, nextFiles, nextStatuses]) => {
         if (!active) return;
         setCourse(nextCourse);
         setFiles(nextFiles);
+        setDocumentStatuses(nextStatuses);
       })
       .catch(() => {
         if (!active) return;
@@ -67,6 +76,62 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
       });
     return () => { active = false; };
   }, [courseId]);
+
+  const statusByFile = useMemo(
+    () => indexDocumentStatusesByFile(documentStatuses),
+    [documentStatuses]
+  );
+
+  const fileProgress = useMemo(
+    () =>
+      files.map((file) => ({
+        file,
+        progress: describeIndexingProgress(file.status, statusByFile.get(file.id) ?? null),
+      })),
+    [files, statusByFile]
+  );
+
+  const hasUnfinishedDocuments = fileProgress.some((entry) => entry.progress.inProgress);
+
+  const refreshStatuses = useCallback(async () => {
+    const [nextFiles, nextStatuses] = await Promise.all([
+      listCourseFiles(courseId),
+      listCourseDocumentStatuses(courseId),
+    ]);
+    return { nextFiles, nextStatuses };
+  }, [courseId]);
+
+  // Poll while at least one document is still being verified, extracted or
+  // indexed. Navigating away or reaching a final state stops the interval.
+  useEffect(() => {
+    if (!hasUnfinishedDocuments) {
+      pollAttemptsRef.current = 0;
+      return;
+    }
+    let active = true;
+    const timer = setInterval(() => {
+      if (pollAttemptsRef.current >= STATUS_POLL_MAX_ATTEMPTS) {
+        clearInterval(timer);
+        return;
+      }
+      pollAttemptsRef.current += 1;
+      refreshStatuses()
+        .then(({ nextFiles, nextStatuses }) => {
+          if (!active) return;
+          setFiles(nextFiles);
+          setDocumentStatuses(nextStatuses);
+        })
+        .catch(() => {
+          // A transient status request failure is not worth an error banner;
+          // the next tick retries.
+        });
+    }, STATUS_POLL_INTERVAL_MS);
+
+    return () => {
+      active = false;
+      clearInterval(timer);
+    };
+  }, [hasUnfinishedDocuments, refreshStatuses]);
 
   async function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
     const selected = Array.from(event.target.files ?? []);
@@ -80,6 +145,10 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
         const uploaded = await uploadCourseFile(courseId, file);
         setFiles((prev) => [uploaded, ...prev]);
       }
+      // A fresh upload starts its own pipeline run; allow the full poll budget.
+      pollAttemptsRef.current = 0;
+      const { nextStatuses } = await refreshStatuses();
+      setDocumentStatuses(nextStatuses);
     } catch (error) {
       setActionError(uploadErrorMessage(error));
     } finally {
@@ -107,6 +176,7 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
     try {
       await deleteCourseFile(id);
       setFiles((prev) => prev.filter((file) => file.id !== id));
+      setDocumentStatuses((prev) => prev.filter((status) => status.fileId !== id));
     } catch {
       setActionError("Der Dateieintrag konnte nicht entfernt werden.");
     } finally {
@@ -209,36 +279,33 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
 
         {files.length > 0 && (
           <ul className={styles.fileList}>
-            {files.map((file) => {
-              const label = statusLabel(file);
-              return (
-                <li key={file.id} className={styles.fileRow}>
-                  {file.status === "ready" ? (
-                    <button
-                      type="button"
-                      className={styles.fileName}
-                      onClick={() => handleDownload(file)}
-                      title="Herunterladen"
-                    >
-                      {file.name}
-                    </button>
-                  ) : (
-                    <span className={styles.fileName}>{file.name}</span>
-                  )}
-                  {label && <small>{label}</small>}
-                  <small>{formatSize(file.size)}</small>
+            {fileProgress.map(({ file, progress }) => (
+              <li key={file.id} className={styles.fileRow}>
+                {file.status === "ready" ? (
                   <button
                     type="button"
-                    className={styles.fileRemove}
-                    aria-label={`${file.name} entfernen`}
-                    onClick={() => handleRemoveFile(file.id)}
-                    disabled={removingId === file.id}
+                    className={styles.fileName}
+                    onClick={() => handleDownload(file)}
+                    title="Herunterladen"
                   >
-                    ✕
+                    {file.name}
                   </button>
-                </li>
-              );
-            })}
+                ) : (
+                  <span className={styles.fileName}>{file.name}</span>
+                )}
+                <DocumentIndexingStatus fileName={file.name} progress={progress} />
+                <small>{formatSize(file.size)}</small>
+                <button
+                  type="button"
+                  className={styles.fileRemove}
+                  aria-label={`${file.name} entfernen`}
+                  onClick={() => handleRemoveFile(file.id)}
+                  disabled={removingId === file.id}
+                >
+                  ✕
+                </button>
+              </li>
+            ))}
           </ul>
         )}
       </div>

@@ -274,6 +274,7 @@
 }
 .fileRow {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 10px;
   padding: 10px 12px;
@@ -435,4 +436,80 @@
 }
 .dangerButton:hover {
   background: #f7e9e6;
+}
+
+/* Backend document pipeline: extraction and search indexing per uploaded file */
+.indexStatus {
+  /* Sits directly beside the file name; size and remove stay right-aligned. */
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 340px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+}
+.indexIcon {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  font-size: 10px;
+  line-height: 1;
+  background: #eef1ea;
+  color: var(--muted);
+}
+.indexStatus[data-tone="ready"] .indexIcon {
+  background: #e2efe6;
+  color: var(--green);
+}
+.indexStatus[data-tone="failed"] .indexIcon {
+  background: #f7e9e6;
+  color: #a83d31;
+}
+.indexBody {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+.indexLabel {
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.indexStatus[data-tone="ready"] .indexLabel {
+  color: var(--green);
+  font-weight: 550;
+}
+.indexStatus[data-tone="failed"] .indexLabel {
+  color: #a83d31;
+  font-weight: 550;
+}
+.indexTrack {
+  height: 4px;
+  width: 150px;
+  border-radius: 999px;
+  background: #eef1ea;
+  overflow: hidden;
+}
+.indexFill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--green);
+  transition: width 400ms ease;
+}
+.indexStatus[data-tone="pending"] .indexFill {
+  background: #b7c3b6;
+}
+.indexDetail {
+  color: var(--muted);
+  line-height: 1.4;
+}
+@media (prefers-reduced-motion: reduce) {
+  .indexFill {
+    transition: none;
+  }
 }
