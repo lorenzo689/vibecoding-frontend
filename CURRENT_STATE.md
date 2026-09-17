@@ -95,6 +95,9 @@ Currently database-backed frontend features:
 - flashcard decks and flashcards
 - calendar events (own events only; optional course link, optional end, all-day flag; click-to-view detail card before editing)
 - grade assessments (own course's assessments only; ECTS credits, grade, status, points, notes; ECTS-weighted current standing and target-grade calculator use real stored data, no assumed 100% target)
+- document processing status per uploaded course file (read-only view of
+  `source_documents.processing_status` and `indexing_status`, polled while a
+  document is still being extracted or indexed)
 
 RLS remains the authorization boundary. Frontend filters and route parameters
 are not treated as authorization.
