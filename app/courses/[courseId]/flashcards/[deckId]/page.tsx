@@ -16,8 +16,7 @@ export default async function FlashcardDeckPage(
     <div className={shared.dashboard}>
       <FlashcardDeckDetail courseId={courseId} materialId={deckId} />
       <footer className={shared.dashboardFooter}>
-        <span>Lernapp · Dein Semester, verbunden.</span>
-        <span>Gespeichert in deinem Konto</span>
+        <span>Gespeichert in deinem Konto.</span>
       </footer>
     </div>
   );

@@ -5,7 +5,6 @@ import Link from "next/link";
 import { createCourse, listCourses, type Course } from "@/lib/supabase/queries/courses";
 import { deriveCourseBadge } from "@/lib/courseBadge";
 import CreateCourseDialog from "@/components/courses/CreateCourseDialog";
-import dashboardStyles from "@/components/dashboard.module.css";
 import styles from "@/components/courses/courses.module.css";
 
 export default function CoursesPage() {
@@ -64,71 +63,28 @@ export default function CoursesPage() {
   }
 
   return (
-    <div className={styles.page}>
-      <div className={styles.header}>
-        <h1>Kurse</h1>
-        {courses.length > 0 && (
-          <button
-            type="button"
-            className={styles.createButton}
-            onClick={() => setDialogOpen(true)}
-          >
-            + Kurs anlegen
-          </button>
-        )}
+    <div className={styles.catalog} data-full-bleed>
+      <header className={styles.catalogIntro}>
+        <p className={styles.micro}>03 / KURSINDEX</p>
+        <h1>Kurse.</h1>
+        <div className={styles.catalogCount}><strong>{String(courses.length).padStart(2, "0")}</strong><span>ANGELEGT</span></div>
+        <p>Material, Notizen und Termine bleiben pro Kurs an einem Ort statt über Ordner und Apps verstreut.</p>
+      </header>
+      <div className={styles.catalogBody}>
+        <div className={styles.catalogToolbar}><h2>Deine Kurse</h2><button type="button" className={styles.createButton} onClick={() => setDialogOpen(true)}>+ Kurs anlegen</button></div>
+        {error && <p className={styles.uploadHint} role="alert">{error}</p>}
+        {courses.length === 0 ? (
+          <div className={styles.empty}><h2>Dein erster Kurs wartet.</h2><p>Leg einen Kurs an, um Vorlesungsmaterial, Notizen und Termine daran zu verknüpfen.</p><button type="button" className={styles.createButton} onClick={() => setDialogOpen(true)}>+ Kurs anlegen</button></div>
+        ) : <ol className={styles.courseIndex}>
+          {courses.map((course, index) => <li key={course.id}><Link href={`/courses/${course.id}`} className={styles.indexLink}>
+            <span className={styles.courseNumber}>{String(index + 1).padStart(2, "0")}</span>
+            <div><span className={styles.courseCode}>{deriveCourseBadge(course.title).code} / KURS</span><h3>{course.title}</h3><p>{course.description || "Keine Beschreibung hinterlegt."}</p></div>
+            <span className={styles.courseArrow} aria-hidden="true">→</span>
+          </Link></li>)}
+        </ol>}
+        <p className={styles.catalogFoot}>Sortiert nach zuletzt angelegt.</p>
       </div>
-      {error && <p className={styles.uploadHint} role="alert">{error}</p>}
-
-      {courses.length === 0 ? (
-        <div className={styles.empty}>
-          <h2>Noch kein Kurs angelegt</h2>
-          <p>
-            Leg deinen ersten Kurs an, um Vorlesungsmaterial, Notizen und
-            Termine daran zu verknüpfen.
-          </p>
-          <button
-            type="button"
-            className={styles.createButton}
-            onClick={() => setDialogOpen(true)}
-          >
-            + Kurs anlegen
-          </button>
-        </div>
-      ) : (
-        <div className={dashboardStyles.courseGrid}>
-          {courses.map((course) => {
-            const badge = deriveCourseBadge(course.title);
-            return (
-              <Link
-                key={course.id}
-                href={`/courses/${course.id}`}
-                className={styles.courseLink}
-              >
-                <article className={dashboardStyles.course}>
-                  <div className={dashboardStyles.courseTop}>
-                    <span
-                      className={`${dashboardStyles.badge} ${styles.badge}`}
-                      data-color={badge.color}
-                    >
-                      {badge.code}
-                    </span>
-                    <small>KURS</small>
-                  </div>
-                  <h3>{course.title}</h3>
-                  <p>{course.description || "Keine Beschreibung hinterlegt."}</p>
-                </article>
-              </Link>
-            );
-          })}
-        </div>
-      )}
-
-      {dialogOpen && (
-        <CreateCourseDialog
-          onClose={() => setDialogOpen(false)}
-          onCreate={handleCreate}
-        />
-      )}
+      {dialogOpen && <CreateCourseDialog onClose={() => setDialogOpen(false)} onCreate={handleCreate} />}
     </div>
   );
 }

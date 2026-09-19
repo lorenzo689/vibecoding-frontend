@@ -136,7 +136,7 @@ export default function DocumentList() {
       {visible.length === 0 && <div className={s.empty}>
         <h3>Hier ist noch Platz für einen Treffer.</h3>
         <p>Keine Beispielunterlagen passen zu dieser Kombination. Ändere die Suche oder setze die Filter zurück.</p>
-        <button type="button" onClick={resetFilters}>Suche und Filter zurücksetzen</button>
+        <button type="button" className={s.emptyReset} onClick={resetFilters}>Suche und Filter zurücksetzen</button>
       </div>}
     </section>
   );

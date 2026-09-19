@@ -74,7 +74,8 @@ export default function AssistantWorkspace() {
   }, [reload, router]);
 
   return (
-    <div className={s.workspace}>
+    <div className={s.workspace} data-full-bleed>
+      <header className={s.workspaceIntro}><div><p className={s.micro}>02 / KI-ASSISTENT</p><h1>Frag dein Material.</h1></div><p>Antworten kommen nur aus deinen hochgeladenen Unterlagen, mit Quellenangabe zu Folie und Seite.</p></header>
       <div className={s.contextBar}>
         <label htmlFor="assistant-context">Kurs</label>
         <select id="assistant-context" value={courseId} disabled={locked || loading || !courses.length}
@@ -226,7 +227,8 @@ function CourseChat({ courseId, userId, setLocked }: { courseId: string; userId:
     }
   }
 
-  return <>
+  return <div className={s.learningRoom}>
+    <aside className={s.questionDesk}><p className={s.micro}>ARBEITSAUFTRAG</p><h2>Woran arbeitest du?</h2>
     <div className={s.contextBar}>
       <label htmlFor="assistant-conversation">Unterhaltung</label>
       <select id="assistant-conversation" value={conversationId} disabled={busy || Boolean(pending) || loadFailed}
@@ -239,37 +241,6 @@ function CourseChat({ courseId, userId, setLocked }: { courseId: string; userId:
         setLoadFailed(false); setLoading(Boolean(courseId)); setHistoryLoading(Boolean(conversationId)); setError(null); setReload((value) => value + 1);
       }}>Aktualisieren</button>
     </div>
-    {!courseId && <p className={s.status}>In deinem Konto sind noch keine Kurse vorhanden. <Link href="/courses">Lege einen Kurs an und lade deine Unterlagen hoch.</Link></p>}
-    {loading || historyLoading ? <p className={s.status} role="status">Kurs und Unterhaltung werden geladen …</p>
-      : courseId && indexed === false && !loadFailed && <p className={s.status}>Bei der letzten Prüfung waren noch keine durchsuchbaren Unterlagen verfügbar. Beim Senden prüft der Chat den aktuellen Stand. <Link href={`/courses/${courseId}`}>Unterlagen im Kurs verwalten</Link></p>}
-    {!busy && indexed && !messages.length && !pending && <p className={s.status}>Stelle eine Frage zu deinen Kursunterlagen.</p>}
-    <ul className={s.messages} aria-label="Chatverlauf">
-      {messages.map((message) => <li key={message.id} className={s.messageRow} data-role={message.role}>
-        <div className={s.bubble}>
-          {message.role === "assistant" && <div className={s.assistantMeta}>KI-ANTWORT</div>}
-          <p>{message.content}</p>
-          {message.chat_message_sources?.length > 0 && <div className={s.sources}>
-            {[...message.chat_message_sources].sort((a, b) => a.citation_no - b.citation_no).map((source) =>
-              <details key={source.citation_no}>
-                <summary>[{source.citation_no}] {source.material_title}{source.page_number !== null ? ` · S. ${source.page_number}` : ""}</summary>
-                <blockquote>{source.excerpt}</blockquote>
-              </details>)}
-          </div>}
-        </div>
-      </li>)}
-      {pending && !messages.some((message) => message.request_id === pending.request_id) && <li className={s.messageRow} data-role="user"><div className={s.bubble}><p>{pending.question}</p></div></li>}
-    </ul>
-    <div ref={endRef} />
-    {sending && <p className={s.status} role="status">Deine Antwort wird erstellt. Das kann bis zu zwei Minuten dauern …</p>}
-    {error && <div className={s.error} role="alert"><p>{error.message}</p>
-      {error.code === "UNAUTHENTICATED" && <Link href="/login?next=%2Fassistant">Erneut anmelden</Link>}
-    </div>}
-    {pending && !sending && <div className={s.status}>
-      <p>Eine Anfrage ist noch offen. Rufe zuerst deren Ergebnis ab, bevor du eine weitere Frage stellst.</p>
-      <button className={s.action} disabled={busy || waitSeconds > 0 || loadFailed} onClick={() => void submit()}>
-        {waitSeconds > 0 ? `Wiederholen in ${waitSeconds} s` : "Anfrage wiederholen"}
-      </button>
-    </div>}
     <form className={s.composer} onSubmit={submit}>
       <label className={s.inputLabel} htmlFor="assistant-question">Deine Frage</label>
       <textarea ref={inputRef} id="assistant-question" value={question} maxLength={1800}
@@ -290,5 +261,40 @@ function CourseChat({ courseId, userId, setLocked }: { courseId: string; userId:
     <p id="assistant-composer-note" className={s.composerNote}>
       {question.length}/1800 Zeichen · Enter zum Senden, Umschalt + Enter für einen Absatz. KI-Antworten können Fehler enthalten; prüfe die Quellen.
     </p>
-  </>;
+</aside>
+    <section className={s.answerDesk} aria-label="Lernprotokoll"><header className={s.answerHeading}><h2>Dein Lernprotokoll</h2><span>FRAGEN / ANTWORTEN / QUELLEN</span></header>
+{!messages.length && !pending && !busy && <div className={s.emptyProtocol}><span aria-hidden="true">01</span><h3>Raum für deine Fragen.</h3><p>Formuliere links eine Frage. Antworten und ihre Quellen sammeln sich hier.</p></div>}
+    {!courseId && <p className={s.status}>In deinem Konto sind noch keine Kurse vorhanden. <Link href="/courses">Lege einen Kurs an und lade deine Unterlagen hoch.</Link></p>}
+    {loading || historyLoading ? <p className={s.status} role="status">Kurs und Unterhaltung werden geladen …</p>
+      : courseId && indexed === false && !loadFailed && <p className={s.status}>Bei der letzten Prüfung waren noch keine durchsuchbaren Unterlagen verfügbar. Beim Senden prüft der Chat den aktuellen Stand. <Link href={`/courses/${courseId}`}>Unterlagen im Kurs verwalten</Link></p>}
+    {!busy && indexed && !messages.length && !pending && <p className={s.status}>Stelle eine Frage zu deinen Kursunterlagen.</p>}
+    <ul className={s.messages} aria-label="Fragen und Antworten">
+      {messages.map((message) => <li key={message.id} className={s.messageRow} data-role={message.role}>
+        <div className={s.messageContent}>
+          <div className={s.assistantMeta}>{message.role === "assistant" ? "KI-ANTWORT" : "DEINE FRAGE"}</div>
+          <p>{message.content}</p>
+          {message.chat_message_sources?.length > 0 && <div className={s.sources}>
+            {[...message.chat_message_sources].sort((a, b) => a.citation_no - b.citation_no).map((source) =>
+              <details key={source.citation_no}>
+                <summary>[{source.citation_no}] {source.material_title}{source.page_number !== null ? ` · S. ${source.page_number}` : ""}</summary>
+                <blockquote>{source.excerpt}</blockquote>
+              </details>)}
+          </div>}
+        </div>
+      </li>)}
+      {pending && !messages.some((message) => message.request_id === pending.request_id) && <li className={s.messageRow} data-role="user"><div className={s.messageContent}><p>{pending.question}</p></div></li>}
+    </ul>
+    <div ref={endRef} />
+    {sending && <p className={s.status} role="status">Deine Antwort wird erstellt. Das kann bis zu zwei Minuten dauern …</p>}
+    {error && <div className={s.error} role="alert"><p>{error.message}</p>
+      {error.code === "UNAUTHENTICATED" && <Link href="/login?next=%2Fassistant">Erneut anmelden</Link>}
+    </div>}
+    {pending && !sending && <div className={s.status}>
+      <p>Eine Anfrage ist noch offen. Rufe zuerst deren Ergebnis ab, bevor du eine weitere Frage stellst.</p>
+      <button className={s.action} disabled={busy || waitSeconds > 0 || loadFailed} onClick={() => void submit()}>
+        {waitSeconds > 0 ? `Wiederholen in ${waitSeconds} s` : "Anfrage wiederholen"}
+      </button>
+    </div>}
+</section>
+  </div>;
 }

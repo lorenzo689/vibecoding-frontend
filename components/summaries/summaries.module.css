@@ -1,170 +1,18 @@
-.topRow {
-  display: flex;
-  justify-content: flex-end;
-  margin-bottom: 10px;
-}
-.backLink {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  font-weight: 550;
-  color: #667369;
-}
-.backLink:hover {
-  color: #224f41;
-}
-.editor {
-  --green: #224f41;
-  --muted: #667369;
-  max-width: 860px;
-  margin-top: 32px;
-  border: 1px solid #dfe5d7;
-  background: #fff;
-  border-radius: 12px;
-  padding: 26px 32px 30px;
-}
-.meta {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 16px;
-  flex-wrap: wrap;
-  font-size: 11px;
-  color: var(--muted);
-  margin-bottom: 18px;
-  padding-bottom: 14px;
-  border-bottom: 1px solid #e9ede2;
-}
-.metaInfo {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-}
-.dot {
-  color: #c2cbbb;
-}
-.metaActions {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-}
-.metaActions .secondaryButton {
-  min-height: 34px;
-  padding: 0 14px;
-  font-size: 12px;
-}
-.dangerButton {
-  min-height: 34px;
-  padding: 0 14px;
-  border-radius: 8px;
-  border: 1px solid #e3c4bd;
-  background: #fff;
-  color: #a83d31;
-  font-size: 12px;
-  font-weight: 550;
-  cursor: pointer;
-  transition: background 150ms;
-}
-.dangerButton:hover {
-  background: #f7e9e6;
-}
-.dangerButton:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-}
-.field {
-  display: block;
-}
-.field textarea {
-  display: block;
-  box-sizing: border-box;
-  width: 100%;
-  min-height: 300px;
-  resize: vertical;
-  border: 1px solid #e0e6da;
-  border-radius: 10px;
-  background: #fcfdfa;
-  padding: 18px 20px;
-  font: inherit;
-  font-size: 15px;
-  line-height: 1.85;
-  color: inherit;
-}
-.field textarea:focus {
-  outline: none;
-  border-color: var(--green);
-  box-shadow: 0 0 0 3px #224f411c;
-}
-.field textarea:disabled {
-  color: var(--muted);
-  cursor: not-allowed;
-}
-.readOnlyText {
-  white-space: pre-wrap;
-  max-width: 68ch;
-  font-size: 15px;
-  line-height: 1.85;
-  color: #26382f;
-}
-.field textarea::placeholder {
-  color: #a8b3a4;
-}
-.actions {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  margin-top: 16px;
-}
-.primaryButton {
-  min-height: 42px;
-  padding: 0 18px;
-  border-radius: 8px;
-  background: var(--green);
-  color: #fff;
-  font-size: 13px;
-  font-weight: 550;
-  cursor: pointer;
-  transition: background 150ms;
-}
-.primaryButton:hover {
-  background: #173d31;
-}
-.primaryButton:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-}
-.secondaryButton {
-  min-height: 42px;
-  padding: 0 16px;
-  border-radius: 8px;
-  border: 1px solid #d7ded6;
-  background: #fff;
-  color: var(--green);
-  font-size: 13px;
-  font-weight: 550;
-  cursor: pointer;
-}
-.secondaryButton:hover {
-  background: #f0f3ea;
-}
-.status {
-  font-size: 12px;
-  color: var(--muted);
-}
-.status[data-tone="error"] {
-  color: #a83d31;
-}
-.empty {
-  text-align: center;
-  padding: 40px 20px;
-}
-.empty h3 {
-  font-size: 15px;
-  font-weight: 550;
-}
-.empty p {
-  margin-top: 8px;
-  font-size: 13px;
-  color: var(--muted);
-}
+.topRow { display: flex; justify-content: flex-end; margin-bottom: var(--space-3); }
+.backLink { composes: textButton from "../ui/system.module.css"; }
+.editor { max-width: 860px; margin-top: var(--space-8); border-top: 3px solid var(--forest); background: var(--canvas); padding: var(--space-8); }
+.meta { display: flex; justify-content: space-between; align-items: center; gap: var(--space-4); flex-wrap: wrap; font-size: 11px; color: var(--muted); margin-bottom: var(--space-5); padding-bottom: var(--space-4); border-bottom: var(--border); }
+.metaInfo { display: inline-flex; align-items: center; gap: var(--space-2); }
+.dot { color: var(--line); }
+.metaActions { display: inline-flex; align-items: center; gap: var(--space-2); }
+.secondaryButton { composes: secondary from "../ui/system.module.css"; min-height: 36px; padding: var(--space-2) var(--space-4); font-size: var(--font-micro); }
+.dangerButton { composes: secondary from "../ui/system.module.css"; min-height: 36px; padding: var(--space-2) var(--space-4); font-size: var(--font-micro); color: var(--error); border-color: var(--error); }
+.dangerButton:hover:not(:disabled) { background: var(--error-surface); border-color: var(--error); color: var(--error); }
+.field { display: block; }
+.field textarea { display: block; width: 100%; min-height: 300px; background: var(--paper); font-size: 16px; line-height: 1.85; }
+.readOnlyText { white-space: pre-wrap; max-width: 68ch; font-size: 16px; line-height: 1.85; color: var(--ink); }
+.actions { display: flex; align-items: center; gap: var(--space-4); margin-top: var(--space-5); }
+.primaryButton { composes: button from "../ui/system.module.css"; }
+.status { font-size: var(--font-meta); color: var(--muted); }
+.status[data-tone="error"] { color: var(--error); }
+.empty { composes: empty from "../ui/system.module.css"; }

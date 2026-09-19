@@ -64,7 +64,7 @@ export default function LandingPage() {
       <div className={s.inner}>
         <header className={s.header}>
           <span className={s.wordmark}>
-            Lernapp<span aria-hidden="true">.</span>
+            Lernapp<span aria-hidden="true" className={s.wordmarkDot}>.</span>
           </span>
           <nav className={s.nav} aria-label="Hauptnavigation">
             <Link href="/login" className={s.navLink}>
@@ -78,16 +78,16 @@ export default function LandingPage() {
 
         <section className={s.hero}>
           <div>
-            <p className={s.eyebrow}>DEIN STUDIENRAUM</p>
+            <p className={s.eyebrow}>FÜR STUDIERENDE</p>
             <h1>
-              Vorlesung, Notizen und Prüfung
+              Ein Ort für Vorlesung,
               <br />
-              <em>endlich verbunden.</em>
+              Notizen und <em>Prüfung.</em>
             </h1>
             <p className={s.heroSubtitle}>
-              Kurse, Vorlesungsmaterial, persönliche Notizen, Termine und
-              Prüfungsvorbereitung in einem durchgehenden Workflow, statt
-              verstreut über einzelne Tools.
+              Lade eine Vorlesungsfolie hoch, und Lernapp verknüpft sie automatisch
+              mit deinem Kurs, deinen Notizen, erkannten Terminen und deiner
+              Prüfungsvorbereitung – statt fünf einzelnen Tools.
             </p>
           </div>
           <div className={s.visual} aria-hidden="true">
@@ -188,15 +188,15 @@ export default function LandingPage() {
         </section>
 
         <section className={s.finalCta} aria-labelledby="cta-heading">
-          <h2 id="cta-heading">Ein Ort für dein ganzes Semester.</h2>
+          <h2 id="cta-heading">Leg deinen ersten Kurs an.</h2>
           <p>
-            Leg deinen ersten Kurs an und verbinde Vorlesung, Notizen und
-            Prüfungsvorbereitung von Anfang an.
+            Zwei Minuten Einrichtung, danach läuft jede neue Vorlesungsfolie automatisch
+            in deinen Kurskontext ein.
           </p>
         </section>
 
         <footer className={s.footer}>
-          <span>Lernapp · Dein Semester, verbunden.</span>
+          <span>Lernapp</span>
           <span>Frontend-Vorschau ohne Datenanbindung</span>
         </footer>
       </div>

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import GradesWorkspace from "@/components/grades/GradesWorkspace";
+import GradeStudio from "@/components/grades/studio/GradeStudio";
 
 export const metadata: Metadata = {
   title: "Noten | Lernapp",
@@ -7,5 +7,5 @@ export const metadata: Metadata = {
 };
 
 export default function GradesPage() {
-  return <GradesWorkspace />;
+  return <GradeStudio />;
 }

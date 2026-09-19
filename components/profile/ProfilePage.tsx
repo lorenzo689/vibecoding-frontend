@@ -142,7 +142,7 @@ export default function ProfilePage({
   if (loadState.status !== "ready") {
     return (
       <div className={s.page}>
-        <p className={s.eyebrow}>PERSÖNLICHER BEREICH</p>
+        <p className={s.eyebrow}>07 / PERSÖNLICHER BEREICH</p>
         <h1>Dein Profil</h1>
         <p className={s.intro}>Hier findest du deine persönlichen Kontoangaben.</p>
         <section className={s.errorCard} aria-live="polite" aria-busy={loadState.status === "loading"}>
@@ -163,7 +163,7 @@ export default function ProfilePage({
     <div className={s.page}>
       <header className={s.pageHeader}>
         <div>
-          <p className={s.eyebrow}>PERSÖNLICHER BEREICH</p>
+          <p className={s.eyebrow}>07 / PERSÖNLICHER BEREICH</p>
           <h1>Dein Profil</h1>
           <p className={s.intro}>
             Verwalte deinen Anzeigenamen und behalte deine Kontoangaben im Blick.

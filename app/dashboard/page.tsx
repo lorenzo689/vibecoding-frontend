@@ -1,237 +1,43 @@
 import Link from "next/link";
-import s from "@/components/dashboard.module.css";
-// Static illustrative content only. These are not user records.
+import s from "@/components/home.module.css";
+
+// Product-preview content, not authenticated user records.
 const courses = [
-  {
-    name: "Neue Konzepte",
-    code: "NK",
-    topic: "Lecture 03 · Vibe Coding Setup",
-    progress: 42,
-    notes: "3 offene Notizen",
-  },
-  {
-    name: "IT Security",
-    code: "IS",
-    topic: "Lecture 08 · Network Security",
-    progress: 68,
-    notes: "Prüfungsvorbereitung",
-  },
-  {
-    name: "Advanced Practical IT Security",
-    code: "AP",
-    topic: "Lab 04 · Threat Modeling",
-    progress: 28,
-    notes: "2 offene Lernpunkte",
-  },
+  { name: "Neue Konzepte", code: "NK", topic: "Lecture 03 · Vibe Coding Setup", progress: 42, notes: "3 offene Notizen" },
+  { name: "IT Security", code: "IS", topic: "Lecture 08 · Network Security", progress: 68, notes: "Prüfungsvorbereitung" },
 ];
 const events = [
-  {
-    day: "14",
-    kind: "LERNSESSION",
-    title: "Lecture Review",
-    detail: "Neue Konzepte · 14:00 Uhr",
-  },
-  {
-    day: "18",
-    kind: "PRÄSENTATION",
-    title: "Neue Konzepte",
-    detail: "Vibe Coding · 10:00 Uhr",
-  },
-  {
-    day: "24",
-    kind: "PRÜFUNG",
-    title: "IT Security",
-    detail: "Network Security · 09:00 Uhr",
-  },
+  { day: "14", kind: "LERNSESSION", title: "Lecture Review", detail: "Neue Konzepte · 14:00 Uhr" },
+  { day: "24", kind: "PRÜFUNG", title: "IT Security", detail: "Network Security · 09:00 Uhr" },
 ];
 export default function Home() {
-  return (
-    <div className={s.dashboard}>
-      <section className={s.intro}>
-        <div>
-          <p className={s.eyebrow}>DEIN STUDIENRAUM</p>
-          <h1>Dein Semester im Überblick.</h1>
-          <p>Mehr Klarheit. Weniger verstreute Gedanken.</p>
-        </div>
-        <div className={s.semester}>
-          <small>BEISPIELSEMESTER</small>
-          <strong>Wintersemester</strong>
-          <span>Ein Schritt nach dem anderen.</span>
-        </div>
+  return <div className={s.home} data-full-bleed>
+    <div className={s.preview}>PRODUKTVORSCHAU <span>Kurse, Termine und Lernstände sind illustrative Beispieldaten.</span></div>
+    <div className={s.opening}>
+      <section className={s.focus} aria-labelledby="home-heading">
+        <p className={s.micro}>01 / ÜBERSICHT</p>
+        <h1 id="home-heading">Vibe Coding<br />Setup</h1>
+        <div className={s.resume}><span className={s.resumeIndex}>03</span><div><p>NEUE KONZEPTE / LECTURE 03</p><h2>Zuletzt bei Folie 8 von 18</h2><span>3 offene Notizen · Zusammenfassung verfügbar</span></div></div>
+        <Link className={s.focusAction} href="/documents">Weiterlesen <span aria-hidden="true">→</span></Link>
+        <dl className={s.contextNotes}><div><dt>NOTIZEN</dt><dd>3 offen</dd></div><div><dt>KARTEIKARTEN</dt><dd>24 bereit</dd></div><div><dt>ZUSAMMENFASSUNG</dt><dd>Aktuell</dd></div></dl>
       </section>
-      <p className={s.notice}>
-        Statische Produktvorschau · Kurse, Termine und Lernstände sind
-        illustrative Beispieldaten.
-      </p>
-      <section aria-labelledby="courses-heading">
-        <div className={s.sectionHeader}>
-          <h2 id="courses-heading">
-            Deine Kurse <small>03</small>
-          </h2>
-          <Link href="/courses">Zur Kursübersicht ↗</Link>
-        </div>
-        <div className={s.courseGrid}>
-          {courses.map((c, i) => (
-            <article className={s.course} key={c.code}>
-              <div className={s.courseTop}>
-                <span className={s.badge} data-tone={i}>
-                  {c.code}
-                </span>
-                <small>KURS</small>
-              </div>
-              <h3>{c.name}</h3>
-              <p>{c.topic}</p>
-              <div className={s.progressLabel}>
-                <span>Lernfortschritt · Beispiel</span>
-                <span>{c.progress}%</span>
-              </div>
-              <div
-                className={s.progress}
-                role="img"
-                aria-label={`Beispielhafter Lernfortschritt: ${c.progress} Prozent`}
-              >
-                <i style={{ width: `${c.progress}%` }} />
-              </div>
-              <footer>· {c.notes}</footer>
-            </article>
-          ))}
-        </div>
+      <section className={s.next} aria-labelledby="upcoming-heading">
+        <div className={s.sectionLabel}><span>NÄCHSTE TERMINE</span><span>OKTOBER / BEISPIEL</span></div>
+        <h2 id="upcoming-heading">Termine.</h2>
+        <ol>{events.map(event=><li key={event.day}><div className={s.day}>{event.day}<span>OKT</span></div><div><p>{event.kind}</p><h3>{event.title}</h3><span>{event.detail}</span></div></li>)}</ol>
+        <Link className={s.textLink} href="/calendar">Kalender öffnen →</Link>
       </section>
-      <div className={s.contentGrid}>
-        <div>
-          <section aria-labelledby="continue-heading">
-            <div className={s.sectionHeader}>
-              <h2 id="continue-heading">Hier geht’s weiter</h2>
-              <small>DEIN LERNKONTEXT</small>
-            </div>
-            <article className={s.study}>
-              <div className={s.studyHeader}>
-                <span>NEUE KONZEPTE</span>
-                <span>LECTURE 03</span>
-              </div>
-              <div className={s.studyBody}>
-                <div className={s.document} aria-hidden="true">
-                  <span>03</span>
-                  <i />
-                  <i />
-                  <i />
-                  <b>
-                    Vibe Coding
-                    <br />
-                    Setup
-                  </b>
-                </div>
-                <div>
-                  <small>VOM VERSTEHEN ZUM BEHALTEN</small>
-                  <h3>Vibe Coding Setup</h3>
-                  <p>
-                    Deine Unterlagen, Gedanken und Lernmaterialien.
-                    <br />
-                    Genau dort, wo sie zusammengehören.
-                  </p>
-                  <Link href="/documents">Zu den Unterlagen →</Link>
-                </div>
-              </div>
-              <div className={s.artifacts}>
-                <div>
-                  <small>NOTIZEN</small>
-                  <strong>3 offene Gedanken</strong>
-                </div>
-                <div>
-                  <small>ZUSAMMENFASSUNG</small>
-                  <strong>Das Wesentliche im Blick</strong>
-                </div>
-                <div>
-                  <small>KARTEIKARTEN</small>
-                  <strong>24 Karten bereit</strong>
-                </div>
-              </div>
-            </article>
-          </section>
-          <section className={s.attention} aria-labelledby="attention-heading">
-            <div className={s.sectionHeader}>
-              <h2 id="attention-heading">Noch ein Gedanke offen.</h2>
-              <small>03</small>
-            </div>
-            <p>Kleine offene Punkte. Ein guter nächster Schritt.</p>
-            <ul>
-              {[
-                {
-                  mark: "?",
-                  title: "2 Folien zum Noch-mal-Verstehen",
-                  detail: "IT Security · Lecture 08 · „Noch einmal erklären“",
-                  tag: "Verstehen",
-                },
-                {
-                  mark: "!",
-                  title: "1 erkannte Deadline prüfen",
-                  detail: "Neue Konzepte · Vorschlag, noch nicht bestätigt",
-                  tag: "Prüfen",
-                },
-                {
-                  mark: "…",
-                  title: "3 Vorlesungsnotizen aufgreifen",
-                  detail: "Neue Konzepte · Lecture 03 · Folien 4, 8 und 12",
-                  tag: "Vertiefen",
-                },
-              ].map((item) => (
-                <li key={item.title}>
-                  <span className={s.attentionMark} aria-hidden="true">
-                    {item.mark}
-                  </span>
-                  <div>
-                    <strong>{item.title}</strong>
-                    <small>{item.detail}</small>
-                  </div>
-                  <span className={s.tag}>{item.tag}</span>
-                </li>
-              ))}
-            </ul>
-          </section>
-        </div>
-        <aside className={s.upcoming} aria-labelledby="upcoming-heading">
-          <div className={s.sectionHeader}>
-            <h2 id="upcoming-heading">Als Nächstes</h2>
-            <small>OKTOBER · BEISPIEL</small>
-          </div>
-          <ol>
-            {events.map((e) => (
-              <li key={e.day}>
-                <div className={s.date}>
-                  <strong>{e.day}</strong>
-                  <small>OKT</small>
-                </div>
-                <div>
-                  <small>{e.kind}</small>
-                  <h3>{e.title}</h3>
-                  <p>{e.detail}</p>
-                </div>
-              </li>
-            ))}
-          </ol>
-          <Link className={s.calendarLink} href="/calendar">
-            Zum Kalender <span aria-hidden="true">→</span>
-          </Link>
-          <div className={s.preparation}>
-            <p className={s.eyebrow}>GUT VORBEREITET</p>
-            <h3>Aus vielen kleinen Schritten wird ein gutes Gefühl.</h3>
-            <p>
-              Vorlesung für Vorlesung. Notiz für Notiz. Dein Wissen wächst
-              zusammen.
-            </p>
-            <div className={s.steps} aria-hidden="true">
-              {[18, 30, 46, 62, 80, 100].map((n) => (
-                <i key={n} style={{ height: `${n}%` }} />
-              ))}
-            </div>
-            <small>Von der ersten Folie bis zur Prüfung.</small>
-          </div>
-        </aside>
-      </div>
-      <footer className={s.dashboardFooter}>
-        <span>Lernapp · Dein Semester, verbunden.</span>
-        <span>Präsentationsansicht ohne Datenanbindung</span>
-      </footer>
     </div>
-  );
+    <div className={s.workbench}>
+      <section className={s.courseIndex} aria-labelledby="courses-heading">
+        <header><h2 id="courses-heading">Kurse.</h2><Link href="/courses">Alle Kurse →</Link></header>
+        <ol>{courses.map((course,index)=><li key={course.code}><span className={s.index}>{String(index+1).padStart(2,"0")}</span><div><h3>{course.name}</h3><p>{course.topic}</p><small>{course.notes}</small></div><div className={s.progress}><strong>{course.progress}<small>%</small></strong><progress max={100} value={course.progress} aria-label={`Beispielhafter Lernfortschritt: ${course.progress} Prozent`} /><span>BEISPIEL</span></div></li>)}</ol>
+      </section>
+      <section className={s.openThreads} aria-labelledby="threads-heading">
+        <p className={s.micro}>NOCH OFFEN / BEISPIEL</p><h2 id="threads-heading">Offene Notizen.</h2>
+        <ol><li><span>01</span><div><h3>2 Folien zum Noch-mal-Verstehen</h3><p>IT Security · Lecture 08 · Noch einmal erklären</p></div></li><li><span>02</span><div><h3>1 erkannte Deadline prüfen</h3><p>Neue Konzepte · Vorschlag, noch nicht bestätigt</p></div></li></ol>
+      </section>
+    </div>
+    <footer className={s.footer}><span>Beispieldaten in dieser Vorschau.</span><span>Ohne Datenanbindung</span></footer>
+  </div>;
 }

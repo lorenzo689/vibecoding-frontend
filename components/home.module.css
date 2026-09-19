@@ -1,0 +1,52 @@
+.home { background: var(--paper); }
+.micro { composes: micro from "./ui/system.module.css"; }
+.preview { display: flex; flex-wrap: wrap; gap: var(--space-4); padding: var(--space-3) var(--page-gutter); border-bottom: var(--border); color: var(--muted); font: 500 10px/1.5 var(--font-geist-mono), monospace; }
+.preview span { font-family: var(--font-geist-sans), sans-serif; font-size: 11px; }
+.opening { display: grid; grid-template-columns: 1.35fr 1fr; }
+.focus { background: var(--forest); color: var(--ink); padding: var(--space-10) var(--page-gutter); }
+.focus > .micro { color: var(--on-forest); }
+.focus h1 { font-size: var(--font-page); font-weight: 500; letter-spacing: -.07em; line-height: .95; margin: var(--space-8) 0 var(--space-12); }
+.resume { display: flex; align-items: center; gap: var(--space-6); }
+.resumeIndex { font-size: 60px; font-weight: 400; letter-spacing: -.06em; line-height: 1; color: var(--on-forest); }
+.resume p { color: var(--on-forest); font: 500 10px/1.6 var(--font-geist-mono), monospace; }
+.resume h2 { font-size: 24px; font-weight: 500; letter-spacing: -.035em; margin-top: 4px; }
+.resume div > span { display: block; font-size: 12px; color: var(--on-forest); margin-top: var(--space-2); }
+.focusAction { display: flex; align-items: center; justify-content: space-between; gap: var(--space-5); margin-top: var(--space-8); padding: var(--space-4) var(--space-5); background: var(--signal); color: var(--paper); font-size: var(--font-meta); font-weight: 600; }
+.focusAction > span { font-size: 22px; }
+.focusAction:focus-visible { outline-color: var(--signal); }
+.contextNotes { display: flex; flex-wrap: wrap; gap: var(--space-6); padding-top: var(--space-6); }
+.contextNotes dt { font: 500 9px/1.5 var(--font-geist-mono), monospace; color: var(--on-forest); }
+.contextNotes dd { font-size: 11px; margin-top: var(--space-2); }
+.next { padding: var(--space-10) var(--page-gutter); background: var(--canvas); }
+.sectionLabel { display: flex; justify-content: space-between; flex-wrap: wrap; gap: var(--space-3); color: var(--muted); font: 500 10px/1.5 var(--font-geist-mono), monospace; }
+.next h2 { margin: var(--space-8) 0; font-size: var(--font-section); line-height: 1; letter-spacing: -.055em; font-weight: 500; }
+.next ol, .courseIndex ol, .openThreads ol { list-style: none; margin: 0; padding: 0; }
+.next li { display: flex; align-items: center; gap: var(--space-6); padding-block: var(--space-6); border-top: var(--border); }
+.day { font-size: 64px; line-height: .95; letter-spacing: -.065em; min-width: 72px; }
+.day > span { display: block; margin-top: var(--space-2); font: 500 10px/1.5 var(--font-geist-mono), monospace; letter-spacing: .08em; color: var(--muted); }
+.next li p { font: 500 10px/1.5 var(--font-geist-mono), monospace; color: var(--muted); }
+.next h3 { font-size: 22px; font-weight: 550; letter-spacing: -.035em; }
+.next li div > span { font-size: 12px; color: var(--muted); }
+.textLink { composes: textButton from "./ui/system.module.css"; margin-top: var(--space-3); }
+.workbench { display: grid; grid-template-columns: 1.5fr 1fr; padding: var(--space-12) var(--page-gutter); gap: var(--space-12); }
+.courseIndex header { display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-4); padding-bottom: var(--space-6); border-bottom: 2px solid var(--ink); }
+.courseIndex h2, .openThreads h2 { font-size: var(--font-section); line-height: 1.04; letter-spacing: -.05em; font-weight: 500; }
+.courseIndex header a { font-size: 12px; }
+.courseIndex li { display: grid; grid-template-columns: 28px minmax(0,1fr) 64px; gap: var(--space-4); padding-block: var(--space-6); border-bottom: var(--border); }
+.index { color: var(--muted); font: 400 12px/1.6 var(--font-geist-mono), monospace; }
+.courseIndex h3 { font-size: 20px; font-weight: 550; line-height: 1.2; letter-spacing: -.035em; }
+.courseIndex p { color: var(--muted); font-size: 12px; margin-top: var(--space-2); }
+.courseIndex li small { color: var(--muted); font-size: 11px; }
+.progress strong { display: block; font-size: 30px; font-weight: 500; line-height: 1.2; letter-spacing: -.045em; }
+.progress strong small { color: var(--ink); }
+.progress progress { display: block; width: 100%; height: 3px; margin-top: var(--space-2); accent-color: var(--forest); }
+.progress > span { font-size: 8px; color: var(--muted); letter-spacing: .08em; }
+.openThreads { border-left: var(--border); padding-left: var(--space-8); }
+.openThreads > .micro { color: var(--muted); margin-bottom: var(--space-5); }
+.openThreads li { display: flex; gap: var(--space-4); margin-top: var(--space-6); }
+.openThreads li > span { font: 400 11px/1.5 var(--font-geist-mono), monospace; color: var(--muted); }
+.openThreads h3 { font-size: 14px; font-weight: 550; }
+.openThreads li p { font-size: 12px; color: var(--muted); margin-top: var(--space-2); }
+.footer { display: flex; justify-content: space-between; flex-wrap: wrap; gap: var(--space-3); margin-inline: var(--page-gutter); padding-block: var(--space-5); border-top: var(--border); color: var(--muted); font-size: 11px; }
+@media(max-width:1000px) { .opening { grid-template-columns: 1.2fr 1fr; } .focus h1 { font-size: 60px; } .workbench { gap: var(--space-8); } .openThreads { padding-left: var(--space-6); } }
+@media(max-width:767px) { .opening, .workbench { display: block; } .focus { padding-block: var(--space-8); } .focus h1 { font-size: 56px; margin-block: var(--space-6) var(--space-8); } .next { padding-block: var(--space-8); } .next h2 { margin-block: var(--space-5); } .openThreads { border-left: 0; border-top: var(--border); padding: var(--space-8) 0 0; margin-top: var(--space-8); } .courseIndex li { gap: var(--space-3); } .workbench { padding-block: var(--space-8); } }
