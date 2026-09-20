@@ -200,7 +200,17 @@ export default function CalendarWorkspace() {
 
   return (
     <div className={s.page} data-full-bleed>
-      <header className={s.calendarMasthead}><div className={s.dateStamp}><span>HEUTE</span><strong>{Number(today.slice(-2))}</strong><small>{formatDateKey(today, { month: "long", year: "numeric" })}</small></div><div className={s.calendarTitle}><div><p>04 / KALENDER</p><h1>Termine.</h1><span>{upcoming.length} anstehend, über alle Kurse.</span></div><button type="button" className={s.createButton} onClick={() => setDialogOpen(true)}>+ Termin</button></div></header>
+      <header className={s.masthead}>
+        <div className={s.mastheadText}>
+          <p className={s.micro}>04 / KALENDER</p>
+          <h1>Termine.</h1>
+          <p className={s.subhead}>{upcoming.length} anstehend, über alle Kurse.</p>
+        </div>
+        <div className={s.mastheadActions}>
+          <div className={s.todayBadge}><span>HEUTE</span><strong>{Number(today.slice(-2))}</strong><small>{formatDateKey(today, { month: "long", year: "numeric" })}</small></div>
+          <button type="button" className={s.createButton} onClick={() => setDialogOpen(true)}>+ Termin</button>
+        </div>
+      </header>
       {actionError && <p className={shared.notice} role="alert">{actionError}</p>}
       <p role="status" aria-live="polite" className={s.visuallyHidden}>{statusMessage}</p>
 

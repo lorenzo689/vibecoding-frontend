@@ -11,17 +11,17 @@ export default function GoalEditor({ assessments }: { assessments: EctsAssessmen
   const summary = courseGradeSummary(assessments);
 
   return (
-    <section className={s.goal} aria-labelledby="goal-heading">
-      <div className={s.goalHeading}>
+    <section className={s.card} aria-labelledby="goal-heading">
+      <div className={s.railHeading}>
         <h2 id="goal-heading">Dein Ziel</h2>
-        <span className={s.micro}>ZIELRECHNER</span>
+        <span className={s.courseCode}>ZIELRECHNER</span>
       </div>
       <label className={s.goalLabel} htmlFor="target-grade">Gewünschte Gesamtnote</label>
       <div className={s.goalControl}>
         <input id="target-grade" type="text" inputMode="decimal" value={input}
           onChange={(event) => setInput(event.target.value)}
           aria-invalid={result.kind === "invalid"} aria-describedby="target-help target-result" />
-        <button type="button" onClick={() => setInput("2,0")}>Zurücksetzen</button>
+        <button type="button" className={s.resetButton} onClick={() => setInput("2,0")}>Zurücksetzen</button>
       </div>
       <div id="target-result" className={s.goalResult} role="status" aria-atomic="true">
         {result.kind === "invalid" && <p>{result.message}</p>}

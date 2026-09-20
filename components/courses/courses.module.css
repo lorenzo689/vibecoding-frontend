@@ -1,25 +1,23 @@
 .page { max-width: var(--content-width); margin-inline: auto; }
 .micro { composes: micro from "../ui/system.module.css"; color: var(--muted); }
-.catalog { display: grid; grid-template-columns: minmax(300px, .85fr) minmax(0, 1.65fr); min-height: calc(100svh - 64px); }
-.catalogIntro { padding: var(--space-12) var(--page-gutter); background: var(--forest); color: var(--ink); }
-.catalogIntro .micro { color: var(--on-forest); }
-.catalogIntro h1 { margin-top: var(--space-12); font-size: clamp(48px, 4.8vw, 76px); font-weight: 500; line-height: .97; letter-spacing: -.065em; }
-.catalogCount { display: flex; align-items: end; gap: var(--space-6); padding-block: var(--space-12) var(--space-8); margin-top: var(--space-12); border-top: 1px solid var(--line-inverse); }
-.catalogCount strong { font-size: var(--font-data); line-height: .8; letter-spacing: -.08em; font-weight: 400; }
-.catalogCount > span { color: var(--on-forest); font: 500 9px/1.8 var(--font-geist-mono), monospace; }
-.catalogIntro > p:last-child { margin-top: var(--space-8); max-width: 28ch; color: var(--on-forest); font-size: var(--font-meta); }
-.catalogBody { padding: var(--space-12) var(--page-gutter); min-width: 0; }
-.catalogToolbar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--space-4); padding-bottom: var(--space-6); border-bottom: 2px solid var(--ink); }
-.catalogToolbar h2 { font-size: var(--font-section); font-weight: 500; letter-spacing: -.045em; }
-.courseIndex { list-style: none; padding: 0; margin: 0; }
-.indexLink { display: grid; grid-template-columns: 32px minmax(0, 1fr) 24px; gap: var(--space-5); padding-block: var(--space-8); border-bottom: var(--border); transition: border-color var(--motion); }
-.indexLink:hover { border-color: var(--forest); }
+.catalog { padding-bottom: var(--space-10); }
+.catalogHeader { max-width: var(--content-width); margin-inline: auto; padding: var(--space-8) var(--page-gutter) 0; }
+.catalogHeader h1 { margin-top: var(--space-3); font-size: clamp(1.75rem, 2.6vw, 2.5rem); font-weight: 550; letter-spacing: -.04em; line-height: 1.1; }
+.subhead { max-width: 60ch; margin-top: var(--space-3); color: var(--muted); font-size: var(--font-body); }
+.toolbar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--space-4); max-width: var(--content-width); margin: var(--space-8) auto var(--space-6); padding: 0 var(--page-gutter) var(--space-5); border-bottom: var(--border); }
+.count { color: var(--muted); font-size: 13px; }
+.count strong { margin-right: var(--space-2); color: var(--ink); font: 600 16px/1 var(--font-geist-mono), monospace; }
+.grid { display: grid; grid-template-columns: repeat(3, 1fr); max-width: var(--content-width); margin: 0 auto; padding: 0 var(--page-gutter) var(--space-12); list-style: none; gap: var(--space-5); }
+.card { position: relative; display: flex; flex-direction: column; min-width: 0; height: 100%; padding: var(--space-6); background: var(--canvas); border: var(--border); border-radius: var(--radius-panel); color: var(--ink); transition: border-color var(--motion); }
+.card:hover { border-color: var(--forest); }
+.cardHead { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); }
 .courseNumber { font: 400 12px/1.6 var(--font-geist-mono), monospace; color: var(--muted); }
 .courseCode { font: 500 10px/1.5 var(--font-geist-mono), monospace; color: var(--muted); letter-spacing: .07em; }
-.indexLink h3 { margin-top: var(--space-3); font-size: clamp(24px, 2.8vw, 38px); font-weight: 550; letter-spacing: -.045em; line-height: 1.08; overflow-wrap: anywhere; }
-.indexLink p { margin-top: var(--space-3); max-width: 48ch; font-size: var(--font-meta); color: var(--muted); overflow-wrap: anywhere; }
-.courseArrow { align-self: center; font-size: 26px; color: var(--muted); }
-.catalogFoot { margin-top: var(--space-12); color: var(--muted); font-size: 11px; }
+.card h3 { margin-top: var(--space-4); font-size: 20px; font-weight: 550; letter-spacing: -.03em; line-height: 1.2; overflow-wrap: anywhere; }
+.card p { flex: 1; margin-top: var(--space-3); color: var(--muted); font-size: 13px; overflow-wrap: anywhere; }
+.courseArrow { align-self: flex-end; margin-top: var(--space-5); font-size: 20px; color: var(--muted); transition: color var(--motion); }
+.card:hover .courseArrow { color: var(--signal); }
+.catalogFoot { max-width: var(--content-width); margin: 0 auto; padding: var(--space-5) var(--page-gutter) 0; color: var(--muted); font-size: 11px; }
 .createButton { composes: button from "../ui/system.module.css"; }
 .empty { composes: empty from "../ui/system.module.css"; }
 .backLink { composes: textButton from "../ui/system.module.css"; }
@@ -74,5 +72,5 @@ button.fileName:hover { text-decoration: underline; text-underline-offset: 4px; 
 .field { composes: field from "../ui/system.module.css"; }
 .hint { composes: hint from "../ui/system.module.css"; }
 .submitButton { composes: button from "../ui/system.module.css"; width: 100%; margin-top: var(--space-6); }
-@media(max-width:1000px) { .catalog { grid-template-columns: 300px minmax(0,1fr); } .catalogIntro { padding-inline: var(--space-6); } .catalogBody { padding-inline: var(--space-6); } .catalogIntro h1 { font-size: 48px; } }
-@media(max-width:767px) { .catalog { display: block; } .catalogIntro { padding: var(--space-8) var(--space-5); display: grid; grid-template-columns: 1fr auto; gap: var(--space-5); } .catalogIntro > .micro { grid-column: 1 / -1; } .catalogIntro h1 { margin: 0; font-size: 44px; } .catalogCount { margin: 0; padding: 0; border: 0; align-items: center; } .catalogCount strong { font-size: 76px; } .catalogCount > span, .catalogIntro > p:last-child { display: none; } .catalogBody { padding: var(--space-8) var(--space-5); } .indexLink { gap: var(--space-3); padding-block: var(--space-6); } .toolGrid { grid-template-columns: 1fr; } .toolGrid > a + a { border-left: 0; border-top: var(--border); } .courseIdentity { padding: var(--space-6); } .fileRow { grid-template-columns: minmax(0,1fr) 56px 32px; gap: var(--space-3); } .fileRow .indexStatus { grid-column: 1 / -1; grid-row: 2; } .fileName { font-size: 14px; } }
+@media(max-width:1100px) { .grid { grid-template-columns: repeat(2, 1fr); } }
+@media(max-width:767px) { .grid { grid-template-columns: 1fr; } .toolGrid { grid-template-columns: 1fr; } .toolGrid > a + a { border-left: 0; border-top: var(--border); } .courseIdentity { padding: var(--space-6); } .fileRow { grid-template-columns: minmax(0,1fr) 56px 32px; gap: var(--space-3); } .fileRow .indexStatus { grid-column: 1 / -1; grid-row: 2; } .fileName { font-size: 14px; } }

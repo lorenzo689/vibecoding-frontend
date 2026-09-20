@@ -1,21 +1,21 @@
 
 .page { max-width: none; }
-.calendarMasthead { display: grid; grid-template-columns: 240px 1fr; background: var(--canvas); border-bottom: var(--border); }
-.dateStamp { padding: var(--space-8); background: var(--forest); color: var(--ink); display: grid; align-content: center; }
-.dateStamp > span { font: 500 10px/1.5 var(--font-geist-mono), monospace; color: var(--on-forest); }
-.dateStamp strong { font-size: 120px; line-height: 1; letter-spacing: -.08em; font-weight: 450; }
-.dateStamp small { color: var(--on-forest); font-size: 12px; }
-.calendarTitle { display: flex; align-items: end; justify-content: space-between; gap: var(--space-6); padding: var(--space-10) var(--page-gutter); }
-.calendarTitle p { color: var(--muted); font: 500 10px/1.5 var(--font-geist-mono), monospace; letter-spacing: .08em; }
-.calendarTitle h1 { font-size: var(--font-page); letter-spacing: -.07em; font-weight: 500; line-height: .95; margin-block: var(--space-5); }
-.calendarTitle span { color: var(--muted); font-size: var(--font-meta); }
-.filterBar { display: flex; flex-wrap: wrap; align-items: end; gap: var(--space-6); padding: var(--space-5) var(--page-gutter); border-bottom: var(--border); }
+.micro { composes: micro from "../ui/system.module.css"; color: var(--muted); }
+.masthead { display: flex; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; gap: var(--space-6); max-width: var(--content-width); margin-inline: auto; padding: var(--space-8) var(--page-gutter) var(--space-6); border-bottom: var(--border); }
+.mastheadText h1 { margin-top: var(--space-3); font-size: clamp(1.75rem, 2.6vw, 2.5rem); font-weight: 550; letter-spacing: -.04em; line-height: 1.1; }
+.subhead { margin-top: var(--space-2); color: var(--muted); font-size: 13px; }
+.mastheadActions { display: flex; align-items: center; gap: var(--space-4); }
+.todayBadge { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-2) var(--space-4); border: var(--border); border-radius: var(--radius-panel); }
+.todayBadge > span { font: 500 9px/1.5 var(--font-geist-mono), monospace; color: var(--muted); letter-spacing: .07em; }
+.todayBadge strong { font-size: 18px; font-weight: 600; letter-spacing: -.02em; }
+.todayBadge small { color: var(--muted); font-size: 11px; }
+.filterBar { display: flex; flex-wrap: wrap; align-items: end; gap: var(--space-6); max-width: var(--content-width); margin-inline: auto; padding: var(--space-5) var(--page-gutter); border-bottom: var(--border); }
 .filterField { display: grid; gap: var(--space-2); flex: 1; min-width: 140px; }
 .filterField label { color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: .08em; }
 .filterField input, .filterField select { width: 100%; font-size: 13px; background: transparent; border: 0; border-bottom: var(--border); padding-inline: 0; }
 .createButton { composes: button from "../ui/system.module.css"; flex-shrink: 0; }
 .resetFilters { composes: textButton from "../ui/system.module.css"; font-size: 12px; }
-.layout { display: grid; grid-template-columns: 1.4fr 1fr; gap: var(--space-10); padding: var(--space-8) var(--page-gutter); }
+.layout { display: grid; grid-template-columns: 1.4fr 1fr; gap: var(--space-10); max-width: var(--content-width); margin-inline: auto; padding: var(--space-8) var(--page-gutter); }
 .calendarColumn { display: contents; }
 .calendar { grid-column: 1 / -1; min-width: 0; }
 .toolbar { display: flex; align-items: center; justify-content: space-between; gap: var(--space-6); margin-bottom: var(--space-6); }
@@ -81,5 +81,5 @@
 .cardActions .dangerAction { background: transparent; border-color: var(--line); }
 .courseDot { display: inline-block; width: 5px; height: 5px; background: var(--forest); margin-right: var(--space-2); vertical-align: middle; }
 .visuallyHidden { composes: srOnly from "../ui/system.module.css"; }
-@media(max-width:1000px) { .calendarMasthead { grid-template-columns: 190px minmax(0,1fr); } .calendarTitle { align-items: start; flex-direction: column; padding-block: var(--space-8); } .calendarTitle h1 { font-size: 58px; } .dateStamp strong { font-size: 100px; } .layout { gap: var(--space-8); } }
-@media(max-width:767px) { .calendarMasthead { grid-template-columns: 110px minmax(0,1fr); } .dateStamp { padding: var(--space-5); } .dateStamp strong { font-size: 70px; } .dateStamp > small { font-size: 10px; } .calendarTitle { padding: var(--space-6) var(--space-5); gap: var(--space-3); } .calendarTitle h1 { font-size: 42px; margin-block: var(--space-3); } .calendarTitle span { display: none; } .calendarTitle p { font-size: 9px; } .calendarTitle .createButton { min-height: 38px; padding-block: 6px; font-size: 12px; } .filterBar { gap: var(--space-4); } .filterField { min-width: 120px; } .layout { display: block; padding-top: var(--space-6); } .desktopCalendar { display: none; } .agenda { display: block; } .toolbar { align-items: end; gap: var(--space-3); } .toolbar h2 { font-size: 26px; } .navigation { gap: 4px; } .navigation button { min-width: 36px; height: 40px; padding-inline: 8px; } .dayDetails { border-top: var(--border); padding-top: var(--space-6); margin-top: var(--space-8); } .upcoming { margin-top: var(--space-8); border-left: 0; border-top: var(--border); padding: var(--space-6) 0 0; } .eventList > li { grid-template-columns: 56px minmax(0,1fr); } .eventActions { grid-column: 2; display: flex; gap: var(--space-5); } .eventActions button { text-align: left; } }
+@media(max-width:1000px) { .layout { gap: var(--space-8); } }
+@media(max-width:767px) { .masthead { padding: var(--space-6) var(--space-5); gap: var(--space-4); } .masthead h1 { font-size: 34px; } .mastheadActions { width: 100%; justify-content: space-between; } .filterBar { gap: var(--space-4); padding-inline: var(--space-5); } .filterField { min-width: 120px; } .layout { display: block; padding: var(--space-6) var(--space-5) var(--space-8); } .desktopCalendar { display: none; } .agenda { display: block; } .toolbar { align-items: end; gap: var(--space-3); } .toolbar h2 { font-size: 26px; } .navigation { gap: 4px; } .navigation button { min-width: 36px; height: 40px; padding-inline: 8px; } .dayDetails { border-top: var(--border); padding-top: var(--space-6); margin-top: var(--space-8); } .upcoming { margin-top: var(--space-8); border-left: 0; border-top: var(--border); padding: var(--space-6) 0 0; } .eventList > li { grid-template-columns: 56px minmax(0,1fr); } .eventActions { grid-column: 2; display: flex; gap: var(--space-5); } .eventActions button { text-align: left; } }

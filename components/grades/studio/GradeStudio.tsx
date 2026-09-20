@@ -23,7 +23,7 @@ export default function GradeStudio() {
   return (
     <div className={s.studio} data-full-bleed>
       <header className={s.contextBar}>
-        <div className={s.location}><span>06</span><h1>Noten</h1></div>
+        <div className={s.location}><span className={s.micro}>06 / NOTEN</span><h1>Noten.</h1></div>
         {data.courses.length > 0 && (
           <div className={s.contextSwitcher}>
             <label htmlFor="grades-course-select">Kurs</label>
@@ -31,7 +31,6 @@ export default function GradeStudio() {
               onChange={(event) => data.setSelectedCourseId(event.target.value)}>
               {data.courses.map((course) => <option key={course.id} value={course.id}>{course.title}</option>)}
             </select>
-            <span aria-hidden="true">↓</span>
           </div>
         )}
       </header>
@@ -61,9 +60,9 @@ function CourseCanvas({ course }: { course: Course }) {
 
   return (
     <>
-      <div className={s.canvas}>
-        <div className={s.standingRail}>
-          <section className={s.standing} aria-labelledby="standing-heading">
+      <div className={s.container}>
+        <div className={s.overviewGrid}>
+          <section className={s.card} aria-labelledby="standing-heading">
             <div className={s.railHeading}><h2 id="standing-heading">Dein Stand</h2><span className={s.courseCode}>{deriveCourseBadge(course.title).code}</span></div>
             <p className={s.averageLabel}>ECTS-GEWICHTETER SCHNITT</p>
             <div className={s.average} aria-label={summary.average === null ? "Noch kein Notenschnitt" : `Ungefähr ${formatGrade(summary.average)}`}>
@@ -74,7 +73,6 @@ function CourseCanvas({ course }: { course: Course }) {
             <p className={s.standingNote}>{summary.average === null ? "Dein Schnitt erscheint mit der ersten bewerteten Leistung." : "Dein Zwischenstand aus bereits bewerteten Leistungen. Keine offizielle Hochschulnote."}</p>
           </section>
           <GoalEditor assessments={data.assessments} />
-          <p className={s.railFooter}>ECTS-GEWICHTETER ZWISCHENSTAND</p>
         </div>
 
         <section className={s.transcript} aria-labelledby="record-heading">

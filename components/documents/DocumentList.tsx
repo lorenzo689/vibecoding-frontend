@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import shared from "@/components/dashboard.module.css";
 import s from "./documents.module.css";
 
 // Fixed presentation fixtures, not persisted records or an API contract.
@@ -80,10 +79,10 @@ export default function DocumentList() {
   }
 
   return (
-    <section className={s.library} aria-labelledby="library-heading">
-      <div className={shared.sectionHeader}>
+    <section className={s.card} aria-labelledby="library-heading">
+      <div className={s.cardHead}>
         <h2 id="library-heading">Dein Vorlesungsmaterial <small>{String(documents.length).padStart(2, "0")}</small></h2>
-        <small>BEISPIELBIBLIOTHEK</small>
+        <span className={s.tag}>BEISPIELBIBLIOTHEK</span>
       </div>
       <div className={s.searchRow}>
         <div>
@@ -108,7 +107,7 @@ export default function DocumentList() {
       <p className={s.resultCount} role="status">{visible.length} von {documents.length} Beispielunterlagen · Suche und Filter werden nicht gespeichert.</p>
       <ul id="document-results" className={s.documentList}>
         {visible.map((document) => (
-          <li key={document.id}>
+          <li key={document.id} className={s.documentItem}>
             <article className={s.documentRow} aria-labelledby={`document-${document.id}`}>
               <div className={s.fileIcon} aria-hidden="true">PDF</div>
               <div className={s.documentInfo}>
