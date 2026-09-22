@@ -70,9 +70,9 @@ export default function CourseFlashcardDecks({ courseId }: { courseId: string })
 
       <section className={dashboardStyles.intro}>
         <div>
-          <p className={dashboardStyles.eyebrow}>DEIN WISSEN, KARTE FÜR KARTE</p>
-          <h1>Deine Karteikarten-Decks.</h1>
-          <p>Organisiere deine Karteikarten in Decks für diesen Kurs.</p>
+          <p className={dashboardStyles.eyebrow}>KARTEIKARTEN</p>
+          <h1>Decks.</h1>
+          <p>Ein Deck pro Thema, aus deinem Vorlesungsmaterial.</p>
         </div>
         <button type="button" className={s.headerButton} onClick={() => setDialogOpen(true)}>
           + Neues Deck

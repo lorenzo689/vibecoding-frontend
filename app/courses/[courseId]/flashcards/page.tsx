@@ -16,8 +16,7 @@ export default async function CourseFlashcardsPage(
     <div className={shared.dashboard}>
       <CourseFlashcardDecks courseId={courseId} />
       <footer className={shared.dashboardFooter}>
-        <span>Lernapp · Dein Semester, verbunden.</span>
-        <span>Gespeichert in deinem Konto</span>
+        <span>Gespeichert in deinem Konto.</span>
       </footer>
     </div>
   );

@@ -10,14 +10,14 @@ import {
   type ProfileUpdatedDetail,
 } from "@/lib/auth/profile";
 import { createClient } from "@/lib/supabase/browser";
-import s from "@/components/dashboard.module.css";
+import s from "@/components/navigation.module.css";
 
 type ProfileState =
   | { status: "loading" }
   | { status: "ready"; name: string; email: string }
   | { status: "error"; message: string };
 
-export default function AuthenticatedProfile({ onNavigate }: { onNavigate?: () => void }) {
+export default function AuthenticatedProfile({ onNavigate, compact = false }: { onNavigate?: () => void; compact?: boolean }) {
   const router = useRouter();
   const [profile, setProfile] = useState<ProfileState>({ status: "loading" });
   const [signingOut, setSigningOut] = useState(false);
@@ -94,18 +94,19 @@ export default function AuthenticatedProfile({ onNavigate }: { onNavigate?: () =
   const initial = profile.status === "ready" ? profileInitial(profile.name) : "L";
 
   return (
-    <div className={s.profileArea}>
+    <div className={`${s.profileArea} ${compact ? s.profileCompact : ""}`}>
       <Link
         href="/profile"
         className={s.profile}
         aria-label="Eigenes Profil öffnen"
+        title={compact ? name : undefined}
         onClick={onNavigate}
       >
         <span aria-hidden="true">{initial}</span>
-        <div aria-live="polite"><strong>{name}</strong><small>{detail}</small></div>
+        <div className={compact ? s.srOnly : undefined} aria-live="polite"><strong>{name}</strong><small>{detail}</small></div>
       </Link>
-      <button type="button" className={s.logoutButton} onClick={logout} disabled={signingOut}>
-        {signingOut ? "Wird abgemeldet …" : "Abmelden"}
+      <button type="button" className={s.logoutButton} onClick={logout} disabled={signingOut} title="Abmelden" aria-label={signingOut ? "Wird abgemeldet …" : "Abmelden"}>
+        {compact ? <span aria-hidden="true">↪</span> : signingOut ? "Wird abgemeldet …" : "Abmelden"}
       </button>
     </div>
   );

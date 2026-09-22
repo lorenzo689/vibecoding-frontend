@@ -178,12 +178,12 @@ export default function CalendarWorkspace() {
   }
 
   if (loading) {
-    return <div className={`${shared.dashboard} ${s.page}`} aria-live="polite">Dein Kalender wird geladen …</div>;
+    return <div className={s.page} data-full-bleed aria-live="polite">Dein Kalender wird geladen …</div>;
   }
 
   if (loadError && events.length === 0) {
     return (
-      <div className={`${shared.dashboard} ${s.page}`}>
+      <div className={s.page} data-full-bleed>
         <div className={s.empty} role="alert">
           <h2>Kalender nicht verfügbar</h2>
           <p>{loadError}</p>
@@ -199,11 +199,18 @@ export default function CalendarWorkspace() {
     .filter((course): course is Course => Boolean(course));
 
   return (
-    <div className={`${shared.dashboard} ${s.page}`}>
-      <section className={shared.intro}>
-        <div><p className={shared.eyebrow}>DEIN SEMESTER, TAG FÜR TAG</p><h1>Dein Kalender.</h1><p>Vorlesungen, Lernzeit und wichtige Termine. Alles im Zusammenhang.</p></div>
-        <button type="button" className={s.createButton} onClick={() => setDialogOpen(true)}>+ Termin</button>
-      </section>
+    <div className={s.page} data-full-bleed>
+      <header className={s.masthead}>
+        <div className={s.mastheadText}>
+          <p className={s.micro}>04 / KALENDER</p>
+          <h1>Termine.</h1>
+          <p className={s.subhead}>{upcoming.length} anstehend, über alle Kurse.</p>
+        </div>
+        <div className={s.mastheadActions}>
+          <div className={s.todayBadge}><span>HEUTE</span><strong>{Number(today.slice(-2))}</strong><small>{formatDateKey(today, { month: "long", year: "numeric" })}</small></div>
+          <button type="button" className={s.createButton} onClick={() => setDialogOpen(true)}>+ Termin</button>
+        </div>
+      </header>
       {actionError && <p className={shared.notice} role="alert">{actionError}</p>}
       <p role="status" aria-live="polite" className={s.visuallyHidden}>{statusMessage}</p>
 
@@ -326,8 +333,6 @@ export default function CalendarWorkspace() {
           )}
         </aside>
       </div>
-      <footer className={shared.dashboardFooter}><span>Lernapp · Dein Semester, verbunden.</span></footer>
-
       {dialogOpen && (
         <EventDialog courses={courses} initialDate={selected} onClose={() => setDialogOpen(false)} onSave={handleCreate} />
       )}

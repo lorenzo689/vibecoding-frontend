@@ -174,9 +174,9 @@ export default function AuthForm({ mode, next, initialError, initialNotice }: {
 
   return (
     <div className={styles.formContent}>
-      <p className={styles.eyebrow}>Mehr Klarheit. Semester für Semester.</p>
+      <p className={styles.eyebrow}>{registering ? "Kostenlos starten" : "Kontozugang"}</p>
       <h1>{registering ? "Konto erstellen" : "Willkommen zurück"}</h1>
-      <p className={styles.subtitle}>{registering ? "Organisiere dein Semester und dein Lernen an einem Ort." : "Melde dich an, um in deinem Studienraum weiterzulernen."}</p>
+      <p className={styles.subtitle}>{registering ? "Zwei Minuten Einrichtung, dann läuft dein erster Kurs." : "Melde dich an, um bei deinen Unterlagen weiterzumachen."}</p>
       {confirmationEmail ? (
         <section className={styles.confirmation} aria-labelledby="confirmation-heading">
           <span aria-hidden="true">✓</span>

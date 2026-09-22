@@ -1,237 +1,115 @@
 import Link from "next/link";
-import s from "@/components/dashboard.module.css";
-// Static illustrative content only. These are not user records.
+import s from "@/components/home.module.css";
+
+// Product-preview content, not authenticated user records.
 const courses = [
-  {
-    name: "Neue Konzepte",
-    code: "NK",
-    topic: "Lecture 03 · Vibe Coding Setup",
-    progress: 42,
-    notes: "3 offene Notizen",
-  },
-  {
-    name: "IT Security",
-    code: "IS",
-    topic: "Lecture 08 · Network Security",
-    progress: 68,
-    notes: "Prüfungsvorbereitung",
-  },
-  {
-    name: "Advanced Practical IT Security",
-    code: "AP",
-    topic: "Lab 04 · Threat Modeling",
-    progress: 28,
-    notes: "2 offene Lernpunkte",
-  },
+  { name: "Neue Konzepte", code: "NK", topic: "Lecture 03 · Vibe Coding Setup", notes: "3 offene Notizen", progress: 42 },
+  { name: "IT Security", code: "IS", topic: "Lecture 08 · Network Security", notes: "Prüfungsvorbereitung", progress: 68 },
 ];
 const events = [
-  {
-    day: "14",
-    kind: "LERNSESSION",
-    title: "Lecture Review",
-    detail: "Neue Konzepte · 14:00 Uhr",
-  },
-  {
-    day: "18",
-    kind: "PRÄSENTATION",
-    title: "Neue Konzepte",
-    detail: "Vibe Coding · 10:00 Uhr",
-  },
-  {
-    day: "24",
-    kind: "PRÜFUNG",
-    title: "IT Security",
-    detail: "Network Security · 09:00 Uhr",
-  },
+  { day: "14", kind: "LERNSESSION", title: "Lecture Review", detail: "Neue Konzepte · 14:00 Uhr" },
+  { day: "24", kind: "PRÜFUNG", title: "IT Security", detail: "Network Security · 09:00 Uhr" },
 ];
+const notes = [
+  { title: "2 Folien zum Noch-mal-Verstehen", detail: "IT Security · Lecture 08 · Noch einmal erklären" },
+  { title: "1 erkannte Deadline prüfen", detail: "Neue Konzepte · Vorschlag, noch nicht bestätigt" },
+];
+
 export default function Home() {
   return (
-    <div className={s.dashboard}>
-      <section className={s.intro}>
-        <div>
-          <p className={s.eyebrow}>DEIN STUDIENRAUM</p>
-          <h1>Dein Semester im Überblick.</h1>
-          <p>Mehr Klarheit. Weniger verstreute Gedanken.</p>
-        </div>
-        <div className={s.semester}>
-          <small>BEISPIELSEMESTER</small>
-          <strong>Wintersemester</strong>
-          <span>Ein Schritt nach dem anderen.</span>
-        </div>
-      </section>
-      <p className={s.notice}>
-        Statische Produktvorschau · Kurse, Termine und Lernstände sind
-        illustrative Beispieldaten.
-      </p>
-      <section aria-labelledby="courses-heading">
-        <div className={s.sectionHeader}>
-          <h2 id="courses-heading">
-            Deine Kurse <small>03</small>
-          </h2>
-          <Link href="/courses">Zur Kursübersicht ↗</Link>
-        </div>
-        <div className={s.courseGrid}>
-          {courses.map((c, i) => (
-            <article className={s.course} key={c.code}>
-              <div className={s.courseTop}>
-                <span className={s.badge} data-tone={i}>
-                  {c.code}
-                </span>
-                <small>KURS</small>
-              </div>
-              <h3>{c.name}</h3>
-              <p>{c.topic}</p>
-              <div className={s.progressLabel}>
-                <span>Lernfortschritt · Beispiel</span>
-                <span>{c.progress}%</span>
-              </div>
-              <div
-                className={s.progress}
-                role="img"
-                aria-label={`Beispielhafter Lernfortschritt: ${c.progress} Prozent`}
-              >
-                <i style={{ width: `${c.progress}%` }} />
-              </div>
-              <footer>· {c.notes}</footer>
-            </article>
-          ))}
-        </div>
-      </section>
-      <div className={s.contentGrid}>
-        <div>
-          <section aria-labelledby="continue-heading">
-            <div className={s.sectionHeader}>
-              <h2 id="continue-heading">Hier geht’s weiter</h2>
-              <small>DEIN LERNKONTEXT</small>
+    <div className={s.home} data-full-bleed>
+      <div className={s.preview}>
+        PRODUKTVORSCHAU <span>Kurse, Termine und Lernstände sind illustrative Beispieldaten.</span>
+      </div>
+
+      <div className={s.container}>
+        <header className={s.pageHeader}>
+          <p className={s.micro}>01 / ÜBERSICHT</p>
+          <h1>Guten Tag.</h1>
+          <p className={s.subhead}>
+            Du bist zuletzt bei <strong>Vibe Coding Setup</strong> · Lecture 03 geblieben, Folie 8 von 18.
+          </p>
+        </header>
+
+        <div className={s.grid}>
+          <section className={`${s.card} ${s.resumeCard}`} aria-labelledby="resume-heading">
+            <div className={s.cardHead}>
+              <span className={s.micro}>Weiter lernen</span>
+              <span className={s.tag}>Lecture 03</span>
             </div>
-            <article className={s.study}>
-              <div className={s.studyHeader}>
-                <span>NEUE KONZEPTE</span>
-                <span>LECTURE 03</span>
-              </div>
-              <div className={s.studyBody}>
-                <div className={s.document} aria-hidden="true">
-                  <span>03</span>
-                  <i />
-                  <i />
-                  <i />
-                  <b>
-                    Vibe Coding
-                    <br />
-                    Setup
-                  </b>
-                </div>
-                <div>
-                  <small>VOM VERSTEHEN ZUM BEHALTEN</small>
-                  <h3>Vibe Coding Setup</h3>
-                  <p>
-                    Deine Unterlagen, Gedanken und Lernmaterialien.
-                    <br />
-                    Genau dort, wo sie zusammengehören.
-                  </p>
-                  <Link href="/documents">Zu den Unterlagen →</Link>
-                </div>
-              </div>
-              <div className={s.artifacts}>
-                <div>
-                  <small>NOTIZEN</small>
-                  <strong>3 offene Gedanken</strong>
-                </div>
-                <div>
-                  <small>ZUSAMMENFASSUNG</small>
-                  <strong>Das Wesentliche im Blick</strong>
-                </div>
-                <div>
-                  <small>KARTEIKARTEN</small>
-                  <strong>24 Karten bereit</strong>
-                </div>
-              </div>
-            </article>
+            <h2 id="resume-heading">Vibe Coding Setup</h2>
+            <p className={s.cardMeta}>Zuletzt bei Folie 8 von 18 · 3 offene Notizen</p>
+            <div className={s.progressRow}>
+              <progress max={100} value={44} aria-label="Beispielhafter Lernfortschritt: 44 Prozent" />
+              <span>44%</span>
+            </div>
+            <Link className={s.cardAction} href="/documents">
+              Weiterlesen <span aria-hidden="true">→</span>
+            </Link>
           </section>
-          <section className={s.attention} aria-labelledby="attention-heading">
-            <div className={s.sectionHeader}>
-              <h2 id="attention-heading">Noch ein Gedanke offen.</h2>
-              <small>03</small>
+
+          <section className={s.card} aria-labelledby="events-heading">
+            <div className={s.cardHead}>
+              <span className={s.micro}>Nächste Termine</span>
+              <Link className={s.cardLink} href="/calendar">Alle →</Link>
             </div>
-            <p>Kleine offene Punkte. Ein guter nächster Schritt.</p>
-            <ul>
-              {[
-                {
-                  mark: "?",
-                  title: "2 Folien zum Noch-mal-Verstehen",
-                  detail: "IT Security · Lecture 08 · „Noch einmal erklären“",
-                  tag: "Verstehen",
-                },
-                {
-                  mark: "!",
-                  title: "1 erkannte Deadline prüfen",
-                  detail: "Neue Konzepte · Vorschlag, noch nicht bestätigt",
-                  tag: "Prüfen",
-                },
-                {
-                  mark: "…",
-                  title: "3 Vorlesungsnotizen aufgreifen",
-                  detail: "Neue Konzepte · Lecture 03 · Folien 4, 8 und 12",
-                  tag: "Vertiefen",
-                },
-              ].map((item) => (
-                <li key={item.title}>
-                  <span className={s.attentionMark} aria-hidden="true">
-                    {item.mark}
-                  </span>
+            <h2 id="events-heading" className={s.srOnly}>Termine</h2>
+            <ul className={s.list}>
+              {events.map((event) => (
+                <li key={event.day}>
+                  <span className={s.eventDate}>{event.day}<small>OKT</small></span>
                   <div>
-                    <strong>{item.title}</strong>
-                    <small>{item.detail}</small>
+                    <strong>{event.title}</strong>
+                    <span>{event.kind} · {event.detail}</span>
                   </div>
-                  <span className={s.tag}>{item.tag}</span>
+                </li>
+              ))}
+            </ul>
+          </section>
+
+          <section className={s.card} aria-labelledby="courses-heading">
+            <div className={s.cardHead}>
+              <span className={s.micro}>Kurse</span>
+              <Link className={s.cardLink} href="/courses">Alle →</Link>
+            </div>
+            <h2 id="courses-heading" className={s.srOnly}>Kurse</h2>
+            <ul className={s.list}>
+              {courses.map((course) => (
+                <li key={course.code}>
+                  <div>
+                    <strong>{course.name}</strong>
+                    <span>{course.topic} · {course.notes}</span>
+                  </div>
+                  <span className={s.percent}>{course.progress}%</span>
+                </li>
+              ))}
+            </ul>
+          </section>
+
+          <section className={s.card} aria-labelledby="notes-heading">
+            <div className={s.cardHead}>
+              <span className={s.micro}>Offene Notizen</span>
+              <span className={s.tag}>Beispiel</span>
+            </div>
+            <h2 id="notes-heading" className={s.srOnly}>Offene Notizen</h2>
+            <ul className={s.list}>
+              {notes.map((note) => (
+                <li key={note.title}>
+                  <div>
+                    <strong>{note.title}</strong>
+                    <span>{note.detail}</span>
+                  </div>
                 </li>
               ))}
             </ul>
           </section>
         </div>
-        <aside className={s.upcoming} aria-labelledby="upcoming-heading">
-          <div className={s.sectionHeader}>
-            <h2 id="upcoming-heading">Als Nächstes</h2>
-            <small>OKTOBER · BEISPIEL</small>
-          </div>
-          <ol>
-            {events.map((e) => (
-              <li key={e.day}>
-                <div className={s.date}>
-                  <strong>{e.day}</strong>
-                  <small>OKT</small>
-                </div>
-                <div>
-                  <small>{e.kind}</small>
-                  <h3>{e.title}</h3>
-                  <p>{e.detail}</p>
-                </div>
-              </li>
-            ))}
-          </ol>
-          <Link className={s.calendarLink} href="/calendar">
-            Zum Kalender <span aria-hidden="true">→</span>
-          </Link>
-          <div className={s.preparation}>
-            <p className={s.eyebrow}>GUT VORBEREITET</p>
-            <h3>Aus vielen kleinen Schritten wird ein gutes Gefühl.</h3>
-            <p>
-              Vorlesung für Vorlesung. Notiz für Notiz. Dein Wissen wächst
-              zusammen.
-            </p>
-            <div className={s.steps} aria-hidden="true">
-              {[18, 30, 46, 62, 80, 100].map((n) => (
-                <i key={n} style={{ height: `${n}%` }} />
-              ))}
-            </div>
-            <small>Von der ersten Folie bis zur Prüfung.</small>
-          </div>
-        </aside>
+
+        <footer className={s.footer}>
+          <span>Beispieldaten in dieser Vorschau.</span>
+          <span>Ohne Datenanbindung</span>
+        </footer>
       </div>
-      <footer className={s.dashboardFooter}>
-        <span>Lernapp · Dein Semester, verbunden.</span>
-        <span>Präsentationsansicht ohne Datenanbindung</span>
-      </footer>
     </div>
   );
 }
