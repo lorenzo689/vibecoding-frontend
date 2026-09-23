@@ -301,16 +301,16 @@ export default function CourseDocuments({ courseId }: { courseId: string }) {
           {fileProgress.map(({ file, progress }) => (
             <article key={file.id} className={styles.cardWrap}>
               <Link href={`/courses/${courseId}/documents/${file.id}`} className={styles.cardLink}>
-                <span className={styles.icon} aria-hidden="true">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M7 3.5h7l4 4V20a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4.5a1 1 0 0 1 1-1Z" /><path d="M13.6 3.6V8h4.3M9 12.5h6M9 16h6" /></svg>
-                </span>
+                <div className={styles.thumb}>
+                  <span className={styles.thumbType}>{EXTENSION_LABELS[file.type] ?? "Datei"}</span>
+                  <span className={styles.thumbPage} aria-hidden="true">
+                    <span className={styles.thumbCorner} />
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M7 3.5h7l4 4V20a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4.5a1 1 0 0 1 1-1Z" /><path d="M13.6 3.6V8h4.3M9 12.5h6M9 16h4" /></svg>
+                  </span>
+                </div>
                 <p className={styles.title}>{file.name}</p>
                 <p className={styles.size}>{formatSize(file.size)}</p>
                 <div className={styles.badges}>
-                  <span className={styles.badge} data-tone="purple">
-                    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M7 3.5h7l4 4V20a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4.5a1 1 0 0 1 1-1Z" /><path d="M13.6 3.6V8h4.3" /></svg>
-                    {EXTENSION_LABELS[file.type] ?? "Datei"}
-                  </span>
                   <span className={styles.badge} data-tone={TONE_MAP[progress.tone]}>
                     <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="8.5" /><path d="M12 7.5V12l3 2" /></svg>
                     {TONE_LABELS[progress.tone]}

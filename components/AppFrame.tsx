@@ -7,7 +7,7 @@ import DashboardFrame from "./DashboardFrame";
 import styles from "./dashboard.module.css";
 
 const lightRoutes = ["/dashboard", "/documents", "/courses"];
-const lightRoutePattern = /^\/courses\/[^/]+\/documents(\/[^/]+)?$/;
+const lightRoutePattern = /^\/courses\/[^/]+(\/(documents(\/[^/]+)?|flashcards))?$/;
 
 export default function AppFrame({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();

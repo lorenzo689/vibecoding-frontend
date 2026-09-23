@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import s from "./flashcards.module.css";
+import styles from "@/components/documents/documents.module.css";
 
 export default function CreateDeckDialog({
   onClose,
@@ -39,30 +39,30 @@ export default function CreateDeckDialog({
 
   return (
     <div
-      className={s.backdrop}
+      className={styles.backdrop}
       onClick={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
     >
       <div
-        className={s.dialog}
+        className={styles.dialog}
         role="dialog"
         aria-modal="true"
         aria-labelledby="create-deck-heading"
       >
-        <div className={s.dialogHeader}>
+        <div className={styles.dialogHeader}>
           <h2 id="create-deck-heading">Deck anlegen</h2>
           <button
             type="button"
-            className={s.closeButton}
+            className={styles.closeButton}
             aria-label="Schließen"
             onClick={onClose}
           >
-            ✕
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m6 6 12 12M18 6 6 18" /></svg>
           </button>
         </div>
         <form onSubmit={submit}>
-          <div className={s.field}>
+          <div className={styles.field}>
             <label htmlFor="deck-title">Titel</label>
             <input
               id="deck-title"
@@ -74,10 +74,13 @@ export default function CreateDeckDialog({
               disabled={saving}
             />
           </div>
-          {error && <p className={s.hint} role="alert">{error}</p>}
-          <button type="submit" className={s.submitButton} disabled={saving || !title.trim()}>
-            {saving ? "Wird erstellt …" : "+ Deck erstellen"}
-          </button>
+          {error && <p className={styles.errorHint} role="alert">{error}</p>}
+          <div className={styles.dialogFooter}>
+            <button type="button" className={styles.cancelButton} onClick={onClose} disabled={saving}>Abbrechen</button>
+            <button type="submit" className={styles.submitButton} disabled={saving || !title.trim()}>
+              {saving ? "Wird erstellt …" : "Deck erstellen"}
+            </button>
+          </div>
         </form>
       </div>
     </div>

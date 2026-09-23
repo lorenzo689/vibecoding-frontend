@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent, type DragEvent, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { deleteCourse, getCourse, type Course } from "@/lib/supabase/queries/courses";
@@ -19,13 +19,25 @@ import {
 import { deriveCourseBadge } from "@/lib/courseBadge";
 import DocumentIndexingStatus from "./DocumentIndexingStatus";
 import { describeIndexingProgress } from "./documentIndexing";
-import dashboardStyles from "@/components/dashboard.module.css";
-import styles from "./courses.module.css";
+import styles from "./coursesList.module.css";
 
 function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function splitName(fileName: string): { base: string; extension: string } {
+  const dot = fileName.lastIndexOf(".");
+  if (dot <= 0) return { base: fileName, extension: "" };
+  return { base: fileName.slice(0, dot), extension: fileName.slice(dot) };
+}
+
+function renameFile(file: File, title: string): File {
+  const { extension } = splitName(file.name);
+  const trimmed = title.trim();
+  if (!trimmed) return file;
+  return new File([file], `${trimmed}${extension}`, { type: file.type, lastModified: file.lastModified });
 }
 
 const UPLOAD_ERROR_MESSAGES: Record<string, string> = {
@@ -55,10 +67,17 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
   const [files, setFiles] = useState<CourseFile[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
-  const [uploading, setUploading] = useState(false);
   const [removingId, setRemovingId] = useState<string | null>(null);
   const [documentStatuses, setDocumentStatuses] = useState<CourseDocumentStatus[]>([]);
   const pollAttemptsRef = useRef(0);
+
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [titleValue, setTitleValue] = useState("");
+  const [dragActive, setDragActive] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [dialogError, setDialogError] = useState<string | null>(null);
+  const dialogFileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     let active = true;
@@ -133,24 +152,67 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
     };
   }, [hasUnfinishedDocuments, refreshStatuses]);
 
-  async function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
-    const selected = Array.from(event.target.files ?? []);
-    event.target.value = "";
-    if (selected.length === 0) return;
+  function openDialog() {
+    setSelectedFile(null);
+    setTitleValue("");
+    setDialogError(null);
+    setDialogOpen(true);
+  }
 
-    setActionError(null);
+  function closeDialog() {
+    if (uploading) return;
+    setDialogOpen(false);
+    setSelectedFile(null);
+    setTitleValue("");
+    setDialogError(null);
+  }
+
+  useEffect(() => {
+    if (!dialogOpen) return;
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") closeDialog();
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dialogOpen, uploading]);
+
+  function pickFile(file: File | undefined) {
+    if (!file) return;
+    setSelectedFile(file);
+    setTitleValue(splitName(file.name).base);
+    setDialogError(null);
+  }
+
+  function handleDialogFileChange(event: ChangeEvent<HTMLInputElement>) {
+    pickFile(event.target.files?.[0]);
+    event.target.value = "";
+  }
+
+  function handleDrop(event: DragEvent<HTMLDivElement>) {
+    event.preventDefault();
+    setDragActive(false);
+    pickFile(event.dataTransfer.files?.[0]);
+  }
+
+  async function handleUploadSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!selectedFile) return;
     setUploading(true);
+    setDialogError(null);
     try {
-      for (const file of selected) {
-        const uploaded = await uploadCourseFile(courseId, file);
-        setFiles((prev) => [uploaded, ...prev]);
-      }
+      const named = renameFile(selectedFile, titleValue);
+      const uploaded = await uploadCourseFile(courseId, named);
+      setFiles((prev) => [uploaded, ...prev]);
       // A fresh upload starts its own pipeline run; allow the full poll budget.
       pollAttemptsRef.current = 0;
       const { nextStatuses } = await refreshStatuses();
       setDocumentStatuses(nextStatuses);
+      setDialogOpen(false);
+      setSelectedFile(null);
+      setTitleValue("");
     } catch (error) {
-      setActionError(uploadErrorMessage(error));
+      setDialogError(uploadErrorMessage(error));
     } finally {
       setUploading(false);
     }
@@ -217,61 +279,53 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
 
   return (
     <div className={styles.page}>
-      <div className={styles.topRow}>
-        <Link href="/courses" className={styles.backLink}>
-          ← Zurück zur Kursübersicht
+      <Link href="/courses" className={styles.backLink}>
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m11 5-6 7 6 7M5 12h14" /></svg>
+        Zurück zur Kursübersicht
+      </Link>
+
+      <header className={styles.courseHeader}>
+        <span className={styles.icon} data-tone={badge.color}>{badge.code}</span>
+        <div>
+          <h1>{course.title}</h1>
+          <p className={styles.subhead}>{course.description || "Keine Beschreibung hinterlegt."}</p>
+        </div>
+      </header>
+
+      <div className={styles.toolGrid}>
+        <Link href={`/courses/${courseId}/flashcards`} className={styles.toolCard}>
+          <div className={styles.toolCardHead}>
+            <span className={styles.toolIcon} data-tone="violet">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="5" width="13" height="15" rx="2.4" /><path d="M9 10h4M9 14h4" /></svg>
+            </span>
+            <span className={styles.toolArrow} aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+            </span>
+          </div>
+          <h3>Karteikarten</h3>
+          <p>Aus deinem Vorlesungsmaterial lernen.</p>
+        </Link>
+        <Link href={`/courses/${courseId}/summaries`} className={styles.toolCard}>
+          <div className={styles.toolCardHead}>
+            <span className={styles.toolIcon} data-tone="blue">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M6 4h9l3 3v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z" /><path d="M8 9h8M8 13h8M8 17h5" /></svg>
+            </span>
+            <span className={styles.toolArrow} aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+            </span>
+          </div>
+          <h3>Zusammenfassung</h3>
+          <p>Das Wesentliche aus deinen Vorlesungen.</p>
         </Link>
       </div>
-      <div className={styles.courseHeaderRow}>
-        <div className={styles.courseIdentity}>
-          <span
-            className={`${dashboardStyles.badge} ${styles.badge}`}
-            data-color={badge.color}
-          >
-            {badge.code}
-          </span>
-          <h1 style={{ marginTop: 16 }}>{course.title}</h1>
-          <p>{course.description || "Keine Beschreibung hinterlegt."}</p>
-        </div>
 
-        <div className={styles.toolGrid}>
-          <Link href={`/courses/${courseId}/flashcards`} className={styles.courseLink}>
-            <article className={styles.toolCard}>
-              <span className={styles.toolIcon} data-tool="flashcards">KK</span>
-              <div className={styles.toolBody}>
-                <h3>Karteikarten</h3>
-                <p>Aus deinem Vorlesungsmaterial lernen.</p>
-              </div>
-              <span className={styles.toolArrow} aria-hidden="true">→</span>
-            </article>
-          </Link>
-          <Link href={`/courses/${courseId}/summaries`} className={styles.courseLink}>
-            <article className={styles.toolCard}>
-              <span className={styles.toolIcon} data-tool="summary">ZF</span>
-              <div className={styles.toolBody}>
-                <h3>Zusammenfassung</h3>
-                <p>Das Wesentliche aus deinen Vorlesungen.</p>
-              </div>
-              <span className={styles.toolArrow} aria-hidden="true">→</span>
-            </article>
-          </Link>
+      <section className={styles.uploadSection}>
+        <div className={styles.sectionHead}>
+          <h2>Vorlesungsfolien &amp; Übungen<span className={styles.tag}>{files.length}</span></h2>
+          <button type="button" className={styles.uploadLabel} onClick={openDialog}>
+            <span aria-hidden="true">+</span> Datei hochladen
+          </button>
         </div>
-      </div>
-
-      <div className={styles.uploadSection}>
-        <h2>
-          Vorlesungsfolien & Übungen <small>{files.length}</small>
-        </h2>
-        <label className={styles.uploadLabel} aria-disabled={uploading}>
-          {uploading ? "Wird hochgeladen …" : "+ Datei hochladen"}
-          <input
-            type="file"
-            multiple
-            accept=".pdf,.pptx,.docx,.txt"
-            onChange={handleFileChange}
-            disabled={uploading}
-          />
-        </label>
         <p className={styles.uploadHint}>
           PDF, PowerPoint (.pptx), Word (.docx) oder Text (.txt), max. 50 MiB.
         </p>
@@ -302,23 +356,101 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
                   onClick={() => handleRemoveFile(file.id)}
                   disabled={removingId === file.id}
                 >
-                  ✕
+                  <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M5 7h14M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2m2 0-.9 12.1a2 2 0 0 1-2 1.9H8.9a2 2 0 0 1-2-1.9L6 7Z" /></svg>
                 </button>
               </li>
             ))}
           </ul>
         )}
-      </div>
+      </section>
 
       <div className={styles.dangerZone}>
         <button
           type="button"
-          className={styles.dangerButton}
+          className={styles.dangerLink}
           onClick={handleDeleteCourse}
         >
           Kurs löschen
         </button>
       </div>
+
+      {dialogOpen && (
+        <div className={styles.backdrop} onClick={(event) => { if (event.target === event.currentTarget) closeDialog(); }}>
+          <div className={styles.dialog} role="dialog" aria-modal="true" aria-labelledby="upload-document-heading">
+            <div className={styles.dialogHeader}>
+              <div>
+                <h2 id="upload-document-heading">Dokument hochladen</h2>
+                <p className={styles.dialogSubhead}>Füge diesem Kurs ein neues Dokument hinzu.</p>
+              </div>
+              <button type="button" className={styles.closeButton} aria-label="Schließen" onClick={closeDialog}>
+                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m6 6 12 12M18 6 6 18" /></svg>
+              </button>
+            </div>
+            <form onSubmit={handleUploadSubmit}>
+              <div className={styles.field}>
+                <label htmlFor="course-document-title">Dokumenttitel</label>
+                <input
+                  id="course-document-title"
+                  value={titleValue}
+                  onChange={(event) => setTitleValue(event.target.value)}
+                  placeholder="z. B. Vorlesung 3 Notizen"
+                  disabled={uploading}
+                  required
+                />
+              </div>
+              <div className={styles.field}>
+                <label htmlFor="course-document-file">Datei</label>
+                <div
+                  className={styles.dropzone}
+                  data-active={dragActive}
+                  onClick={() => !uploading && dialogFileInputRef.current?.click()}
+                  onDragOver={(event) => { event.preventDefault(); if (!uploading) setDragActive(true); }}
+                  onDragLeave={() => setDragActive(false)}
+                  onDrop={uploading ? undefined : handleDrop}
+                  role="button"
+                  tabIndex={0}
+                >
+                  <span className={styles.dropzoneIcon} aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 16V4M7 9l5-5 5 5" /><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3" /></svg>
+                  </span>
+                  {uploading ? (
+                    <>
+                      <p className={styles.dropzoneFile}>Wird hochgeladen …</p>
+                      <div className={styles.progressTrack}><div className={styles.progressFill} /></div>
+                    </>
+                  ) : selectedFile ? (
+                    <>
+                      <p className={styles.dropzoneFile}>{selectedFile.name}</p>
+                      <small>PDF, PPTX, DOCX oder TXT bis 50 MiB</small>
+                    </>
+                  ) : (
+                    <>
+                      <p>Datei hierher ziehen oder klicken zum Auswählen</p>
+                      <small>PDF, PPTX, DOCX oder TXT bis 50 MiB</small>
+                    </>
+                  )}
+                  <input
+                    ref={dialogFileInputRef}
+                    id="course-document-file"
+                    className={styles.dropzoneHidden}
+                    type="file"
+                    accept=".pdf,.pptx,.docx,.txt"
+                    onChange={handleDialogFileChange}
+                    disabled={uploading}
+                  />
+                </div>
+              </div>
+              {dialogError && <p className={styles.hint} role="alert">{dialogError}</p>}
+              <div className={styles.dialogFooter}>
+                <button type="button" className={styles.cancelButton} onClick={closeDialog} disabled={uploading}>Abbrechen</button>
+                <button type="submit" className={styles.submitButton} disabled={uploading || !selectedFile}>
+                  {uploading ? "Wird hochgeladen …" : "Hochladen"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -18,11 +18,13 @@ export type FlashcardDeckSummary = {
   deckId: string;
   title: string;
   cardCount: number;
+  createdAt: string;
 };
 
 type MaterialWithDeckRow = {
   id: string;
   title: string;
+  created_at: string;
   flashcard_decks: {
     id: string;
     flashcards: { id: string; question: string; answer: string }[];
@@ -32,7 +34,7 @@ type MaterialWithDeckRow = {
 export async function listCourseDecks(courseId: string): Promise<FlashcardDeckSummary[]> {
   const { data, error } = await createClient()
     .from("materials")
-    .select("id, title, flashcard_decks!material_id(id, flashcards(id, question, answer))")
+    .select("id, title, created_at, flashcard_decks!material_id(id, flashcards(id, question, answer))")
     .eq("course_id", courseId)
     .eq("type", "flashcard_deck")
     .order("created_at", { ascending: true });
@@ -45,6 +47,7 @@ export async function listCourseDecks(courseId: string): Promise<FlashcardDeckSu
       deckId: row.flashcard_decks!.id,
       title: row.title,
       cardCount: row.flashcard_decks!.flashcards.length,
+      createdAt: row.created_at,
     }));
 }
 

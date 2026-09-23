@@ -1,37 +1,7 @@
 .manager { min-width: 0; }
-.topRow { display: flex; justify-content: flex-end; margin-bottom: var(--space-3); }
-.topRow .backLink { margin-top: 0; }
-.headerButton { composes: button from "../ui/system.module.css"; flex-shrink: 0; }
-
-.backdrop { composes: backdrop from "../ui/system.module.css"; }
-.dialog { composes: dialog from "../ui/system.module.css"; max-width: 420px; }
-.dialogHeader { composes: dialogHeader from "../ui/system.module.css"; }
 .closeButton { composes: closeButton from "../ui/system.module.css"; }
-.field { composes: field from "../ui/system.module.css"; }
-.hint { composes: hint from "../ui/system.module.css"; }
 .submitButton { composes: button from "../ui/system.module.css"; }
 .status { font-size: var(--font-meta); color: var(--error); }
-
-.deckGrid { list-style: none; padding: 0; margin: var(--space-10) 0 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 0; border-top: 2px solid var(--ink); border-left: var(--border); }
-.deckTile { position: relative; border-right: var(--border); border-bottom: var(--border); }
-.deckRemove { position: absolute; top: var(--space-1); right: var(--space-1); z-index: 1; width: 28px; height: 28px; display: grid; place-items: center; color: var(--muted); background: transparent; }
-.deckRemove:hover { color: var(--error); }
-.deckLink { display: flex; flex-direction: column; align-items: center; gap: var(--space-3); padding: var(--space-6) var(--space-3); text-align: center; }
-.deckLink:hover { background: var(--canvas); }
-.deckColor { display: block; }
-.folderIcon { width: 56px; height: 42px; }
-.deckLabel { font-size: var(--font-meta); font-weight: 550; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.deckCount { font: 500 10px/1.6 var(--font-geist-mono), monospace; color: var(--muted); }
-
-.deckColor[data-color="green"] { color: #6fe08a; }
-.deckColor[data-color="amber"] { color: #ffc857; }
-.deckColor[data-color="sage"] { color: #8fe0b8; }
-.deckColor[data-color="blue"] { color: #7fb3ff; }
-.deckColor[data-color="rose"] { color: #ff9b9b; }
-.deckColor[data-color="violet"] { color: #c1a3ff; }
-.deckColor[data-color="teal"] { color: #6de0ce; }
-.deckColor[data-color="coral"] { color: #ffab7a; }
-.deckColor[data-color="indigo"] { color: #a3b1ff; }
 
 .deckTopRow { display: flex; align-items: flex-start; gap: var(--space-8); padding-bottom: var(--space-6); border-bottom: 2px solid var(--ink); }
 .deckHeader { flex-shrink: 0; margin-bottom: 0; }

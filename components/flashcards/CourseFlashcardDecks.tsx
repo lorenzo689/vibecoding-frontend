@@ -8,20 +8,19 @@ import {
   listCourseDecks,
   type FlashcardDeckSummary,
 } from "@/lib/supabase/queries/flashcards";
-import { deriveCourseBadge } from "@/lib/courseBadge";
-import dashboardStyles from "@/components/dashboard.module.css";
 import CreateDeckDialog from "./CreateDeckDialog";
-import s from "./flashcards.module.css";
+import styles from "@/components/documents/documents.module.css";
 
-function FolderIcon() {
+function DeckIcon() {
   return (
-    <svg viewBox="0 0 24 20" className={s.folderIcon} aria-hidden="true">
-      <path
-        fill="currentColor"
-        d="M2 5.6C2 4.4 3 3.4 4.2 3.4h5C9.8 3.4 10.4 3.7 10.8 4.2l1 1.3c.4.5 1 .8 1.6.8H19.8C21 6.3 22 7.3 22 8.5V15.8C22 17 21 18 19.8 18H4.2C3 18 2 17 2 15.8Z"
-      />
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="4" y="5" width="13" height="15" rx="2.4" /><path d="M9 10h4M9 14h4" />
     </svg>
   );
+}
+
+function formatShortDate(iso: string): string {
+  return new Intl.DateTimeFormat("de-DE", { day: "2-digit", month: "short", year: "numeric" }).format(new Date(iso)).toUpperCase();
 }
 
 export default function CourseFlashcardDecks({ courseId }: { courseId: string }) {
@@ -43,7 +42,7 @@ export default function CourseFlashcardDecks({ courseId }: { courseId: string })
 
   async function handleCreate(title: string) {
     const deck = await createDeck(courseId, title);
-    setDecks((current) => [...current, { ...deck, cardCount: 0 }]);
+    setDecks((current) => [...current, { ...deck, cardCount: 0, createdAt: new Date().toISOString() }]);
     setDialogOpen(false);
   }
 
@@ -61,71 +60,62 @@ export default function CourseFlashcardDecks({ courseId }: { courseId: string })
   }
 
   return (
-    <div className={s.manager}>
-      <div className={s.topRow}>
-        <Link href={`/courses/${courseId}`} className={s.backLink}>
-          ← Zurück zum Kurs
-        </Link>
-      </div>
+    <div className={styles.page}>
+      <Link href={`/courses/${courseId}`} className={styles.backLink}>
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m11 5-6 7 6 7M5 12h14" /></svg>
+        Zurück zum Kurs
+      </Link>
 
-      <section className={dashboardStyles.intro}>
+      <header className={styles.header}>
         <div>
-          <p className={dashboardStyles.eyebrow}>KARTEIKARTEN</p>
-          <h1>Decks.</h1>
-          <p>Ein Deck pro Thema, aus deinem Vorlesungsmaterial.</p>
+          <h1>Karteikarten</h1>
+          <p className={styles.subhead}>Alle Decks in diesem Kurs, aus deinem Vorlesungsmaterial.</p>
         </div>
-        <button type="button" className={s.headerButton} onClick={() => setDialogOpen(true)}>
-          + Neues Deck
+        <button type="button" className={styles.uploadButton} onClick={() => setDialogOpen(true)}>
+          <span aria-hidden="true">+</span> Neues Deck
         </button>
-      </section>
+      </header>
 
-      {error && <p className={s.status} role="alert">{error}</p>}
+      {error && <p className={styles.errorHint} role="alert">{error}</p>}
 
-      {loading && <p className={s.status} aria-live="polite">Decks werden geladen …</p>}
+      {loading && <p className={styles.loading} aria-live="polite">Decks werden geladen …</p>}
 
       {!loading && loadError && (
-        <div className={s.empty} role="alert">
-          <h3>Nicht verfügbar</h3>
+        <div className={styles.empty} role="alert">
+          <h2>Nicht verfügbar</h2>
           <p>{loadError} Bitte lade die Seite erneut.</p>
         </div>
       )}
 
       {!loading && !loadError && (
         decks.length === 0 ? (
-          <div className={s.empty}>
-            <h3>Noch keine Karteikarten-Decks</h3>
+          <div className={styles.empty}>
+            <h2>Noch keine Karteikarten-Decks</h2>
             <p>Leg dein erstes Deck für diesen Kurs an.</p>
+            <button type="button" className={styles.uploadButton} onClick={() => setDialogOpen(true)}>
+              <span aria-hidden="true">+</span> Neues Deck
+            </button>
           </div>
         ) : (
-          <ul className={s.deckGrid}>
-            {decks.map((deck) => {
-              const badge = deriveCourseBadge(deck.title);
-              return (
-                <li key={deck.materialId} className={s.deckTile}>
-                  <button
-                    type="button"
-                    className={s.deckRemove}
-                    aria-label={`${deck.title} löschen`}
-                    onClick={() => handleRemove(deck.materialId)}
-                    disabled={removingId === deck.materialId}
-                  >
-                    ✕
+          <ul className={styles.deckGrid}>
+            {decks.map((deck) => (
+              <li key={deck.materialId}>
+                <article className={styles.deckCard}>
+                  <button type="button" className={styles.deckCardDelete} aria-label={`„${deck.title}“ löschen`}
+                    onClick={() => void handleRemove(deck.materialId)} disabled={removingId === deck.materialId}>
+                    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M5 7h14M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2m2 0-.9 12.1a2 2 0 0 1-2 1.9H8.9a2 2 0 0 1-2-1.9L6 7Z" /></svg>
                   </button>
-                  <Link
-                    href={`/courses/${courseId}/flashcards/${deck.materialId}`}
-                    className={s.deckLink}
-                  >
-                    <span className={s.deckColor} data-color={badge.color}>
-                      <FolderIcon />
-                    </span>
-                    <span className={s.deckLabel}>{deck.title}</span>
-                    <span className={s.deckCount}>
-                      {deck.cardCount} {deck.cardCount === 1 ? "Karte" : "Karten"}
-                    </span>
+                  <span className={styles.deckCardIcon} aria-hidden="true"><DeckIcon /></span>
+                  <span className={styles.deckCardTitle}>{deck.title}</span>
+                  <span className={styles.deckCardDate}>ERSTELLT {formatShortDate(deck.createdAt)}</span>
+                  <span className={styles.deckCardCount}>{deck.cardCount} {deck.cardCount === 1 ? "Karte" : "Karten"}</span>
+                  <Link href={`/courses/${courseId}/flashcards/${deck.materialId}`} className={`${styles.deckCardAction} ${styles.deckCardActionPrimary}`}>
+                    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M8 5v14l11-7Z" /></svg>
+                    Jetzt lernen
                   </Link>
-                </li>
-              );
-            })}
+                </article>
+              </li>
+            ))}
           </ul>
         )
       )}
