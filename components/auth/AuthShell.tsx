@@ -1,39 +1,21 @@
 import Link from "next/link";
 import styles from "./auth.module.css";
 
-const steps = [
-  { n: "01", label: "Kurs anlegen" },
-  { n: "02", label: "Material hochladen" },
-  { n: "03", label: "Folie für Folie verstehen" },
-  { n: "04", label: "Termine bestätigen" },
-  { n: "05", label: "Mit Kontext lernen" },
-];
-
 export default function AuthShell({ children }: { children: React.ReactNode }) {
   return (
-    <main className={styles.shell} lang="de">
-      <section className={styles.formPanel} aria-label="Kontozugang">
-        <header className={styles.header}><Link href="/" className={styles.wordmark}>Lernapp<span aria-hidden="true">.</span></Link></header>
+    <main className={styles.page} lang="de">
+      <div className={styles.card}>
+        <Link href="/" className={styles.logo} aria-label="Lernapp, zur Startseite">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="6" cy="7" r="2.4" />
+            <circle cx="18" cy="7" r="2.4" />
+            <circle cx="12" cy="18" r="2.4" />
+            <path d="M8.1 8.2 10.5 16M15.9 8.2 13.5 16M8.4 7h7.2" />
+          </svg>
+        </Link>
         {children}
-        <footer className={styles.footer}><span>Lernapp</span><span>Für Studierende gebaut.</span></footer>
-      </section>
-      <aside className={styles.story} aria-labelledby="story-title">
-        <div className={styles.storyTop}>
-          <span className={styles.storyLabel}><i /> DEIN LERNEN, IM KONTEXT</span>
-          <span className={styles.edition}>V1</span>
-        </div>
-        <div className={styles.storyContent}>
-          <p className={styles.storyKicker}>SO FUNKTIONIERT&apos;S</p>
-          <h2 id="story-title">Vom Upload<br />zur <em>Prüfung.</em></h2>
-          <p className={styles.storyLede}>Jede hochgeladene Folie hängt automatisch am richtigen Kurs, mit Notizen, erkannten Terminen und generiertem Lernmaterial.</p>
-          <ol className={styles.steps}>
-            {steps.map((step) => (
-              <li key={step.n}><span aria-hidden="true">{step.n}</span><strong>{step.label}</strong></li>
-            ))}
-          </ol>
-        </div>
-        <div className={styles.storyFooter}><span>Für Studierende in prüfungsintensiven Studiengängen.</span><span aria-hidden="true">01 — 06</span></div>
-      </aside>
+      </div>
+      <p className={styles.legal}>Mit der Fortsetzung stimmst du unseren Nutzungsbedingungen und der Datenschutzerklärung zu.</p>
     </main>
   );
 }

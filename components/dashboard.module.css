@@ -1,8 +1,8 @@
 .shell { display: flex; min-height: 100svh; color: var(--ink); background: var(--paper); font-family: var(--font-geist-sans), sans-serif; }
-.workspace { flex: 1; min-width: 0; }
+.workspace { flex: 1; min-width: 0; background: var(--canvas); }
 .main { padding: var(--space-10) var(--page-gutter) var(--space-8); }
 .main:has(> [data-full-bleed]) { padding: 0; }
-.topbar { min-height: 64px; display: flex; align-items: center; justify-content: space-between; gap: var(--space-5); padding: var(--space-4) var(--page-gutter); border-bottom: var(--border); font-size: var(--font-meta); }
+.topbar { position: sticky; top: 0; z-index: 5; min-height: 64px; display: flex; align-items: center; justify-content: space-between; gap: var(--space-5); padding: var(--space-4) var(--page-gutter); background: rgba(20, 26, 18, 0.78); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line-strong); font-size: var(--font-meta); }
 .topbar div > span { color: var(--muted); margin-right: var(--space-3); }
 .topbar strong { font-weight: 500; }
 .topbar > small { font: 500 10px/1.5 var(--font-geist-mono), monospace; letter-spacing: .08em; color: var(--muted); }
