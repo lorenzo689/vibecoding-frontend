@@ -5,6 +5,9 @@
   --paper: #0a0e0b;
   --muted: #8b968c;
   --line: rgba(255, 255, 255, 0.09);
+  --line-strong: rgba(255, 255, 255, 0.16);
+  --surface: #1c2419;
+  --surface-hover: #222d1d;
   --signal: #d4ff3d;
   --error: #ff6b57;
   --error-surface: rgba(255, 107, 87, 0.12);
@@ -46,6 +49,7 @@
   --foreground: var(--ink);
   color-scheme: dark;
 }
+:root[data-theme="light"] { color-scheme: light; }
 
 body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--font-geist-sans), sans-serif; font-size: var(--font-body); line-height: var(--leading-body); }
 * { box-sizing: border-box; }

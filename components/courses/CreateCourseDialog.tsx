@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import styles from "./courses.module.css";
+import styles from "./coursesList.module.css";
 
 export default function CreateCourseDialog({
   onClose,
@@ -59,7 +59,7 @@ export default function CreateCourseDialog({
             aria-label="Schließen"
             onClick={onClose}
           >
-            ✕
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m6 6 12 12M18 6 6 18" /></svg>
           </button>
         </div>
         <form onSubmit={submit}>
@@ -89,9 +89,12 @@ export default function CreateCourseDialog({
             </p>
           </div>
           {error && <p className={styles.hint} role="alert">{error}</p>}
-          <button type="submit" className={styles.submitButton} disabled={saving}>
-            {saving ? "Wird erstellt …" : "Kurs erstellen"}
-          </button>
+          <div className={styles.dialogFooter}>
+            <button type="button" className={styles.cancelButton} onClick={onClose} disabled={saving}>Abbrechen</button>
+            <button type="submit" className={styles.submitButton} disabled={saving}>
+              {saving ? "Wird erstellt …" : "Kurs erstellen"}
+            </button>
+          </div>
         </form>
       </div>
     </div>

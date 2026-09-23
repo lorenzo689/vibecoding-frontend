@@ -199,17 +199,24 @@ export default function AuthForm({ mode, next, initialError, initialNotice }: {
       ) : (
         <form onSubmit={submit}>
           {registering && <div className={styles.field}>
-            <label htmlFor="display-name">Anzeigename</label>
-            <input id="display-name" name="display_name" autoComplete="nickname" placeholder="Wie dürfen wir dich nennen?" required disabled={pending} />
+            <label htmlFor="display-name">ANZEIGENAME</label>
+            <div className={styles.inputIcon}>
+              <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><circle cx="12" cy="8" r="4" /><path d="M4 20c0-3.6 3.4-6.5 8-6.5s8 2.9 8 6.5" /></svg>
+              <input id="display-name" name="display_name" autoComplete="nickname" placeholder="Wie dürfen wir dich nennen?" required disabled={pending} />
+            </div>
             <small>1–60 Zeichen</small>
           </div>}
           <div className={styles.field}>
-            <label htmlFor="email">E-Mail-Adresse</label>
-            <input id="email" name="email" type="email" autoComplete="email" autoCapitalize="none" spellCheck={false} placeholder="du@hochschule.de" required disabled={pending} />
+            <label htmlFor="email">E-MAIL</label>
+            <div className={styles.inputIcon}>
+              <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><rect x="3" y="5" width="18" height="14" rx="2.5" /><path d="m4 7 8 6 8-6" /></svg>
+              <input id="email" name="email" type="email" autoComplete="email" autoCapitalize="none" spellCheck={false} placeholder="du@hochschule.de" required disabled={pending} />
+            </div>
           </div>
           <div className={styles.field}>
-            <label htmlFor="password">Passwort</label>
-            <div className={styles.passwordWrap}>
+            <label htmlFor="password">PASSWORT</label>
+            <div className={`${styles.inputIcon} ${styles.passwordWrap}`}>
+              <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><rect x="4.5" y="10.5" width="15" height="9.5" rx="2.2" /><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3" /></svg>
               <input id="password" name="password" type={visible ? "text" : "password"} autoComplete={registering ? "new-password" : "current-password"} placeholder={registering ? "Mindestens 8 Zeichen" : "Dein Passwort"} minLength={registering ? 8 : undefined} required disabled={pending} />
               <button className={styles.visibility} type="button" aria-label={visible ? "Passwort ausblenden" : "Passwort anzeigen"} aria-controls="password" onClick={() => setVisible(!visible)} disabled={pending}>
                 <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" /><circle cx="12" cy="12" r="3" />{visible && <path d="m3 3 18 18" />}</svg>
