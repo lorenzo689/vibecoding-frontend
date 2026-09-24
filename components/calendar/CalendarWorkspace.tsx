@@ -15,6 +15,8 @@ import {
 import { deriveCourseBadge } from "@/lib/courseBadge";
 import EventDialog, { KIND_LABELS } from "./EventDialog";
 import EventCard from "./EventCard";
+import CalendarImport from "./CalendarImport";
+import { toEventInput, type ImportCandidate } from "@/lib/calendar/importModel";
 import {
   addMonths,
   buildMonthGrid,
@@ -75,6 +77,7 @@ export default function CalendarWorkspace() {
   const [actionError, setActionError] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [viewingEvent, setViewingEvent] = useState<CalendarEvent | undefined>(undefined);
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | undefined>(undefined);
   const [filters, setFilters] = useState<EventFilters>(defaultFilters);
@@ -135,6 +138,29 @@ export default function CalendarWorkspace() {
   function selectDay(day: DateKey) {
     setSelected(day);
     if (monthKeyOf(day) !== month) setMonth(monthKeyOf(day));
+  }
+
+  /**
+   * Imported entries are written one at a time on purpose. A single failure
+   * then costs one appointment instead of the whole batch, and the ones that
+   * did land stay visible - which matters when a source calendar holds a few
+   * hundred entries and one of them trips a constraint.
+   */
+  async function handleImport(candidates: ImportCandidate[], targetCourseId: string | null) {
+    setActionError(null);
+    const created: CalendarEvent[] = [];
+    let failed = 0;
+    for (const candidate of candidates) {
+      try {
+        created.push(await createEvent(toEventInput(candidate, targetCourseId)));
+      } catch {
+        failed += 1;
+      }
+    }
+    if (created.length > 0) setEvents((previous) => [...previous, ...created]);
+    if (failed > 0) setActionError(`${failed} Termine konnten nicht übernommen werden.`);
+    setStatusMessage(`${created.length} Termine wurden übernommen.`);
+    return created.length;
   }
 
   async function handleCreate(input: CalendarEventInput) {
@@ -208,9 +234,18 @@ export default function CalendarWorkspace() {
         </div>
         <div className={s.mastheadActions}>
           <div className={s.todayBadge}><span>HEUTE</span><strong>{Number(today.slice(-2))}</strong><small>{formatDateKey(today, { month: "long", year: "numeric" })}</small></div>
+          <button type="button" className={s.importButton} onClick={() => setImportOpen((open) => !open)} aria-expanded={importOpen}>Kalender übernehmen</button>
           <button type="button" className={s.createButton} onClick={() => setDialogOpen(true)}>+ Termin</button>
         </div>
       </header>
+      {importOpen && (
+        <CalendarImport
+          existing={events}
+          courses={courses}
+          onImport={handleImport}
+          onClose={() => setImportOpen(false)}
+        />
+      )}
       {actionError && <p className={shared.notice} role="alert">{actionError}</p>}
       <p role="status" aria-live="polite" className={s.visuallyHidden}>{statusMessage}</p>
 
