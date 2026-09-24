@@ -11,6 +11,9 @@
 .uploadButton { display: inline-flex; align-items: center; gap: var(--space-2); flex-shrink: 0; min-height: 46px; padding-inline: var(--space-5); color: #fff; background: linear-gradient(135deg, var(--doc-accent-a), var(--doc-accent-b)); border: 0; border-radius: 12px; font-size: 14px; font-weight: 650; cursor: pointer; transition: box-shadow var(--motion), transform var(--motion); }
 .uploadButton:hover:not(:disabled) { box-shadow: 0 14px 26px -14px rgba(14, 136, 80, 0.55); transform: translateY(-1px); }
 .uploadButton span { font-size: 17px; line-height: 1; }
+.dangerButtonSolid { display: inline-flex; align-items: center; gap: var(--space-2); flex-shrink: 0; min-height: 44px; padding-inline: var(--space-5); color: #fff; background: #dc2626; border: 0; border-radius: 12px; font-size: 13.5px; font-weight: 650; cursor: pointer; transition: background var(--motion); }
+.dangerButtonSolid:hover:not(:disabled) { background: #c11f1f; }
+.dangerButtonSolid svg { width: 16px; height: 16px; }
 .uploadNote { margin-top: var(--space-2); color: var(--doc-muted); font-size: 11px; }
 
 .backLink { display: inline-flex; align-items: center; gap: var(--space-2); min-height: 34px; margin-bottom: var(--space-5); padding: var(--space-1) var(--space-3) var(--space-1) var(--space-2); color: var(--doc-muted); background: transparent; border: 1px solid transparent; border-radius: 999px; font-size: 13px; font-weight: 600; white-space: nowrap; text-decoration: none; transition: color var(--motion), background var(--motion); }
@@ -223,27 +226,76 @@
 .deckCardIcon svg { width: 22px; height: 22px; }
 .deckCardTitle { font-size: 16px; font-weight: 650; letter-spacing: -.01em; overflow-wrap: anywhere; }
 .deckCardDate { color: var(--doc-muted); font: 600 10.5px/1.6 var(--font-geist-mono), monospace; letter-spacing: .04em; }
-.deckCardCount { display: inline-flex; margin-top: var(--space-2); padding: var(--space-1) var(--space-3); color: var(--doc-muted); background: #eef1ef; border-radius: 999px; font-size: 11.5px; font-weight: 650; }
+.deckCardPills { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-2); }
+.deckCardCount { display: inline-flex; padding: var(--space-1) var(--space-3); color: var(--doc-muted); background: #eef1ef; border-radius: 999px; font-size: 11.5px; font-weight: 650; }
+.deckCardScore { display: inline-flex; align-items: center; gap: 4px; padding: var(--space-1) var(--space-3); color: var(--doc-accent-b); background: #e9f7ef; border-radius: 999px; font-size: 11.5px; font-weight: 650; }
+.deckCardScore svg { width: 12px; height: 12px; }
+.deckCardProgressRow { display: flex; justify-content: space-between; margin-top: var(--space-4); color: var(--doc-muted); font-size: 11.5px; font-weight: 600; }
+.deckCardProgressTrack { width: 100%; height: 6px; margin-top: var(--space-2); background: #eef1ef; border-radius: 999px; overflow: hidden; }
+.deckCardProgressFill { height: 100%; background: linear-gradient(135deg, var(--doc-accent-a), var(--doc-accent-b)); border-radius: 999px; transition: width var(--motion); }
 .deckCardDelete { position: absolute; top: var(--space-4); right: var(--space-4); display: grid; place-items: center; width: 30px; height: 30px; color: var(--doc-muted); background: #fff; border: 1px solid var(--doc-line); border-radius: 8px; opacity: 0; transform: translateY(-4px); cursor: pointer; transition: opacity var(--motion), transform var(--motion), color var(--motion), border-color var(--motion); }
 .deckCardDelete svg { width: 14px; height: 14px; }
 .deckCard:hover .deckCardDelete, .deckCardDelete:focus-visible { opacity: 1; transform: translateY(0); }
 .deckCardDelete:hover:not(:disabled) { color: #b3392c; border-color: #f3c9c2; }
 .deckCardDelete:disabled { opacity: .5; cursor: not-allowed; }
 
-.studyPanel { display: flex; flex-direction: column; align-items: center; gap: var(--space-6); }
+.studyPanel { display: flex; flex-direction: column; align-items: center; gap: var(--space-8); padding-top: var(--space-6); }
 .studyPanel > .viewerLink { align-self: flex-start; }
-.studyCard { display: flex; width: 100%; max-width: 560px; min-height: 220px; flex-direction: column; align-items: center; justify-content: center; gap: var(--space-5); padding: var(--space-8); background: #f7f8f7; border: 1px solid var(--doc-line); border-radius: 20px; text-align: center; cursor: pointer; transition: border-color var(--motion), background var(--motion); }
-.studyCard:hover { border-color: var(--doc-accent-b); }
+.studyCard { position: relative; display: flex; width: 100%; max-width: 620px; min-height: 280px; flex-direction: column; align-items: center; justify-content: center; gap: var(--space-6); padding: var(--space-10) var(--space-8); background: #fff; border: 1px solid var(--doc-line); border-radius: 24px; box-shadow: 0 1px 2px rgba(16, 32, 26, 0.03); text-align: center; cursor: pointer; transition: border-color var(--motion), background var(--motion), box-shadow var(--motion); }
+.studyCard:hover { border-color: var(--doc-accent-b); box-shadow: 0 16px 32px -22px rgba(16, 32, 26, 0.3); }
 .studyCard[data-revealed="true"] { background: #eef8f2; }
-.studyQuestion { max-width: 46ch; font-size: 18px; font-weight: 650; line-height: 1.5; letter-spacing: -.01em; overflow-wrap: anywhere; }
+.studyBadgeRow { position: absolute; top: var(--space-5); left: var(--space-5); right: var(--space-5); display: flex; align-items: center; justify-content: space-between; }
+.studyStatusTag { padding: var(--space-1) var(--space-3); color: var(--doc-muted); background: #eef1ef; border-radius: 999px; font-size: 11px; font-weight: 650; letter-spacing: .03em; text-transform: uppercase; }
+.studyStatusTag[data-tone="known"] { color: var(--doc-accent-b); background: #e9f7ef; }
+.studyStarButton { display: grid; place-items: center; width: 34px; height: 34px; color: var(--doc-muted); background: #eef1ef; border: 0; border-radius: 10px; cursor: pointer; transition: color var(--motion), background var(--motion); }
+.studyStarButton svg { width: 16px; height: 16px; }
+.studyStarButton:hover { background: #e2e6e2; }
+.studyStarButton[data-active="true"] { color: #b45309; background: #fef3d9; }
+.studyQuestion { max-width: 46ch; font-size: 19px; font-weight: 650; line-height: 1.55; letter-spacing: -.01em; overflow-wrap: anywhere; }
 .studyHint { display: inline-flex; align-items: center; gap: var(--space-2); color: var(--doc-muted); font-size: 12px; font-weight: 600; }
 .studyHint svg { width: 14px; height: 14px; }
 .studyNav { display: flex; align-items: center; gap: var(--space-5); }
 .studyNav span { min-width: 4ch; color: var(--doc-muted); font: 600 12.5px/1 var(--font-geist-mono), monospace; text-align: center; }
-.studyNav button { display: inline-flex; align-items: center; gap: var(--space-2); min-height: 40px; padding-inline: var(--space-4); color: var(--doc-ink); background: #fff; border: 1.5px solid var(--doc-line); border-radius: 999px; font-size: 13px; font-weight: 650; cursor: pointer; transition: border-color var(--motion), background var(--motion); }
+.studyNav button { display: inline-flex; align-items: center; gap: var(--space-2); min-height: 42px; padding-inline: var(--space-5); color: var(--doc-ink); background: #f2f4f2; border: 0; border-radius: 999px; font-size: 13px; font-weight: 650; cursor: pointer; transition: background var(--motion); }
 .studyNav button svg { width: 15px; height: 15px; }
-.studyNav button:hover:not(:disabled) { background: #f7f8f7; border-color: #cfd6d0; }
+.studyNav button:hover:not(:disabled) { background: #e5e9e5; }
 .studyNav button:disabled { opacity: .45; cursor: not-allowed; }
+
+.rateRow { display: flex; gap: var(--space-3); width: 100%; max-width: 560px; }
+.rateAgain, .rateKnown { flex: 1; min-height: 46px; border-radius: 12px; font-size: 13.5px; font-weight: 650; cursor: pointer; transition: box-shadow var(--motion), background var(--motion); }
+.rateAgain { color: var(--doc-ink); background: #fff; border: 1.5px solid var(--doc-line); }
+.rateAgain:hover { background: #f7f8f7; border-color: #cfd6d0; }
+.rateKnown { color: #fff; background: linear-gradient(135deg, var(--doc-accent-a), var(--doc-accent-b)); border: 0; }
+.rateKnown:hover { box-shadow: 0 10px 20px -10px rgba(14, 136, 80, 0.5); }
+
+.manageSection { width: 100%; max-width: 640px; margin: var(--space-8) auto 0; text-align: center; }
+.manageToggle { display: inline-flex; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-5); color: var(--doc-ink); background: #fff; border: 1.5px solid var(--doc-line); border-radius: 999px; font-size: 13px; font-weight: 650; cursor: pointer; transition: border-color var(--motion), background var(--motion); }
+.manageToggle:hover { background: #f7f8f7; border-color: #cfd6d0; }
+.manageToggle svg { width: 14px; height: 14px; transition: transform var(--motion); }
+.manageToggle[data-open="true"] svg { transform: rotate(180deg); }
+
+.managePanel { margin-top: var(--space-5); padding: var(--space-6); background: #fff; border: 1px solid var(--doc-line); border-radius: 20px; box-shadow: 0 1px 2px rgba(16, 32, 26, 0.03); text-align: left; }
+.managePanelHead { display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-5); }
+.managePanelIcon { display: grid; place-items: center; width: 36px; height: 36px; flex-shrink: 0; color: var(--doc-accent-b); background: #d9f2e3; border-radius: 10px; }
+.managePanelIcon svg { width: 17px; height: 17px; }
+.managePanelHead h3 { font-size: 15px; font-weight: 700; letter-spacing: -.01em; }
+.managePanelHead p { margin-top: 1px; color: var(--doc-muted); font-size: 12px; }
+
+.manageForm { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); align-items: end; padding-bottom: var(--space-6); border-bottom: 1px solid var(--doc-line); }
+.manageForm .field { margin-top: 0; }
+.manageForm .uploadButton { grid-column: 1 / -1; justify-content: center; }
+
+.cardList { display: flex; flex-direction: column; gap: var(--space-2); margin-top: var(--space-5); padding: 0; list-style: none; }
+.cardListRow { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3) var(--space-4); background: #f7f8f7; border-radius: 12px; transition: background var(--motion); }
+.cardListRow:hover { background: #eef1ef; }
+.cardListIndex { display: grid; flex-shrink: 0; place-items: center; width: 22px; height: 22px; color: var(--doc-muted); background: #fff; border: 1px solid var(--doc-line); border-radius: 50%; font: 600 10px/1 var(--font-geist-mono), monospace; }
+.cardListRow span { flex: 1; min-width: 0; overflow: hidden; font-size: 13.5px; color: var(--doc-ink); font-weight: 550; text-overflow: ellipsis; white-space: nowrap; }
+.cardListRemove { display: grid; flex-shrink: 0; place-items: center; width: 30px; height: 30px; color: var(--doc-muted); background: none; border: 0; border-radius: 8px; cursor: pointer; transition: color var(--motion), background var(--motion); }
+.cardListRemove:hover { color: #b3392c; background: #fdecea; }
+
+@media (max-width: 560px) {
+  .manageForm { grid-template-columns: 1fr; }
+}
 .generatorCompact { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-3); }
 
 .srOnly { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }

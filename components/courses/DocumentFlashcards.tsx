@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { deleteDeck, getDeck, listCourseDecks, type Flashcard, type FlashcardDeck, type FlashcardDeckSummary } from "@/lib/supabase/queries/flashcards";
+import { getDeckProgress, markCardReviewed, toggleCardStarred } from "@/lib/flashcardProgress";
 import DocumentFlashcardGenerator from "./DocumentFlashcardGenerator";
 import styles from "@/components/documents/documents.module.css";
 
@@ -21,12 +22,25 @@ function formatShortDate(iso: string): string {
 function DeckStudy({ deck, onBack }: { deck: FlashcardDeck; onBack: () => void }) {
   const [index, setIndex] = useState(0);
   const [revealed, setRevealed] = useState(false);
+  const [, forceUpdate] = useState(0);
   const card: Flashcard | undefined = deck.cards[index];
+
+  useEffect(() => {
+    if (card) markCardReviewed(deck.materialId, card.id);
+  }, [deck.materialId, card]);
+
   if (!card) return null;
+  const progress = getDeckProgress(deck.materialId);
 
   function go(delta: number) {
     setRevealed(false);
     setIndex((current) => Math.min(deck.cards.length - 1, Math.max(0, current + delta)));
+  }
+
+  function toggleStar() {
+    if (!card) return;
+    toggleCardStarred(deck.materialId, card.id);
+    forceUpdate((current) => current + 1);
   }
 
   return (
@@ -38,6 +52,16 @@ function DeckStudy({ deck, onBack }: { deck: FlashcardDeck; onBack: () => void }
 
       <div className={styles.studyCard} data-revealed={revealed} onClick={() => setRevealed((current) => !current)} role="button" tabIndex={0}
         onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setRevealed((current) => !current); } }}>
+        <div className={styles.studyBadgeRow}>
+          <span className={styles.studyStatusTag} data-tone={progress.known.has(card.id) ? "known" : undefined}>
+            {progress.known.has(card.id) ? "Gewusst" : progress.reviewed.has(card.id) ? "Gesehen" : "Neu"}
+          </span>
+          <button type="button" className={styles.studyStarButton} data-active={progress.starred.has(card.id)}
+            aria-label={progress.starred.has(card.id) ? "Aus Favoriten entfernen" : "Als Favorit markieren"}
+            onClick={(event) => { event.stopPropagation(); toggleStar(); }}>
+            <svg viewBox="0 0 24 24" fill={progress.starred.has(card.id) ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="m12 3 2.6 5.6 6.1.7-4.5 4.2 1.2 6-5.4-3-5.4 3 1.2-6-4.5-4.2 6.1-.7Z" /></svg>
+          </button>
+        </div>
         <p className={styles.studyQuestion}>{revealed ? card.answer : card.question}</p>
         <span className={styles.studyHint}>
           <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 1 3 6.7" /><path d="M3 17v-5h5" /></svg>

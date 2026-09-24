@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import shared from "@/components/dashboard.module.css";
 import s from "./calendar.module.css";
 import { listCourses, type Course } from "@/lib/supabase/queries/courses";
 import {
@@ -178,12 +177,12 @@ export default function CalendarWorkspace() {
   }
 
   if (loading) {
-    return <div className={s.page} data-full-bleed aria-live="polite">Dein Kalender wird geladen …</div>;
+    return <div className={s.page} aria-live="polite">Dein Kalender wird geladen …</div>;
   }
 
   if (loadError && events.length === 0) {
     return (
-      <div className={s.page} data-full-bleed>
+      <div className={s.page}>
         <div className={s.empty} role="alert">
           <h2>Kalender nicht verfügbar</h2>
           <p>{loadError}</p>
@@ -199,7 +198,7 @@ export default function CalendarWorkspace() {
     .filter((course): course is Course => Boolean(course));
 
   return (
-    <div className={s.page} data-full-bleed>
+    <div className={s.page}>
       <header className={s.masthead}>
         <div className={s.mastheadText}>
           <p className={s.micro}>04 / KALENDER</p>
@@ -211,7 +210,7 @@ export default function CalendarWorkspace() {
           <button type="button" className={s.createButton} onClick={() => setDialogOpen(true)}>+ Termin</button>
         </div>
       </header>
-      {actionError && <p className={shared.notice} role="alert">{actionError}</p>}
+      {actionError && <p className={s.errorHint} role="alert">{actionError}</p>}
       <p role="status" aria-live="polite" className={s.visuallyHidden}>{statusMessage}</p>
 
       <div className={s.filterBar} role="group" aria-label="Termine filtern">
@@ -243,7 +242,7 @@ export default function CalendarWorkspace() {
         <div className={s.calendarColumn}>
           <section className={s.calendar} aria-labelledby="calendar-month">
             <header className={s.toolbar}>
-              <div><p className={shared.eyebrow}>DEIN MONAT</p><h2 id="calendar-month" aria-live="polite" aria-atomic="true">{monthLabel}</h2></div>
+              <div><p className={s.micro}>DEIN MONAT</p><h2 id="calendar-month" aria-live="polite" aria-atomic="true">{monthLabel}</h2></div>
               <div className={s.navigation}>
                 <button type="button" onClick={goToToday}>Heute</button>
                 <button type="button" aria-label="Vorheriger Monat" onClick={() => changeMonth(-1)}><span aria-hidden="true">‹</span></button>
@@ -306,7 +305,7 @@ export default function CalendarWorkspace() {
             )}
           </section>
           <section id="calendar-day-details" className={s.dayDetails} aria-labelledby="selected-day-heading">
-            <div className={shared.sectionHeader}>
+            <div className={s.sectionHeader}>
               <h2 id="selected-day-heading" aria-live="polite">{formatDateKey(selected, { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</h2>
               <button type="button" className={s.createButton} onClick={() => setDialogOpen(true)}>+ Termin an diesem Tag</button>
             </div>
@@ -314,7 +313,7 @@ export default function CalendarWorkspace() {
           </section>
         </div>
         <aside className={s.upcoming} aria-labelledby="upcoming-heading">
-          <div className={shared.sectionHeader}><h2 id="upcoming-heading">Als Nächstes</h2><small>{String(upcoming.length).padStart(2, "0")} TERMINE</small></div>
+          <div className={s.sectionHeader}><h2 id="upcoming-heading">Als Nächstes</h2><small>{String(upcoming.length).padStart(2, "0")} TERMINE</small></div>
           <ol className={s.upcomingList}>{upcoming.map((event) => {
             const day = localDateKey(event.startsAt);
             return (

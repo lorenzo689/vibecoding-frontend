@@ -5,7 +5,7 @@ import type { Course } from "@/lib/supabase/queries/courses";
 import type { CalendarEvent, CalendarEventInput, CalendarEventKind } from "@/lib/supabase/queries/calendar";
 import { formToIso, isoToFormDate, isoToFormTime, startOfDayIso, endOfDayIso, type DateKey } from "./dateUtils";
 import { useDialogA11y } from "@/components/useDialogA11y";
-import styles from "@/components/courses/courses.module.css";
+import styles from "@/components/courses/coursesList.module.css";
 
 export const KIND_LABELS: Record<CalendarEventKind, string> = {
   lecture: "Vorlesung",
