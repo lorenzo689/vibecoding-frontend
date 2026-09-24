@@ -1,7 +1,7 @@
 "use client";
 
 import type { IndexingProgress } from "./documentIndexing";
-import styles from "./courses.module.css";
+import styles from "./coursesList.module.css";
 
 const ICONS: Record<IndexingProgress["tone"], string> = {
   pending: "•",

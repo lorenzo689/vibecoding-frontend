@@ -150,7 +150,7 @@ export default function DocumentCourseChat({ courseId, courseTitle }: { courseId
           maxLength={1800}
           rows={1}
           readOnly={sending}
-          placeholder="Frag etwas zu diesem Kurs …"
+          placeholder="Frage etwas zu diesem Dokument …"
           onChange={(event) => setQuestion(event.target.value)}
           onKeyDown={(event) => {
             if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) {
