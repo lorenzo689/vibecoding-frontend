@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useAuthenticatedProfile } from "@/lib/auth/useAuthenticatedProfile";
 import s from "./dashboardFrame.module.css";
+
+const sidebarStorageKey = "lernapp-dashboard-sidebar";
 
 const items = [
   { href: "/dashboard", label: "Übersicht", icon: <path d="M4 4h7v7H4V4Zm9 0h7v4h-7V4ZM4 13h7v7H4v-7Zm9-2h7v9h-7v-9Z" /> },
@@ -18,6 +20,7 @@ const items = [
 export default function DashboardFrame({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { name, detail, initial, signingOut, logout } = useAuthenticatedProfile();
+  const [collapsed, setCollapsed] = useState(false);
 
   useEffect(() => {
     document.documentElement.dataset.theme = "light";
@@ -26,51 +29,84 @@ export default function DashboardFrame({ children }: { children: React.ReactNode
     };
   }, []);
 
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      try {
+        setCollapsed(localStorage.getItem(sidebarStorageKey) === "collapsed");
+      } catch { /* Navigation works without browser storage. */ }
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  function toggleCollapsed() {
+    setCollapsed((current) => {
+      const next = !current;
+      try { localStorage.setItem(sidebarStorageKey, next ? "collapsed" : "expanded"); } catch { /* Optional preference. */ }
+      return next;
+    });
+  }
+
   return (
     <div className={s.shell}>
-      <header className={s.topbar}>
-        <Link href="/dashboard" className={s.brand}>
-          <span className={s.logo} aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="6" cy="7" r="2.4" /><circle cx="18" cy="7" r="2.4" /><circle cx="12" cy="18" r="2.4" />
-              <path d="M8.1 8.2 10.5 16M15.9 8.2 13.5 16M8.4 7h7.2" />
-            </svg>
-          </span>
-          <span>Lernapp</span>
-        </Link>
-        <div className={s.search}>
-          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
-          <input type="search" placeholder="Kurse, Dokumente, Karteikarten durchsuchen …" aria-label="Globale Suche" />
-        </div>
-        <div className={s.topbarRight}>
-          <button type="button" className={s.bell} aria-label="Benachrichtigungen">
-            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9a6 6 0 1 1 12 0c0 4 1.5 5.5 1.5 5.5h-15S6 13 6 9Z" /><path d="M10 19a2 2 0 0 0 4 0" /></svg>
-            <span className={s.dot} aria-hidden="true" />
-          </button>
-          <Link href="/profile" className={s.profileChip}>
-            <span className={s.avatar} aria-hidden="true">{initial}</span>
-            <span className={s.identity}><strong>{name}</strong><small>{detail}</small></span>
+      <aside className={s.sidebar} data-collapsed={collapsed}>
+        <div className={s.brandRow}>
+          <Link href="/dashboard" className={s.brand} title={collapsed ? "Lernapp" : undefined}>
+            <span className={s.logo} aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="6" cy="7" r="2.4" /><circle cx="18" cy="7" r="2.4" /><circle cx="12" cy="18" r="2.4" />
+                <path d="M8.1 8.2 10.5 16M15.9 8.2 13.5 16M8.4 7h7.2" />
+              </svg>
+            </span>
+            {!collapsed && <span>Lernapp</span>}
           </Link>
+          {!collapsed && (
+            <button type="button" className={s.collapseToggle} onClick={toggleCollapsed} title="Navigation einklappen"
+              aria-expanded={!collapsed} aria-controls="dashboard-navigation" aria-label="Navigation einklappen">
+              <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M11 5 5 12l6 7M5 12h14" /></svg>
+            </button>
+          )}
         </div>
-      </header>
-      <div className={s.body}>
-        <aside className={s.sidebar}>
-          <nav aria-label="Hauptnavigation">
+        <div className={s.sidebarBody}>
+          {collapsed && (
+            <button type="button" className={s.collapseToggle} onClick={toggleCollapsed} title="Navigation ausklappen"
+              aria-expanded={!collapsed} aria-controls="dashboard-navigation" aria-label="Navigation ausklappen">
+              <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" data-flip="true"><path d="M11 5 5 12l6 7M5 12h14" /></svg>
+            </button>
+          )}
+          <nav aria-label="Hauptnavigation" id="dashboard-navigation">
             {items.map((item) => {
               const active = pathname === item.href || pathname.startsWith(item.href + "/");
               return (
-                <Link key={item.href} href={item.href} className={s.navItem} aria-current={active ? "page" : undefined} data-active={active}>
+                <Link key={item.href} href={item.href} className={s.navItem} aria-current={active ? "page" : undefined} data-active={active} title={collapsed ? item.label : undefined}>
                   <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">{item.icon}</svg>
                   <span>{item.label}</span>
                 </Link>
               );
             })}
           </nav>
-          <button type="button" className={s.logoutItem} onClick={logout} disabled={signingOut}>
+          <button type="button" className={s.logoutItem} onClick={logout} disabled={signingOut} title={collapsed ? "Abmelden" : undefined}>
             <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M9 20H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h3" /><path d="M15 16l4-4-4-4M19 12H9" /></svg>
             <span>{signingOut ? "Wird abgemeldet …" : "Abmelden"}</span>
           </button>
-        </aside>
+        </div>
+      </aside>
+      <div className={s.workspace}>
+        <header className={s.topbar}>
+          <div className={s.search}>
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+            <input type="search" placeholder="Kurse, Dokumente, Karteikarten durchsuchen …" aria-label="Globale Suche" />
+          </div>
+          <div className={s.topbarRight}>
+            <button type="button" className={s.bell} aria-label="Benachrichtigungen">
+              <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9a6 6 0 1 1 12 0c0 4 1.5 5.5 1.5 5.5h-15S6 13 6 9Z" /><path d="M10 19a2 2 0 0 0 4 0" /></svg>
+              <span className={s.dot} aria-hidden="true" />
+            </button>
+            <Link href="/profile" className={s.profileChip}>
+              <span className={s.avatar} aria-hidden="true">{initial}</span>
+              <span className={s.identity}><strong>{name}</strong><small>{detail}</small></span>
+            </Link>
+          </div>
+        </header>
         <main className={s.main}>{children}</main>
       </div>
     </div>

@@ -8,6 +8,7 @@ import {
   listCourseDecks,
   type FlashcardDeckSummary,
 } from "@/lib/supabase/queries/flashcards";
+import { getDeckProgress } from "@/lib/flashcardProgress";
 import CreateDeckDialog from "./CreateDeckDialog";
 import styles from "@/components/documents/documents.module.css";
 
@@ -98,24 +99,45 @@ export default function CourseFlashcardDecks({ courseId }: { courseId: string })
           </div>
         ) : (
           <ul className={styles.deckGrid}>
-            {decks.map((deck) => (
-              <li key={deck.materialId}>
-                <article className={styles.deckCard}>
-                  <button type="button" className={styles.deckCardDelete} aria-label={`„${deck.title}“ löschen`}
-                    onClick={() => void handleRemove(deck.materialId)} disabled={removingId === deck.materialId}>
-                    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M5 7h14M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2m2 0-.9 12.1a2 2 0 0 1-2 1.9H8.9a2 2 0 0 1-2-1.9L6 7Z" /></svg>
-                  </button>
-                  <span className={styles.deckCardIcon} aria-hidden="true"><DeckIcon /></span>
-                  <span className={styles.deckCardTitle}>{deck.title}</span>
-                  <span className={styles.deckCardDate}>ERSTELLT {formatShortDate(deck.createdAt)}</span>
-                  <span className={styles.deckCardCount}>{deck.cardCount} {deck.cardCount === 1 ? "Karte" : "Karten"}</span>
-                  <Link href={`/courses/${courseId}/flashcards/${deck.materialId}`} className={`${styles.deckCardAction} ${styles.deckCardActionPrimary}`}>
-                    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M8 5v14l11-7Z" /></svg>
-                    Jetzt lernen
-                  </Link>
-                </article>
-              </li>
-            ))}
+            {decks.map((deck) => {
+              const progress = getDeckProgress(deck.materialId);
+              const reviewedCount = Math.min(progress.reviewed.size, deck.cardCount);
+              const score = progress.reviewed.size > 0 ? Math.round((progress.known.size / progress.reviewed.size) * 100) : null;
+              const percent = deck.cardCount > 0 ? Math.round((reviewedCount / deck.cardCount) * 100) : 0;
+              return (
+                <li key={deck.materialId}>
+                  <article className={styles.deckCard}>
+                    <button type="button" className={styles.deckCardDelete} aria-label={`„${deck.title}“ löschen`}
+                      onClick={() => void handleRemove(deck.materialId)} disabled={removingId === deck.materialId}>
+                      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M5 7h14M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2m2 0-.9 12.1a2 2 0 0 1-2 1.9H8.9a2 2 0 0 1-2-1.9L6 7Z" /></svg>
+                    </button>
+                    <span className={styles.deckCardIcon} aria-hidden="true"><DeckIcon /></span>
+                    <span className={styles.deckCardTitle}>{deck.title}</span>
+                    <span className={styles.deckCardDate}>ERSTELLT {formatShortDate(deck.createdAt)}</span>
+                    <div className={styles.deckCardPills}>
+                      <span className={styles.deckCardCount}>{deck.cardCount} {deck.cardCount === 1 ? "Karte" : "Karten"}</span>
+                      {score !== null && (
+                        <span className={styles.deckCardScore}>
+                          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m4 15 5-5 4 4 7-7" /><path d="M14 7h6v6" /></svg>
+                          {score}%
+                        </span>
+                      )}
+                    </div>
+                    <div className={styles.deckCardProgressRow}>
+                      <span>Fortschritt</span>
+                      <span>{reviewedCount}/{deck.cardCount} gesehen</span>
+                    </div>
+                    <div className={styles.deckCardProgressTrack}>
+                      <div className={styles.deckCardProgressFill} style={{ width: `${percent}%` }} />
+                    </div>
+                    <Link href={`/courses/${courseId}/flashcards/${deck.materialId}`} className={`${styles.deckCardAction} ${styles.deckCardActionPrimary}`}>
+                      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M8 5v14l11-7Z" /></svg>
+                      Jetzt lernen
+                    </Link>
+                  </article>
+                </li>
+              );
+            })}
           </ul>
         )
       )}

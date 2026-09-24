@@ -1,6 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
+import { getCourse, type Course } from "@/lib/supabase/queries/courses";
+import { deriveCourseBadge } from "@/lib/courseBadge";
 import {
   deleteCourseSummary,
   getCourseSummary,
@@ -22,6 +25,7 @@ function wordCount(text: string): number {
 }
 
 export default function CourseSummaryEditor({ courseId }: { courseId: string }) {
+  const [course, setCourse] = useState<Course | null | undefined>(undefined);
   const [loading, setLoading] = useState(true);
   const [materialId, setMaterialId] = useState<string | null>(null);
   const [updatedAt, setUpdatedAt] = useState<string | null>(null);
@@ -33,6 +37,7 @@ export default function CourseSummaryEditor({ courseId }: { courseId: string }) 
 
   useEffect(() => {
     let active = true;
+    getCourse(courseId).then((value) => { if (active) setCourse(value); }).catch(() => { if (active) setCourse(null); });
     getCourseSummary(courseId)
       .then((summary) => {
         if (!active) return;
@@ -84,92 +89,85 @@ export default function CourseSummaryEditor({ courseId }: { courseId: string }) 
     }
   }
 
-  if (loading) return <p className={s.status} aria-live="polite">Zusammenfassung wird geladen …</p>;
-
-  if (error && !updatedAt && !editing) {
-    return <div className={s.empty} role="alert"><h3>Nicht verfügbar</h3><p>{error} Bitte lade die Seite erneut.</p></div>;
-  }
-
   const busy = saving || deleting;
+  const badge = course ? deriveCourseBadge(course.title) : null;
 
   return (
-    <div className={s.editor}>
-      <div className={s.meta}>
-        <span className={s.metaInfo}>
-          {updatedAt ? (
-            <>
-              <span>Zuletzt bearbeitet: {formatDate(updatedAt)}</span>
-              <span className={s.dot} aria-hidden="true">·</span>
-              <span>{wordCount(text)} Wörter</span>
-            </>
-          ) : (
-            <span>Noch nicht gespeichert</span>
-          )}
-        </span>
-        {!editing && (
-          <span className={s.metaActions}>
-            <button type="button" className={s.secondaryButton} onClick={() => setEditing(true)}>
-              Bearbeiten
-            </button>
-            {materialId && (
-              <button
-                type="button"
-                className={s.dangerButton}
-                onClick={handleDelete}
-                disabled={busy}
-              >
-                {deleting ? "Wird gelöscht …" : "Löschen"}
-              </button>
-            )}
-          </span>
-        )}
-      </div>
+    <div className={s.page}>
+      <Link href={`/courses/${courseId}`} className={s.backLink}>
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m11 5-6 7 6 7M5 12h14" /></svg>
+        Zurück zum Kurs
+      </Link>
 
-      {editing ? (
-        <>
-          <label className={s.field}>
-            <textarea
-              value={text}
-              onChange={(event) => setText(event.target.value)}
-              placeholder="Schreib hier deine Zusammenfassung für diesen Kurs …"
-              disabled={busy}
-            />
-          </label>
-          <div className={s.actions}>
-            <button
-              type="button"
-              className={s.primaryButton}
-              onClick={handleSave}
-              disabled={busy || !text.trim()}
-            >
-              {saving ? "Wird gespeichert …" : "Speichern"}
-            </button>
-            {updatedAt && (
-              <button
-                type="button"
-                className={s.secondaryButton}
-                onClick={() => setEditing(false)}
-                disabled={busy}
-              >
-                Abbrechen
-              </button>
-            )}
-            {error && (
-              <span className={s.status} data-tone="error">
-                {error}
+      <header className={s.courseHeader}>
+        {badge && <span className={s.icon} data-tone={badge.color}>{badge.code}</span>}
+        <div>
+          <h1>Zusammenfassung</h1>
+          <p className={s.subhead}>{course === undefined ? "Kurs wird geladen …" : course === null ? "Kurs nicht gefunden." : course.title}</p>
+        </div>
+      </header>
+
+      {loading ? (
+        <p className={s.status} aria-live="polite">Zusammenfassung wird geladen …</p>
+      ) : error && !updatedAt && !editing ? (
+        <div className={s.empty} role="alert"><h2>Nicht verfügbar</h2><p>{error} Bitte lade die Seite erneut.</p></div>
+      ) : (
+        <div className={s.card}>
+          <div className={s.meta}>
+            <span className={s.metaInfo}>
+              {updatedAt ? (
+                <>
+                  <span>Zuletzt bearbeitet: {formatDate(updatedAt)}</span>
+                  <span className={s.dot} aria-hidden="true">·</span>
+                  <span>{wordCount(text)} Wörter</span>
+                </>
+              ) : (
+                <span>Noch nicht gespeichert</span>
+              )}
+            </span>
+            {!editing && (
+              <span className={s.metaActions}>
+                <button type="button" className={s.secondaryButton} onClick={() => setEditing(true)}>
+                  Bearbeiten
+                </button>
+                {materialId && (
+                  <button type="button" className={s.dangerButton} onClick={handleDelete} disabled={busy}>
+                    {deleting ? "Wird gelöscht …" : "Löschen"}
+                  </button>
+                )}
               </span>
             )}
           </div>
-        </>
-      ) : (
-        <>
-          <p className={s.readOnlyText}>{text}</p>
-          {error && (
-            <p className={s.status} data-tone="error" role="alert">
-              {error}
-            </p>
+
+          {editing ? (
+            <>
+              <label className={s.field}>
+                <textarea
+                  value={text}
+                  onChange={(event) => setText(event.target.value)}
+                  placeholder="Schreib hier deine Zusammenfassung für diesen Kurs …"
+                  disabled={busy}
+                />
+              </label>
+              <div className={s.actions}>
+                <button type="button" className={s.primaryButton} onClick={handleSave} disabled={busy || !text.trim()}>
+                  {saving ? "Wird gespeichert …" : "Speichern"}
+                </button>
+                {updatedAt && (
+                  <button type="button" className={s.secondaryButton} onClick={() => setEditing(false)} disabled={busy}>
+                    Abbrechen
+                  </button>
+                )}
+                {error && <span className={s.status} data-tone="error">{error}</span>}
+              </div>
+            </>
+          ) : (
+            <>
+              <p className={s.readOnlyText}>{text}</p>
+              {error && <p className={s.status} data-tone="error" role="alert">{error}</p>}
+            </>
           )}
-        </>
+        </div>
       )}
     </div>
   );

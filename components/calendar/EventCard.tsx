@@ -6,7 +6,7 @@ import { deriveCourseBadge } from "@/lib/courseBadge";
 import { formatDateKey, formatEventWhen, localDateKey } from "./dateUtils";
 import { useDialogA11y } from "@/components/useDialogA11y";
 import { KIND_LABELS } from "./EventDialog";
-import styles from "@/components/courses/courses.module.css";
+import styles from "@/components/courses/coursesList.module.css";
 import s from "./calendar.module.css";
 
 /** Read-only detail card shown when a user clicks an event; leads into edit/delete. */

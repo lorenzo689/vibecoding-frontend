@@ -6,8 +6,8 @@ import Topbar from "./Topbar";
 import DashboardFrame from "./DashboardFrame";
 import styles from "./dashboard.module.css";
 
-const lightRoutes = ["/dashboard", "/documents", "/courses"];
-const lightRoutePattern = /^\/courses\/[^/]+(\/(documents(\/[^/]+)?|flashcards))?$/;
+const lightRoutes = ["/dashboard", "/documents", "/courses", "/calendar", "/grades", "/assistant", "/profile"];
+const lightRoutePattern = /^\/courses\/[^/]+(\/(documents(\/[^/]+)?|flashcards(\/[^/]+)?|summaries))?$/;
 
 export default function AppFrame({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();

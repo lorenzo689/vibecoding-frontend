@@ -21,7 +21,7 @@ export default function GradeStudio() {
   const data = useGradeCourses();
 
   return (
-    <div className={s.studio} data-full-bleed>
+    <div className={s.studio}>
       <header className={s.contextBar}>
         <div className={s.location}><span className={s.micro}>06 / NOTEN</span><h1>Noten.</h1></div>
         {data.courses.length > 0 && (

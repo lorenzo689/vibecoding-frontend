@@ -5,7 +5,7 @@ import type { Assessment, AssessmentInput, AssessmentKind, AssessmentStatus } fr
 import { parseGermanDecimal, validGrade, validEcts, pointsConsistent } from "./calculations";
 import { useDialogA11y } from "@/components/useDialogA11y";
 import { KIND_LABELS, STATUS_LABELS } from "./assessmentLabels";
-import styles from "@/components/courses/courses.module.css";
+import styles from "@/components/courses/coursesList.module.css";
 
 export default function AssessmentDialog({
   initial,
