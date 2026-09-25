@@ -113,9 +113,13 @@ Do not:
 - create backend commits
 - push backend changes
 
-Unless explicitly instructed otherwise, the backend repository's local `main` branch is the stable backend contract.
+Backend contract baseline:
 
-Do not silently use `origin/dev`, another branch, or unmerged backend work as the frontend contract.
+- Until the pending backend release merge `dev` → `main`, the backend `dev` branch at the revision recorded in the header of `lib/supabase/database.types.ts` is the integration baseline of this frontend. Backend `main` does not yet contain the features the frontend depends on (RLS, files, chat, calendar, grades), so it is not the complete contract.
+- After the release merge, backend `main` is the production contract again. Then update this section and re-sync `lib/supabase/database.types.ts` from `main`.
+- The baseline is a deliberate, documented state, not a permanent rule. Do not switch to another branch, an unmerged feature branch, or a different revision without an explicit instruction.
+- `lib/supabase/database.types.ts` is a verbatim copy of `../backend/types/database.types.ts`. Re-sync it as a whole when the baseline changes; never patch it by hand.
+- If frontend and backend disagree, report the drift instead of adapting the frontend to unmerged backend work.
 
 If a requested frontend feature requires backend functionality that does not exist on the current backend contract:
 

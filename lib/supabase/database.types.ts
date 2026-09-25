@@ -1,7 +1,6 @@
-// Synchronized from ../backend/types/database.types.ts at backend dev 367a8c9,
-// plus uncommitted follow-up migrations: grade_assessments_ects.sql (weight -> ects_credits),
-// calendar_events_end_after_start.sql (ends_at > starts_at constraint),
-// and calendar_events_all_day.sql (all_day flag).
+// Synchronized verbatim from ../backend/types/database.types.ts at backend dev 71d0389
+// (branch dev, before the pending dev -> main release merge). Do not edit by hand:
+// regenerate in the backend repo, then copy the file and update this header.
 // Keep this copy local so the standalone frontend CI does not depend on a sibling checkout.
 export type Json =
   | string
@@ -177,6 +176,35 @@ export type Database = {
           },
         ]
       }
+      chat_history_summaries: {
+        Row: {
+          content: string
+          conversation_id: string
+          through_seq: number
+          updated_at: string
+        }
+        Insert: {
+          content: string
+          conversation_id: string
+          through_seq: number
+          updated_at?: string
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          through_seq?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_history_summaries_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: true
+            referencedRelation: "chat_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chat_message_sources: {
         Row: {
           chunk_id: string | null
@@ -256,8 +284,11 @@ export type Database = {
           content: string
           conversation_id: string
           created_at: string
+          helpful: boolean | null
+          helpful_at: string | null
           id: string
           input_tokens: number | null
+          material_ids: string[] | null
           model: string | null
           output_tokens: number | null
           provider: string | null
@@ -269,8 +300,11 @@ export type Database = {
           content: string
           conversation_id: string
           created_at?: string
+          helpful?: boolean | null
+          helpful_at?: string | null
           id?: string
           input_tokens?: number | null
+          material_ids?: string[] | null
           model?: string | null
           output_tokens?: number | null
           provider?: string | null
@@ -282,8 +316,11 @@ export type Database = {
           content?: string
           conversation_id?: string
           created_at?: string
+          helpful?: boolean | null
+          helpful_at?: string | null
           id?: string
           input_tokens?: number | null
+          material_ids?: string[] | null
           model?: string | null
           output_tokens?: number | null
           provider?: string | null
@@ -309,6 +346,7 @@ export type Database = {
           input_tokens: number | null
           lease_token: string
           lease_until: string
+          material_ids: string[] | null
           model: string
           output_tokens: number | null
           provider: string
@@ -326,6 +364,7 @@ export type Database = {
           input_tokens?: number | null
           lease_token: string
           lease_until: string
+          material_ids?: string[] | null
           model: string
           output_tokens?: number | null
           provider: string
@@ -343,6 +382,7 @@ export type Database = {
           input_tokens?: number | null
           lease_token?: string
           lease_until?: string
+          material_ids?: string[] | null
           model?: string
           output_tokens?: number | null
           provider?: string
@@ -1252,10 +1292,23 @@ export type Database = {
       }
       can_upload_learning_file: { Args: { p_path: string }; Returns: boolean }
       chat_exchange: {
-        Args: { p_conversation_id: string; p_request_id: string }
+        Args: {
+          p_conversation_id: string
+          p_material_ids?: string[]
+          p_request_id: string
+        }
         Returns: Json
       }
       chat_exchange_payload: { Args: { p_message_id: string }; Returns: Json }
+      chat_feedback_stats: {
+        Args: { p_from?: string; p_to?: string }
+        Returns: {
+          helpful_count: number
+          model: string
+          not_helpful_count: number
+          provider: string
+        }[]
+      }
       claim_document_indexing: {
         Args: { p_document_id: string }
         Returns: Json
@@ -1329,6 +1382,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      normalize_chat_material_ids: {
+        Args: { p_material_ids: string[] }
+        Returns: string[]
+      }
       prepare_file_upload: {
         Args: {
           p_course_id: string
@@ -1363,6 +1420,7 @@ export type Database = {
         Args: {
           p_concurrent_responses: number
           p_conversation_id: string
+          p_material_ids?: string[]
           p_model: string
           p_provider: string
           p_question: string
@@ -1422,27 +1480,107 @@ export type Database = {
           isSetofReturn: false
         }
       }
-      search_document_chunks: {
+      save_chat_history_summary: {
         Args: {
-          p_course_id: string
-          p_embedding: string
-          p_embedding_dimensions: number
-          p_embedding_model: string
-          p_embedding_provider: string
-          p_limit?: number
-          p_min_similarity?: number
+          p_content: string
+          p_conversation_id: string
+          p_lease_token: string
+          p_previous_seq: number
+          p_request_id: string
+          p_through_seq: number
+          p_user_id: string
         }
-        Returns: {
-          chunk_index: number
-          content: string
-          document_id: string
-          id: string
-          material_id: string
-          metadata: Json
-          page_number: number
-          similarity: number
-        }[]
+        Returns: boolean
       }
+      search_document_chunks:
+        | {
+            Args: {
+              p_course_id: string
+              p_embedding: string
+              p_embedding_dimensions: number
+              p_embedding_model: string
+              p_embedding_provider: string
+              p_limit?: number
+              p_min_similarity?: number
+            }
+            Returns: {
+              chunk_index: number
+              content: string
+              document_id: string
+              id: string
+              material_id: string
+              metadata: Json
+              page_number: number
+              similarity: number
+            }[]
+          }
+        | {
+            Args: {
+              p_course_id: string
+              p_embedding: string
+              p_embedding_dimensions: number
+              p_embedding_model: string
+              p_embedding_provider: string
+              p_limit: number
+              p_material_ids: string[]
+              p_min_similarity: number
+            }
+            Returns: {
+              chunk_index: number
+              content: string
+              document_id: string
+              id: string
+              material_id: string
+              metadata: Json
+              page_number: number
+              similarity: number
+            }[]
+          }
+        | {
+            Args: {
+              p_course_id: string
+              p_embedding: string
+              p_embedding_dimensions: number
+              p_embedding_model: string
+              p_embedding_provider: string
+              p_limit: number
+              p_min_similarity: number
+              p_query: string
+            }
+            Returns: {
+              chunk_index: number
+              content: string
+              document_id: string
+              id: string
+              material_id: string
+              metadata: Json
+              page_number: number
+              similarity: number
+            }[]
+          }
+        | {
+            Args: {
+              p_course_id: string
+              p_embedding: string
+              p_embedding_dimensions: number
+              p_embedding_model: string
+              p_embedding_provider: string
+              p_limit: number
+              p_material_ids: string[]
+              p_min_similarity: number
+              p_query: string
+            }
+            Returns: {
+              chunk_index: number
+              content: string
+              document_id: string
+              id: string
+              material_id: string
+              metadata: Json
+              page_number: number
+              similarity: number
+            }[]
+          }
     }
     Enums: {
       [_ in never]: never

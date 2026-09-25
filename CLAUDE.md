@@ -90,8 +90,9 @@ The sibling backend repository is available at:
 
 Use it only as a READ-ONLY contract source when needed.
 
-Unless explicitly instructed otherwise, treat its local `main` branch as the stable
-backend contract.
+The backend contract baseline (currently backend `dev` until the pending release
+merge to `main`, see the revision in the header of `lib/supabase/database.types.ts`)
+is defined in `AGENTS.md`. Follow it there.
 
 Do not silently use another branch or unmerged backend work.
 
