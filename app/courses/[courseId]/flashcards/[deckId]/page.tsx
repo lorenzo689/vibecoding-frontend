@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import FlashcardDeckDetail from "@/components/flashcards/FlashcardDeckDetail";
 
 export const metadata: Metadata = {
-  title: "Karteikarten | Lernapp",
+  title: "Karteikarten | UniVerse",
   description: "Deine eigenen Karteikarten in diesem Deck.",
 };
 

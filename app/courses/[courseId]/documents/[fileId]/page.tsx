@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import CourseDocumentDetail from "@/components/courses/CourseDocumentDetail";
 
 export const metadata: Metadata = {
-  title: "Dokument | Lernapp",
+  title: "Dokument | UniVerse",
   description: "Einzelansicht eines hochgeladenen Dokuments.",
 };
 

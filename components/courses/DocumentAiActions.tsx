@@ -11,7 +11,7 @@ function asChatError(error: unknown): ChatError {
   return error instanceof ChatError ? error : new ChatError("LOAD_FAILED");
 }
 
-// Lernapp has no dedicated "summarize" or "explain" AI endpoint. Both actions
+// UniVerse has no dedicated "summarize" or "explain" AI endpoint. Both actions
 // below ask the same real course RAG chat (lib/chat.ts) a crafted one-off
 // question and show the answer — a real AI action, not a canned response.
 async function askOnce(courseId: string, question: string): Promise<string> {

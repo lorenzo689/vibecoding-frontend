@@ -19,8 +19,9 @@
   font-family: var(--font-geist-sans), sans-serif;
 }
 .card { width: 100%; max-width: 440px; padding: var(--space-10) var(--space-8) var(--space-8); background: #fff; border: 1px solid var(--auth-line); border-radius: 28px; box-shadow: 0 24px 60px -28px rgba(16, 32, 26, 0.22), 0 2px 10px rgba(16, 32, 26, 0.04); text-align: center; }
-.logo { display: grid; place-items: center; width: 64px; height: 64px; margin: 0 auto var(--space-6); color: #fff; background: linear-gradient(135deg, var(--auth-accent-a), var(--auth-accent-b)); border-radius: 20px; box-shadow: 0 12px 24px -10px rgba(14, 136, 80, 0.55); }
-.logo svg { width: 30px; height: 30px; }
+/* Wide wordmark: no fixed square or background, the artwork carries its own. */
+.logo { display: block; width: fit-content; margin: 0 auto var(--space-6); }
+.wordmark { width: auto; height: 60px; object-fit: contain; }
 
 .formContent { width: 100%; }
 .eyebrow { display: none; }

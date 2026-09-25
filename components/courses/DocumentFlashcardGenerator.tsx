@@ -13,7 +13,7 @@ function asChatError(error: unknown): ChatError {
 
 type Candidate = { question: string; answer: string; keep: boolean };
 
-// Lernapp has no dedicated flashcard-generation endpoint. This asks the real
+// UniVerse has no dedicated flashcard-generation endpoint. This asks the real
 // course RAG chat (lib/chat.ts) for cards in a strict, parseable format, then
 // lets the user review before anything is actually saved as a deck.
 function parseCandidates(text: string): Candidate[] {

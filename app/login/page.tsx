@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import AuthShell from "@/components/auth/AuthShell";
 import AuthForm from "@/components/auth/AuthForm";
 
-export const metadata: Metadata = { title: "Anmelden | Lernapp" };
+export const metadata: Metadata = { title: "Anmelden | UniVerse" };
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string; authError?: string; authNotice?: string }> }) {
   const params = await searchParams;

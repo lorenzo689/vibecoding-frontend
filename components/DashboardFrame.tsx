@@ -1,9 +1,11 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useAuthenticatedProfile } from "@/lib/auth/useAuthenticatedProfile";
+import logo from "@/components/ui/logo.png";
 import s from "./dashboardFrame.module.css";
 
 const sidebarStorageKey = "lernapp-dashboard-sidebar";
@@ -50,14 +52,17 @@ export default function DashboardFrame({ children }: { children: React.ReactNode
     <div className={s.shell}>
       <aside className={s.sidebar} data-collapsed={collapsed}>
         <div className={s.brandRow}>
-          <Link href="/dashboard" className={s.brand} title={collapsed ? "Lernapp" : undefined}>
-            <span className={s.logo} aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="6" cy="7" r="2.4" /><circle cx="18" cy="7" r="2.4" /><circle cx="12" cy="18" r="2.4" />
-                <path d="M8.1 8.2 10.5 16M15.9 8.2 13.5 16M8.4 7h7.2" />
-              </svg>
-            </span>
-            {!collapsed && <span>Lernapp</span>}
+          <Link href="/dashboard" className={s.brand} title={collapsed ? "UniVerse" : undefined}>
+            {collapsed ? (
+              <span className={s.logo} aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="6" cy="7" r="2.4" /><circle cx="18" cy="7" r="2.4" /><circle cx="12" cy="18" r="2.4" />
+                  <path d="M8.1 8.2 10.5 16M15.9 8.2 13.5 16M8.4 7h7.2" />
+                </svg>
+              </span>
+            ) : (
+              <Image src={logo} alt="UniVerse" className={s.wordmark} priority />
+            )}
           </Link>
           {!collapsed && (
             <button type="button" className={s.collapseToggle} onClick={toggleCollapsed} title="Navigation einklappen"

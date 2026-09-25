@@ -10,7 +10,7 @@ import {
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "E-Mail bestätigen | Lernapp",
+  title: "E-Mail bestätigen | UniVerse",
 };
 
 export default async function ConfirmPage() {

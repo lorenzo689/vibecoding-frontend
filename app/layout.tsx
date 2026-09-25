@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Lernapp",
+  title: "UniVerse",
   description: "Intelligenter Lern- und Vorlesungsassistent",
 };
 

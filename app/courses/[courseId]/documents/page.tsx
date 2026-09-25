@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import CourseDocuments from "@/components/courses/CourseDocuments";
 
 export const metadata: Metadata = {
-  title: "Unterlagen | Lernapp",
+  title: "Unterlagen | UniVerse",
   description: "Vorlesungsmaterial für diesen Kurs verwalten und hochladen.",
 };
 

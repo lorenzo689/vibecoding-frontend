@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Profil · Lernapp",
+  title: "Profil · UniVerse",
   description: "Persönliche Profil- und Kontoinformationen",
 };
 
