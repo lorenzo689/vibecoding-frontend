@@ -3,7 +3,7 @@
 import { Fragment, useEffect, useRef, useState, type FormEvent } from "react";
 import { createClient } from "@/lib/supabase/browser";
 import { createConversation, loadConversations, loadHistory, sendChat } from "@/lib/chat";
-import { ChatError, mergeExchange, sendBlockedReason, type ChatMessage, type ChatRequest } from "@/lib/chatProtocol";
+import { ChatError, mergeExchange, sendBlockedReason, withMaterialScope, type ChatMessage, type ChatRequest } from "@/lib/chatProtocol";
 import { useAuthenticatedProfile } from "@/lib/auth/useAuthenticatedProfile";
 import styles from "@/components/documents/documents.module.css";
 
@@ -21,11 +21,11 @@ function renderContent(content: string) {
   );
 }
 
-// A lightweight, embedded chat for the document-detail page. Answers use
-// context from every indexed material in the course (see lib/chat.ts) — the
-// backend has no per-document scoping, so this is a real course conversation,
-// not a document-scoped one.
-export default function DocumentCourseChat({ courseId, courseTitle }: { courseId: string; courseTitle: string }) {
+// A lightweight, embedded chat for the document-detail page. Every question is
+// scoped to the open document via `material_ids` (see withMaterialScope), so
+// retrieval and citations only come from that material. The conversation itself
+// still belongs to the course and is shared with the course-wide assistant.
+export default function DocumentCourseChat({ courseId, courseTitle, materialId }: { courseId: string; courseTitle: string; materialId: string }) {
   const { initial } = useAuthenticatedProfile();
   const [conversationId, setConversationId] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -81,7 +81,7 @@ export default function DocumentCourseChat({ courseId, courseTitle }: { courseId
         id = conversation.id;
         setConversationId(id);
       }
-      const request: ChatRequest = { conversation_id: id, request_id: crypto.randomUUID(), question: askedQuestion };
+      const request: ChatRequest = withMaterialScope({ conversation_id: id, request_id: crypto.randomUUID(), question: askedQuestion }, materialId);
       const exchange = await sendChat(client, request);
       if (!alive.current) return;
       setMessages((history) => mergeExchange(history, exchange));

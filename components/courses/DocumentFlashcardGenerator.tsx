@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/browser";
 import { createConversation, sendChat } from "@/lib/chat";
-import { ChatError } from "@/lib/chatProtocol";
+import { ChatError, withMaterialScope } from "@/lib/chatProtocol";
 import { addFlashcard, createDeck } from "@/lib/supabase/queries/flashcards";
 import styles from "@/components/documents/documents.module.css";
 
@@ -35,11 +35,13 @@ function parseCandidates(text: string): Candidate[] {
 
 export default function DocumentFlashcardGenerator({
   courseId,
+  materialId,
   fileName,
   onSaved,
   compact = false,
 }: {
   courseId: string;
+  materialId: string;
   fileName: string;
   onSaved: () => void;
   compact?: boolean;
@@ -61,11 +63,11 @@ export default function DocumentFlashcardGenerator({
     try {
       const client = createClient();
       const conversation = await createConversation(client, courseId);
-      const exchange = await sendChat(client, {
+      const exchange = await sendChat(client, withMaterialScope({
         conversation_id: conversation.id,
         request_id: crypto.randomUUID(),
         question: `Erstelle 8 Lernkarteikarten (Frage und Antwort) aus den Kursunterlagen, mit Schwerpunkt auf "${fileName}" falls dort relevanter Text indexiert ist. Antworte ausschließlich in diesem Format, eine Zeile pro Eintrag, ohne zusätzlichen Text:\nF1: <Frage>\nA1: <Antwort>\nF2: <Frage>\nA2: <Antwort>\n(und so weiter bis F8/A8)`,
-      });
+      }, materialId));
       const answer = exchange.messages.find((message) => message.role === "assistant")?.content ?? "";
       const parsed = parseCandidates(answer);
       if (parsed.length === 0) {

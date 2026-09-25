@@ -80,6 +80,9 @@ export default function CourseDocumentDetail({ courseId, fileId }: { courseId: s
   );
 
   const canView = file?.status === "ready" && progress?.tone === "ready";
+  // The AI tabs are scoped to this document's material. Without it they must not
+  // fall back to the whole course, so they stay unavailable until it is indexed.
+  const materialId = canView && file ? (statusByFile.get(file.id)?.materialId ?? null) : null;
   const inlineViewable = file ? INLINE_VIEWABLE_TYPES.has(file.type) : false;
 
   useEffect(() => {
@@ -196,27 +199,36 @@ export default function CourseDocumentDetail({ courseId, fileId }: { courseId: s
         </section>
       )}
 
-      {tab === "chat" && (
+      {(tab === "chat" || tab === "actions" || tab === "quizzes") && !materialId && (
         <section className={styles.viewerCard}>
-          <DocumentCourseChat courseId={courseId} courseTitle={course.title} />
+          <div className={styles.viewerEmpty}>
+            <p><strong>Noch nicht für dieses Dokument verfügbar.</strong></p>
+            <p>Die KI arbeitet nur mit diesem Dokument und braucht dafür den fertig indexierten Text. Aktueller Stand: {progress!.label}</p>
+          </div>
         </section>
       )}
 
-      {tab === "actions" && (
+      {tab === "chat" && materialId && (
         <section className={styles.viewerCard}>
-          <DocumentAiActions courseId={courseId} courseTitle={course.title} fileName={file.name} />
+          <DocumentCourseChat courseId={courseId} courseTitle={course.title} materialId={materialId} />
+        </section>
+      )}
+
+      {tab === "actions" && materialId && (
+        <section className={styles.viewerCard}>
+          <DocumentAiActions courseId={courseId} courseTitle={course.title} fileName={file.name} materialId={materialId} />
         </section>
       )}
 
       {tab === "flashcards" && (
         <section className={styles.viewerCard}>
-          <DocumentFlashcards courseId={courseId} fileName={file.name} />
+          <DocumentFlashcards courseId={courseId} materialId={materialId} fileName={file.name} />
         </section>
       )}
 
-      {tab === "quizzes" && (
+      {tab === "quizzes" && materialId && (
         <section className={styles.viewerCard}>
-          <DocumentQuizzes courseId={courseId} fileName={file.name} />
+          <DocumentQuizzes courseId={courseId} materialId={materialId} fileName={file.name} />
         </section>
       )}
 

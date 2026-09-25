@@ -14,7 +14,16 @@ export type ChatMessage = {
   request_id?: string;
   chat_message_sources: ChatSource[];
 };
-export type ChatRequest = { conversation_id: string; request_id: string; question: string };
+// `material_ids` is the backend's optional material scope: omitted means the whole
+// course; present means retrieval is limited to exactly these materials. The backend
+// rejects an empty list and treats it as part of the request identity, so a retry of a
+// request must carry the same scope.
+export type ChatRequest = {
+  conversation_id: string;
+  request_id: string;
+  question: string;
+  material_ids?: [string, ...string[]];
+};
 export type ChatExchange = {
   conversation_id: string;
   request_id: string;
@@ -66,6 +75,11 @@ export function validateQuestion(question: string): boolean {
 // Only these failures establish that the user can safely change the question.
 export function canDiscardRequest(code: string): boolean {
   return ["INVALID_REQUEST", "CONVERSATION_NOT_FOUND", "NO_INDEXED_MATERIAL", "NO_RELEVANT_MATERIAL"].includes(code);
+}
+
+/** Limits a request to a single material, e.g. the document that is currently open. */
+export function withMaterialScope(request: ChatRequest, materialId: string): ChatRequest {
+  return { ...request, material_ids: [materialId] };
 }
 
 export function mergeExchange(history: ChatMessage[], exchange: ChatExchange): ChatMessage[] {
