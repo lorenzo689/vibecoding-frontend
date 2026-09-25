@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { getCourse, type Course } from "@/lib/supabase/queries/courses";
@@ -15,7 +15,14 @@ import {
   listCourseDocumentStatuses,
   type CourseDocumentStatus,
 } from "@/lib/supabase/queries/documents";
-import { describeIndexingProgress, type IndexingTone } from "./documentIndexing";
+import {
+  describeIndexingProgress,
+  retryStage,
+  STATUS_POLL_INTERVAL_MS,
+  STATUS_POLL_MAX_ATTEMPTS,
+  type IndexingTone,
+} from "./documentIndexing";
+import DocumentRetryButton from "./DocumentRetryButton";
 import DocumentCourseChat from "./DocumentCourseChat";
 import DocumentAiActions from "./DocumentAiActions";
 import DocumentFlashcards from "./DocumentFlashcards";
@@ -80,6 +87,35 @@ export default function CourseDocumentDetail({ courseId, fileId }: { courseId: s
   );
 
   const canView = file?.status === "ready" && progress?.tone === "ready";
+  const documentStatus = file ? statusByFile.get(file.id) : undefined;
+  const retry = file ? retryStage(file.status, documentStatus ?? null) : null;
+  const hasUnfinishedDocument = progress?.inProgress ?? false;
+  const pollAttemptsRef = useRef(0);
+
+  const refreshDocument = useCallback(async () => {
+    const [nextFiles, nextStatuses] = await Promise.all([listCourseFiles(courseId), listCourseDocumentStatuses(courseId)]);
+    setFile(nextFiles.find((entry) => entry.id === fileId) ?? null);
+    setDocumentStatuses(nextStatuses);
+  }, [courseId, fileId]);
+
+  // Follow the status while the document is unfinished, e.g. after a retry was started.
+  useEffect(() => {
+    if (!hasUnfinishedDocument) {
+      pollAttemptsRef.current = 0;
+      return;
+    }
+    const timer = setInterval(() => {
+      if (pollAttemptsRef.current >= STATUS_POLL_MAX_ATTEMPTS) {
+        clearInterval(timer);
+        return;
+      }
+      pollAttemptsRef.current += 1;
+      refreshDocument().catch(() => {
+        // A transient status request failure is not worth an error banner; the next tick retries.
+      });
+    }, STATUS_POLL_INTERVAL_MS);
+    return () => clearInterval(timer);
+  }, [hasUnfinishedDocument, refreshDocument]);
   // The AI tabs are scoped to this document's material. Without it they must not
   // fall back to the whole course, so they stay unavailable until it is indexed.
   const materialId = canView && file ? (statusByFile.get(file.id)?.materialId ?? null) : null;
@@ -182,6 +218,15 @@ export default function CourseDocumentDetail({ courseId, fileId }: { courseId: s
               <div className={styles.viewerEmpty}>
                 <p><strong>{TONE_LABELS[progress!.tone]}</strong></p>
                 <p>{progress!.detail ?? "Dieses Dokument ist noch nicht zur Vorschau bereit."}</p>
+                {documentStatus && retry && (
+                  <DocumentRetryButton
+                    documentId={documentStatus.documentId}
+                    stage={retry}
+                    onRestarted={refreshDocument}
+                    className={styles.uploadButton}
+                    errorClassName={styles.errorHint}
+                  />
+                )}
               </div>
             ) : !inlineViewable ? (
               <div className={styles.viewerEmpty}>

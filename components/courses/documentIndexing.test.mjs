@@ -1,7 +1,7 @@
 // Run with Node 22+: node --test components/courses/documentIndexing.test.mjs
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { describeIndexingProgress } from "./documentIndexing.ts";
+import { describeIndexingProgress, retryStage } from "./documentIndexing.ts";
 
 const extracted = { processingStatus: "ready", errorCode: null };
 
@@ -106,4 +106,36 @@ test("file level states short-circuit the document pipeline", () => {
   const legacy = describeIndexingProgress("unverified", null);
   assert.equal(legacy.tone, "pending");
   assert.equal(legacy.inProgress, false);
+});
+
+const state = (patch) => ({ processingStatus: "ready", errorCode: null, indexingStatus: "ready", indexingError: null, ...patch });
+
+test("retry is offered for transient processing and indexing failures", () => {
+  for (const errorCode of ["PROCESSING_FAILED", "PROCESSING_TIMEOUT"]) {
+    assert.equal(retryStage("ready", state({ processingStatus: "failed", errorCode, indexingStatus: "pending" })), "processing");
+  }
+  assert.equal(retryStage("ready", state({ indexingStatus: "failed", indexingError: "INDEXING_TIMEOUT" })), "indexing");
+});
+
+test("retry is not offered for permanent failures such as unsupported formats", () => {
+  for (const errorCode of ["UNSUPPORTED_FORMAT", "INVALID_DOCUMENT", "SOURCE_DELETED"]) {
+    assert.equal(retryStage("ready", state({ processingStatus: "failed", errorCode, indexingStatus: "pending" })), null);
+  }
+  assert.equal(retryStage("ready", state({ indexingStatus: "failed", indexingError: "INVALID_INDEXING_INPUT" })), null);
+});
+
+test("retry is not offered while unfinished, when ready, or without a source document", () => {
+  for (const patch of [
+    { processingStatus: "uploaded", indexingStatus: "pending" },
+    { processingStatus: "processing", indexingStatus: "pending" },
+    { indexingStatus: "pending" },
+    { indexingStatus: "processing" },
+    {},
+  ]) assert.equal(retryStage("ready", state(patch)), null);
+  assert.equal(retryStage("ready", null), null);
+});
+
+test("retry is only offered for confirmed files, never for failed uploads", () => {
+  const failed = state({ processingStatus: "failed", errorCode: "PROCESSING_TIMEOUT", indexingStatus: "pending" });
+  for (const status of ["pending", "failed", "unverified", "deleting"]) assert.equal(retryStage(status, failed), null);
 });
