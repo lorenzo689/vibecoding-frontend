@@ -3,7 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { createClient } from "@/lib/supabase/browser";
 import { createConversation, sendChat } from "@/lib/chat";
-import { ChatError } from "@/lib/chatProtocol";
+import { ChatError, withMaterialScope } from "@/lib/chatProtocol";
 import { saveCourseSummary } from "@/lib/supabase/queries/summaries";
 import styles from "@/components/documents/documents.module.css";
 
@@ -13,17 +13,18 @@ function asChatError(error: unknown): ChatError {
 
 // UniVerse has no dedicated "summarize" or "explain" AI endpoint. Both actions
 // below ask the same real course RAG chat (lib/chat.ts) a crafted one-off
-// question and show the answer — a real AI action, not a canned response.
-async function askOnce(courseId: string, question: string): Promise<string> {
+// question, scoped to the open document via `material_ids`, and show the
+// answer — a real AI action, not a canned response.
+async function askOnce(courseId: string, materialId: string, question: string): Promise<string> {
   const client = createClient();
   const conversation = await createConversation(client, courseId);
-  const exchange = await sendChat(client, { conversation_id: conversation.id, request_id: crypto.randomUUID(), question });
+  const exchange = await sendChat(client, withMaterialScope({ conversation_id: conversation.id, request_id: crypto.randomUUID(), question }, materialId));
   const answer = exchange.messages.find((message) => message.role === "assistant");
   if (!answer) throw new ChatError("INVALID_ANSWER_RESPONSE");
   return answer.content;
 }
 
-export default function DocumentAiActions({ courseId, courseTitle, fileName }: { courseId: string; courseTitle: string; fileName: string }) {
+export default function DocumentAiActions({ courseId, courseTitle, fileName, materialId }: { courseId: string; courseTitle: string; fileName: string; materialId: string }) {
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [summaryResult, setSummaryResult] = useState<string | null>(null);
   const [summaryError, setSummaryError] = useState<string | null>(null);
@@ -40,7 +41,7 @@ export default function DocumentAiActions({ courseId, courseTitle, fileName }: {
     setSummaryError(null);
     setSummarySaved(false);
     try {
-      const answer = await askOnce(courseId, `Fasse den Inhalt der Kursunterlagen kurz und verständlich zusammen. Achte besonders auf "${fileName}", falls dort relevanter Text indexiert ist.`);
+      const answer = await askOnce(courseId, materialId, `Fasse den Inhalt der Kursunterlagen kurz und verständlich zusammen. Achte besonders auf "${fileName}", falls dort relevanter Text indexiert ist.`);
       setSummaryResult(answer);
     } catch (error) {
       setSummaryError(asChatError(error).message);
@@ -69,7 +70,7 @@ export default function DocumentAiActions({ courseId, courseTitle, fileName }: {
     setExplainLoading(true);
     setExplainError(null);
     try {
-      const answer = await askOnce(courseId, `Erkläre das Konzept "${trimmed}" verständlich anhand der Kursunterlagen. Nutze wenn möglich ein Beispiel.`);
+      const answer = await askOnce(courseId, materialId, `Erkläre das Konzept "${trimmed}" verständlich anhand der Kursunterlagen. Nutze wenn möglich ein Beispiel.`);
       setExplainResult(answer);
     } catch (error) {
       setExplainError(asChatError(error).message);

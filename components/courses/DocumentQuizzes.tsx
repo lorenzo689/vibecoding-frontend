@@ -3,7 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { createClient } from "@/lib/supabase/browser";
 import { createConversation, sendChat } from "@/lib/chat";
-import { ChatError } from "@/lib/chatProtocol";
+import { ChatError, withMaterialScope } from "@/lib/chatProtocol";
 import styles from "@/components/documents/documents.module.css";
 
 function asChatError(error: unknown): ChatError {
@@ -184,7 +184,7 @@ function QuizResults({ quiz, onBack }: { quiz: Quiz; onBack: () => void }) {
   );
 }
 
-export default function DocumentQuizzes({ courseId, fileName }: { courseId: string; fileName: string }) {
+export default function DocumentQuizzes({ courseId, materialId, fileName }: { courseId: string; materialId: string; fileName: string }) {
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
   const [openId, setOpenId] = useState<string | null>(null);
   const [showResultsId, setShowResultsId] = useState<string | null>(null);
@@ -203,11 +203,11 @@ export default function DocumentQuizzes({ courseId, fileName }: { courseId: stri
     try {
       const client = createClient();
       const conversation = await createConversation(client, courseId);
-      const exchange = await sendChat(client, {
+      const exchange = await sendChat(client, withMaterialScope({
         conversation_id: conversation.id,
         request_id: crypto.randomUUID(),
         question: `Erstelle einen Multiple-Choice-Test mit ${count} Fragen (je 4 Antwortoptionen, genau eine richtig) aus den Kursunterlagen, mit Schwerpunkt auf "${fileName}" falls dort relevanter Text indexiert ist. Antworte ausschließlich in diesem Format, eine Zeile pro Eintrag, ohne zusätzlichen Text:\nF1: <Frage>\nO1A: <Option A>\nO1B: <Option B>\nO1C: <Option C>\nO1D: <Option D>\nK1: <Buchstabe der richtigen Option, z. B. B>\nE1: <kurze Erklärung mit Bezug zum Text>\n(und so weiter bis F${count})`,
-      });
+      }, materialId));
       const answer = exchange.messages.find((message) => message.role === "assistant")?.content ?? "";
       const questions = parseQuiz(answer);
       if (questions.length === 0) {

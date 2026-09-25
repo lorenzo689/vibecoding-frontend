@@ -14,6 +14,8 @@ function CardIcon() {
   );
 }
 
+const GENERATION_UNAVAILABLE = "Neue Karteikarten kann die KI erst erstellen, wenn dieses Dokument fertig indexiert ist.";
+
 function formatShortDate(iso: string): string {
   return new Intl.DateTimeFormat("de-DE", { day: "2-digit", month: "short", year: "numeric" }).format(new Date(iso)).toUpperCase();
 }
@@ -84,7 +86,10 @@ function DeckStudy({ deck, onBack }: { deck: FlashcardDeck; onBack: () => void }
   );
 }
 
-export default function DocumentFlashcards({ courseId, fileName }: { courseId: string; fileName: string }) {
+// Existing decks are course content and always stay visible. Only generating new cards
+// needs the open document's material for its AI scope; without it (document not indexed
+// yet) generation is unavailable rather than falling back to the whole course.
+export default function DocumentFlashcards({ courseId, materialId, fileName }: { courseId: string; materialId: string | null; fileName: string }) {
   const [decks, setDecks] = useState<FlashcardDeckSummary[] | undefined>(undefined);
   const [openDeck, setOpenDeck] = useState<FlashcardDeck | null>(null);
   const [openError, setOpenError] = useState<string | null>(null);
@@ -130,7 +135,15 @@ export default function DocumentFlashcards({ courseId, fileName }: { courseId: s
   }
 
   if (decks.length === 0) {
-    return <DocumentFlashcardGenerator courseId={courseId} fileName={fileName} onSaved={refreshDecks} />;
+    if (!materialId) {
+      return (
+        <div className={styles.panelEmpty}>
+          <h3>Karteikarten erstellen</h3>
+          <p>{GENERATION_UNAVAILABLE}</p>
+        </div>
+      );
+    }
+    return <DocumentFlashcardGenerator courseId={courseId} materialId={materialId} fileName={fileName} onSaved={refreshDecks} />;
   }
 
   return (
@@ -140,7 +153,9 @@ export default function DocumentFlashcards({ courseId, fileName }: { courseId: s
           <h2>Deine Karteikarten-Sets</h2>
           <p>{decks.length} {decks.length === 1 ? "Set verfügbar" : "Sets verfügbar"}</p>
         </div>
-        <DocumentFlashcardGenerator courseId={courseId} fileName={fileName} onSaved={refreshDecks} compact />
+        {materialId
+          ? <DocumentFlashcardGenerator courseId={courseId} materialId={materialId} fileName={fileName} onSaved={refreshDecks} compact />
+          : <div><p>{GENERATION_UNAVAILABLE}</p></div>}
       </div>
       {openError && <p className={styles.errorHint} role="alert">{openError}</p>}
       <ul className={styles.deckGrid}>
