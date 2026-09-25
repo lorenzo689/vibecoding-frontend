@@ -1,13 +1,14 @@
 import { FunctionsHttpError, type SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/lib/supabase/database.types";
 import { ChatError, type ChatCourse, type ChatExchange, type ChatMessage, type ChatRequest, type Conversation } from "./chatProtocol";
 
-export async function loadCourses(client: SupabaseClient): Promise<ChatCourse[]> {
+export async function loadCourses(client: SupabaseClient<Database>): Promise<ChatCourse[]> {
   const { data, error } = await client.from("courses").select("id, title").order("title");
   if (error) throw new ChatError("LOAD_FAILED");
   return data ?? [];
 }
 
-export async function loadConversations(client: SupabaseClient, courseId: string): Promise<Conversation[]> {
+export async function loadConversations(client: SupabaseClient<Database>, courseId: string): Promise<Conversation[]> {
   const { data, error } = await client.from("chat_conversations")
     .select("id, course_id, title, updated_at").eq("course_id", courseId)
     .order("updated_at", { ascending: false });
@@ -15,7 +16,7 @@ export async function loadConversations(client: SupabaseClient, courseId: string
   return data ?? [];
 }
 
-export async function hasIndexedMaterial(client: SupabaseClient, courseId: string): Promise<boolean> {
+export async function hasIndexedMaterial(client: SupabaseClient<Database>, courseId: string): Promise<boolean> {
   const { data, error } = await client.from("source_documents")
     .select("id, materials!source_documents_material_id_fkey!inner(course_id)")
     .eq("materials.course_id", courseId).eq("indexing_status", "ready").limit(1);
@@ -23,14 +24,14 @@ export async function hasIndexedMaterial(client: SupabaseClient, courseId: strin
   return Boolean(data?.length);
 }
 
-export async function createConversation(client: SupabaseClient, courseId: string): Promise<Conversation> {
+export async function createConversation(client: SupabaseClient<Database>, courseId: string): Promise<Conversation> {
   const { data, error } = await client.from("chat_conversations").insert({ course_id: courseId })
     .select("id, course_id, title, updated_at").single();
   if (error || !data) throw new ChatError("LOAD_FAILED");
   return data;
 }
 
-export async function loadHistory(client: SupabaseClient, conversationId: string): Promise<ChatMessage[]> {
+export async function loadHistory(client: SupabaseClient<Database>, conversationId: string): Promise<ChatMessage[]> {
   const messages: ChatMessage[] = [];
   // Explicit pagination avoids silently dropping history beyond the API row limit.
   for (let offset = 0; ; offset += 100) {
@@ -43,7 +44,7 @@ export async function loadHistory(client: SupabaseClient, conversationId: string
   }
 }
 
-export async function sendChat(client: SupabaseClient, request: ChatRequest): Promise<ChatExchange> {
+export async function sendChat(client: SupabaseClient<Database>, request: ChatRequest): Promise<ChatExchange> {
   // Use the signed-in user's JWT, never the public project key as Bearer token.
   const { data: { session }, error: sessionError } = await client.auth.getSession();
   if (sessionError || !session) throw new ChatError("UNAUTHENTICATED");

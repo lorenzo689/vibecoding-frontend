@@ -32,8 +32,9 @@ Die Anwendung ist anschließend unter `http://127.0.0.1:3000` erreichbar.
 
 ## Backend-Vertrag
 
-Das Frontend ist gegen den read-only geprüften Backend-Stand `dev` bei
-`1bf6374` synchronisiert. Die lokale Typkopie liegt unter
+Das Frontend ist gegen den Backend-Stand `dev` synchronisiert, bis der
+Release-Merge `dev` → `main` erfolgt ist (Regeln in `AGENTS.md`). Der genaue
+Commit steht im Kopf der Typkopie unter
 `lib/supabase/database.types.ts`; zur Laufzeit und in CI besteht keine
 Abhängigkeit auf einen benachbarten Backend-Checkout.
 

@@ -2,6 +2,12 @@
 
 Last reviewed: 2026-09-16
 
+> **Historical snapshot.** Written on 2026-09-16 and not updated since. Chat
+> feedback, chat history summaries, hybrid search, the chat material scope and
+> the UniVerse rename came later and are not described here. The current backend
+> baseline is defined in `AGENTS.md`; its revision is recorded in the header of
+> `lib/supabase/database.types.ts`. The revisions listed below are historical.
+
 This document is an advisory snapshot and may become outdated. Repository
 contents, installed dependencies, migrations and generated types remain
 authoritative.
@@ -25,6 +31,10 @@ Selected backend contract:
 
 The backend was inspected read-only. This task explicitly selected `dev`; that
 does not permanently replace the default branch rule in `AGENTS.md`.
+
+> Historical note: at the time of this snapshot, `dev` was explicitly selected
+> for this task. The statement above is superseded by the current backend
+> contract baseline documented in `AGENTS.md`.
 
 ## Frontend Stack
 
@@ -71,7 +81,9 @@ Protected product areas:
 ## Database Contract
 
 Frontend Supabase clients use the synchronized types in
-`lib/supabase/database.types.ts`, copied from backend `dev` at `1bf6374`.
+`lib/supabase/database.types.ts`, a verbatim copy of the backend types (at the
+time of this snapshot from backend `dev` at `1bf6374`; the current revision is
+recorded in that file's header).
 
 The current profile contract is:
 
