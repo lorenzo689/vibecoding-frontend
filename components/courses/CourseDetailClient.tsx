@@ -18,7 +18,8 @@ import {
 } from "@/lib/supabase/queries/documents";
 import { deriveCourseBadge } from "@/lib/courseBadge";
 import DocumentIndexingStatus from "./DocumentIndexingStatus";
-import { describeIndexingProgress } from "./documentIndexing";
+import DocumentRetryButton from "./DocumentRetryButton";
+import { describeIndexingProgress, retryStage, STATUS_POLL_INTERVAL_MS, STATUS_POLL_MAX_ATTEMPTS } from "./documentIndexing";
 import styles from "./coursesList.module.css";
 
 function formatSize(bytes: number): string {
@@ -53,13 +54,6 @@ function uploadErrorMessage(error: unknown): string {
   const code = error instanceof Error ? error.message : "";
   return UPLOAD_ERROR_MESSAGES[code] ?? "Die Datei konnte nicht hochgeladen werden.";
 }
-
-// The backend publishes no realtime channel for document processing
-// (../lernapp_backend/docs/documents.md), so unfinished documents are polled.
-// The regular cron worker runs once a minute; the cap keeps a document that
-// never reaches a final state from polling for the whole session.
-const STATUS_POLL_INTERVAL_MS = 5000;
-const STATUS_POLL_MAX_ATTEMPTS = 120;
 
 export default function CourseDetailClient({ courseId }: { courseId: string }) {
   const router = useRouter();
@@ -119,6 +113,14 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
     ]);
     return { nextFiles, nextStatuses };
   }, [courseId]);
+
+  // Reloads the real status after a retry was started; the unfinished document then
+  // keeps the polling below running until it is ready or failed again.
+  async function handleRetryRestarted() {
+    const { nextFiles, nextStatuses } = await refreshStatuses();
+    setFiles(nextFiles);
+    setDocumentStatuses(nextStatuses);
+  }
 
   // Poll while at least one document is still being verified, extracted or
   // indexed. Navigating away or reaching a final state stops the interval.
@@ -347,7 +349,23 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
                 ) : (
                   <span className={styles.fileName}>{file.name}</span>
                 )}
-                <DocumentIndexingStatus fileName={file.name} progress={progress} />
+                <DocumentIndexingStatus
+                  fileName={file.name}
+                  progress={progress}
+                  action={(() => {
+                    const docStatus = statusByFile.get(file.id);
+                    const stage = retryStage(file.status, docStatus ?? null);
+                    return docStatus && stage ? (
+                      <DocumentRetryButton
+                        documentId={docStatus.documentId}
+                        stage={stage}
+                        onRestarted={handleRetryRestarted}
+                        className={styles.retryButton}
+                        errorClassName={styles.indexDetail}
+                      />
+                    ) : null;
+                  })()}
+                />
                 <small>{formatSize(file.size)}</small>
                 <button
                   type="button"

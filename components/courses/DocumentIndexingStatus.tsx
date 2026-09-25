@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import type { IndexingProgress } from "./documentIndexing";
 import styles from "./coursesList.module.css";
 
@@ -18,9 +19,11 @@ const ICONS: Record<IndexingProgress["tone"], string> = {
 export default function DocumentIndexingStatus({
   fileName,
   progress,
+  action,
 }: {
   fileName: string;
   progress: IndexingProgress;
+  action?: ReactNode;
 }) {
   const showBar = progress.tone === "pending" || progress.tone === "active";
 
@@ -44,6 +47,7 @@ export default function DocumentIndexingStatus({
           </div>
         )}
         {progress.detail && <span className={styles.indexDetail}>{progress.detail}</span>}
+        {action}
       </div>
     </div>
   );

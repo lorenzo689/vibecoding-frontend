@@ -137,3 +137,36 @@ export function describeIndexingProgress(
     inProgress: false,
   };
 }
+
+// The backend publishes no realtime channel for document processing, so unfinished
+// documents are polled. The regular cron worker runs once a minute; the cap keeps a
+// document that never reaches a final state from polling for the whole session.
+export const STATUS_POLL_INTERVAL_MS = 5000;
+export const STATUS_POLL_MAX_ATTEMPTS = 120;
+
+export type RetryStage = "processing" | "indexing";
+
+// The backend retry RPCs accept any failed document, so the frontend decides which
+// failures are worth retrying. Only errors that can be transient are retryable.
+// UNSUPPORTED_FORMAT, INVALID_DOCUMENT, INVALID_INDEXING_INPUT and SOURCE_DELETED are
+// deterministic (or the source is gone), so a retry would fail the same way again.
+const RETRYABLE_PROCESSING_ERRORS = new Set(["PROCESSING_FAILED", "PROCESSING_TIMEOUT"]);
+const RETRYABLE_INDEXING_ERRORS = new Set(["INDEXING_TIMEOUT"]);
+
+/**
+ * Which backend retry applies to a file, or null when none does: the file is not
+ * ready, nothing failed, or the failure is not retryable.
+ */
+export function retryStage(
+  fileStatus: FileProgressStatus,
+  state: DocumentPipelineState | null
+): RetryStage | null {
+  if (fileStatus !== "ready" || !state) return null;
+  if (state.processingStatus === "failed") {
+    return state.errorCode && RETRYABLE_PROCESSING_ERRORS.has(state.errorCode) ? "processing" : null;
+  }
+  if (state.processingStatus === "ready" && state.indexingStatus === "failed") {
+    return state.indexingError && RETRYABLE_INDEXING_ERRORS.has(state.indexingError) ? "indexing" : null;
+  }
+  return null;
+}

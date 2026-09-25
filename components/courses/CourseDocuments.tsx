@@ -14,7 +14,14 @@ import {
   listCourseDocumentStatuses,
   type CourseDocumentStatus,
 } from "@/lib/supabase/queries/documents";
-import { describeIndexingProgress, type IndexingTone } from "./documentIndexing";
+import DocumentRetryButton from "./DocumentRetryButton";
+import {
+  describeIndexingProgress,
+  retryStage,
+  STATUS_POLL_INTERVAL_MS,
+  STATUS_POLL_MAX_ATTEMPTS,
+  type IndexingTone,
+} from "./documentIndexing";
 import styles from "@/components/documents/documents.module.css";
 
 function formatSize(bytes: number): string {
@@ -82,9 +89,6 @@ function renameFile(file: File, title: string): File {
   return new File([file], `${trimmed}${extension}`, { type: file.type, lastModified: file.lastModified });
 }
 
-const STATUS_POLL_INTERVAL_MS = 5000;
-const STATUS_POLL_MAX_ATTEMPTS = 120;
-
 export default function CourseDocuments({ courseId }: { courseId: string }) {
   const [course, setCourse] = useState<Course | null | undefined>(undefined);
   const [files, setFiles] = useState<CourseFile[]>([]);
@@ -145,6 +149,14 @@ export default function CourseDocuments({ courseId }: { courseId: string }) {
     const [nextFiles, nextStatuses] = await Promise.all([listCourseFiles(courseId), listCourseDocumentStatuses(courseId)]);
     return { nextFiles, nextStatuses };
   }, [courseId]);
+
+  // Reloads the real status after a retry was started; the unfinished document then
+  // keeps the polling below running until it is ready or failed again.
+  async function handleRetryRestarted() {
+    const { nextFiles, nextStatuses } = await refreshStatuses();
+    setFiles(nextFiles);
+    setDocumentStatuses(nextStatuses);
+  }
 
   useEffect(() => {
     if (!hasUnfinishedDocuments) {
@@ -298,7 +310,10 @@ export default function CourseDocuments({ courseId }: { courseId: string }) {
         </div>
       ) : (
         <div className={styles.grid}>
-          {fileProgress.map(({ file, progress }) => (
+          {fileProgress.map(({ file, progress }) => {
+            const docStatus = statusByFile.get(file.id);
+            const stage = retryStage(file.status, docStatus ?? null);
+            return (
             <article key={file.id} className={styles.cardWrap}>
               <Link href={`/courses/${courseId}/documents/${file.id}`} className={styles.cardLink}>
                 <div className={styles.thumb}>
@@ -322,6 +337,17 @@ export default function CourseDocuments({ courseId }: { courseId: string }) {
                   Hochgeladen {formatRelative(file.createdAt)}
                 </p>
               </Link>
+              {docStatus && stage && (
+                <div className={styles.retryRow}>
+                  <DocumentRetryButton
+                    documentId={docStatus.documentId}
+                    stage={stage}
+                    onRestarted={handleRetryRestarted}
+                    className={styles.viewerLink}
+                    errorClassName={styles.errorHint}
+                  />
+                </div>
+              )}
               <button
                 type="button"
                 className={styles.deleteButton}
@@ -332,7 +358,8 @@ export default function CourseDocuments({ courseId }: { courseId: string }) {
                 <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M5 7h14M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2m2 0-.9 12.1a2 2 0 0 1-2 1.9H8.9a2 2 0 0 1-2-1.9L6 7Z" /><path d="M10 11v6M14 11v6" /></svg>
               </button>
             </article>
-          ))}
+            );
+          })}
         </div>
       )}
 
