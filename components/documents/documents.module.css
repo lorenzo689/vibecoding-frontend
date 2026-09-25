@@ -14,7 +14,6 @@
 .dangerButtonSolid { display: inline-flex; align-items: center; gap: var(--space-2); flex-shrink: 0; min-height: 44px; padding-inline: var(--space-5); color: #fff; background: #dc2626; border: 0; border-radius: 12px; font-size: 13.5px; font-weight: 650; cursor: pointer; transition: background var(--motion); }
 .dangerButtonSolid:hover:not(:disabled) { background: #c11f1f; }
 .dangerButtonSolid svg { width: 16px; height: 16px; }
-.uploadNote { margin-top: var(--space-2); color: var(--doc-muted); font-size: 11px; }
 
 .backLink { display: inline-flex; align-items: center; gap: var(--space-2); min-height: 34px; margin-bottom: var(--space-5); padding: var(--space-1) var(--space-3) var(--space-1) var(--space-2); color: var(--doc-muted); background: transparent; border: 1px solid transparent; border-radius: 999px; font-size: 13px; font-weight: 600; white-space: nowrap; text-decoration: none; transition: color var(--motion), background var(--motion); }
 .backLink svg { width: 15px; height: 15px; flex-shrink: 0; }
