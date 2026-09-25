@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import LandingPage from "@/components/landing/LandingPage";
 
 export const metadata: Metadata = {
-  title: "Lernapp – Dein Studienraum",
+  title: "UniVerse – Dein Studienraum",
   description:
     "Kurse, Vorlesungsmaterial, Notizen, Termine und Prüfungsvorbereitung in einem verbundenen Workflow.",
 };

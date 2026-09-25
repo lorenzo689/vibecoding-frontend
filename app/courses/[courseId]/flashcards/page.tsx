@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import CourseFlashcardDecks from "@/components/flashcards/CourseFlashcardDecks";
 
 export const metadata: Metadata = {
-  title: "Karteikarten | Lernapp",
+  title: "Karteikarten | UniVerse",
   description: "Deine Karteikarten-Decks für diesen Kurs.",
 };
 

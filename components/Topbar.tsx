@@ -18,7 +18,7 @@ export default function Topbar() {
     <header className={s.topbar}>
       <div>
         <span>Dein Studienraum / </span>
-        <strong>{labels[path] ?? "Lernapp"}</strong>
+        <strong>{labels[path] ?? "UniVerse"}</strong>
       </div>
       <small>{stamp.toUpperCase()}</small>
     </header>

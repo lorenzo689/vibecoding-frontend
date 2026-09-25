@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import GradeStudio from "@/components/grades/studio/GradeStudio";
 
 export const metadata: Metadata = {
-  title: "Noten | Lernapp",
+  title: "Noten | UniVerse",
   description: "Kursleistungen, offene Bewertungen und Zielnoten im Überblick.",
 };
 

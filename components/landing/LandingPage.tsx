@@ -64,7 +64,7 @@ export default function LandingPage() {
       <div className={s.inner}>
         <header className={s.header}>
           <span className={s.wordmark}>
-            Lernapp<span aria-hidden="true" className={s.wordmarkDot}>.</span>
+            UniVerse<span aria-hidden="true" className={s.wordmarkDot}>.</span>
           </span>
           <nav className={s.nav} aria-label="Hauptnavigation">
             <Link href="/login" className={s.navLink}>
@@ -85,7 +85,7 @@ export default function LandingPage() {
               Notizen und <em>Prüfung.</em>
             </h1>
             <p className={s.heroSubtitle}>
-              Lade eine Vorlesungsfolie hoch, und Lernapp verknüpft sie automatisch
+              Lade eine Vorlesungsfolie hoch, und UniVerse verknüpft sie automatisch
               mit deinem Kurs, deinen Notizen, erkannten Terminen und deiner
               Prüfungsvorbereitung – statt fünf einzelnen Tools.
             </p>
@@ -196,7 +196,7 @@ export default function LandingPage() {
         </section>
 
         <footer className={s.footer}>
-          <span>Lernapp</span>
+          <span>UniVerse</span>
           <span>Frontend-Vorschau ohne Datenanbindung</span>
         </footer>
       </div>

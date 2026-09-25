@@ -19,6 +19,8 @@
 .brand { display: flex; align-items: center; gap: var(--space-3); min-width: 0; color: var(--dash-ink); font-size: 17px; font-weight: 700; letter-spacing: -.02em; text-decoration: none; }
 .logo { display: grid; place-items: center; width: 34px; height: 34px; flex-shrink: 0; color: #fff; background: linear-gradient(135deg, var(--dash-accent-a), var(--dash-accent-b)); border-radius: 10px; }
 .logo svg { width: 18px; height: 18px; }
+/* The logo is a wide wordmark: fix the height and let the width follow. */
+.wordmark { width: auto; height: 50px; object-fit: contain; }
 
 .sidebarBody { display: flex; flex-direction: column; flex: 1; min-height: 0; padding: var(--space-5) var(--space-4) var(--space-6); overflow-y: auto; }
 .sidebarBody nav { display: flex; flex-direction: column; gap: var(--space-1); }

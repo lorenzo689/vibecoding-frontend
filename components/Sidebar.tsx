@@ -78,7 +78,7 @@ export default function Sidebar() {
 
   return <>
     <aside className={s.sidebar} data-collapsed={collapsed}>
-      <Link className={s.brand} href="/dashboard" aria-label="Lernapp, zur Übersicht">{collapsed ? <>L<span className={s.brandDot}>.</span></> : <>Lernapp<span className={s.brandDot}>.</span></>}</Link>
+      <Link className={s.brand} href="/dashboard" aria-label="UniVerse, zur Übersicht">{collapsed ? <>U<span className={s.brandDot}>.</span></> : <>UniVerse<span className={s.brandDot}>.</span></>}</Link>
       <button className={s.toggle} type="button" onClick={toggle} aria-expanded={!collapsed}
         aria-controls="desktop-navigation" aria-label={collapsed ? "Navigation ausklappen" : "Navigation einklappen"}>
         <span aria-hidden="true">{collapsed ? "→" : "←"}</span>{!collapsed && <span>Navigation einklappen</span>}
@@ -86,14 +86,14 @@ export default function Sidebar() {
       <Navigation compact={collapsed} id="desktop-navigation" />
     </aside>
     <div className={s.mobileBar}>
-      <Link className={s.brand} href="/dashboard">Lernapp<span className={s.brandDot}>.</span></Link>
+      <Link className={s.brand} href="/dashboard">UniVerse<span className={s.brandDot}>.</span></Link>
       <button type="button" className={s.mobileToggle} aria-expanded={mobileOpen} aria-controls="mobile-navigation"
         onClick={() => { drawer.current?.showModal(); setMobileOpen(true); }}>Index <span aria-hidden="true">☰</span></button>
     </div>
     <dialog ref={drawer} className={s.drawer} aria-label="App-Navigation" onClose={() => setMobileOpen(false)}
       onClick={(event) => { if (event.target === event.currentTarget) closeDrawer(); }}>
       <div className={s.drawerContent}>
-        <div className={s.drawerHeader}><Link className={s.brand} href="/dashboard" onClick={closeDrawer}>Lernapp<span className={s.brandDot}>.</span></Link>
+        <div className={s.drawerHeader}><Link className={s.brand} href="/dashboard" onClick={closeDrawer}>UniVerse<span className={s.brandDot}>.</span></Link>
           <button type="button" className={s.mobileToggle} onClick={closeDrawer} aria-label="Navigation schließen">Schließen ×</button></div>
         {mobileOpen && <Navigation onNavigate={closeDrawer} id="mobile-navigation" />}
       </div>

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import CourseSummaryEditor from "@/components/summaries/CourseSummaryEditor";
 
 export const metadata: Metadata = {
-  title: "Zusammenfassung | Lernapp",
+  title: "Zusammenfassung | UniVerse",
   description: "Deine eigene Zusammenfassung für diesen Kurs.",
 };
 

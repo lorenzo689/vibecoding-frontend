@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import s from "@/components/documents/documents.module.css";
 
 export const metadata: Metadata = {
-  title: "Unterlagen | Lernapp",
+  title: "Unterlagen | UniVerse",
   description: "Vorlesungsmaterial, persönliche Notizen und Lernfortschritt im Kurskontext.",
 };
 
