@@ -3,9 +3,10 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useAuthenticatedProfile } from "@/lib/auth/useAuthenticatedProfile";
 import logo from "@/components/ui/logo.png";
+import { COMPACT_MEDIA_QUERY, effectiveCollapsed, isDrawerOpen } from "./shellState";
 import s from "./dashboardFrame.module.css";
 
 const sidebarStorageKey = "lernapp-dashboard-sidebar";
@@ -19,10 +20,28 @@ const items = [
   { href: "/grades", label: "Noten", icon: <><path d="M5 20V11M12 20V4M19 20v-7" /></> },
 ];
 
+// The server always renders the desktop variant; the real value is applied right
+// after hydration. The compact CSS itself does not depend on this.
+function subscribeCompact(onChange: () => void) {
+  const query = window.matchMedia(COMPACT_MEDIA_QUERY);
+  query.addEventListener("change", onChange);
+  return () => query.removeEventListener("change", onChange);
+}
+const getCompact = () => window.matchMedia(COMPACT_MEDIA_QUERY).matches;
+const getServerCompact = () => false;
+
 export default function DashboardFrame({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { name, detail, initial, signingOut, logout } = useAuthenticatedProfile();
-  const [collapsed, setCollapsed] = useState(false);
+  // Desktop preference (persisted) and mobile drawer (not persisted) are separate.
+  const [collapsedPreference, setCollapsedPreference] = useState(false);
+  const [openedAt, setOpenedAt] = useState<string | null>(null);
+  const compact = useSyncExternalStore(subscribeCompact, getCompact, getServerCompact);
+  const collapsed = effectiveCollapsed(collapsedPreference, compact);
+  const drawerOpen = isDrawerOpen(openedAt, pathname, compact);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const wasDrawerOpen = useRef(false);
 
   useEffect(() => {
     document.documentElement.dataset.theme = "light";
@@ -34,25 +53,44 @@ export default function DashboardFrame({ children }: { children: React.ReactNode
   useEffect(() => {
     const timer = window.setTimeout(() => {
       try {
-        setCollapsed(localStorage.getItem(sidebarStorageKey) === "collapsed");
+        setCollapsedPreference(localStorage.getItem(sidebarStorageKey) === "collapsed");
       } catch { /* Navigation works without browser storage. */ }
     }, 0);
     return () => window.clearTimeout(timer);
   }, []);
 
+  // Drawer: Escape closes it; focus moves into it on open and back to the menu button on close.
+  useEffect(() => {
+    if (drawerOpen) {
+      closeButtonRef.current?.focus();
+      wasDrawerOpen.current = true;
+      const onKeyDown = (event: KeyboardEvent) => {
+        if (event.key === "Escape") setOpenedAt(null);
+      };
+      window.addEventListener("keydown", onKeyDown);
+      return () => window.removeEventListener("keydown", onKeyDown);
+    }
+    if (wasDrawerOpen.current) {
+      wasDrawerOpen.current = false;
+      menuButtonRef.current?.focus();
+    }
+  }, [drawerOpen]);
+
   function toggleCollapsed() {
-    setCollapsed((current) => {
+    setCollapsedPreference((current) => {
       const next = !current;
       try { localStorage.setItem(sidebarStorageKey, next ? "collapsed" : "expanded"); } catch { /* Optional preference. */ }
       return next;
     });
   }
 
+  const closeDrawer = () => setOpenedAt(null);
+
   return (
     <div className={s.shell}>
-      <aside className={s.sidebar} data-collapsed={collapsed}>
+      <aside id="app-sidebar" className={s.sidebar} data-collapsed={collapsed} data-drawer-open={drawerOpen}>
         <div className={s.brandRow}>
-          <Link href="/dashboard" className={s.brand} title={collapsed ? "UniVerse" : undefined}>
+          <Link href="/dashboard" className={s.brand} title={collapsed ? "UniVerse" : undefined} aria-label={collapsed ? "UniVerse – Übersicht" : undefined}>
             {collapsed ? (
               <span className={s.logo} aria-hidden="true">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
@@ -64,7 +102,12 @@ export default function DashboardFrame({ children }: { children: React.ReactNode
               <Image src={logo} alt="UniVerse" className={s.wordmark} priority />
             )}
           </Link>
-          {!collapsed && (
+          {compact ? (
+            <button ref={closeButtonRef} type="button" className={s.collapseToggle} onClick={closeDrawer}
+              aria-label="Navigation schließen" title="Navigation schließen">
+              <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M6 6l12 12M18 6 6 18" /></svg>
+            </button>
+          ) : !collapsed && (
             <button type="button" className={s.collapseToggle} onClick={toggleCollapsed} title="Navigation einklappen"
               aria-expanded={!collapsed} aria-controls="dashboard-navigation" aria-label="Navigation einklappen">
               <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M11 5 5 12l6 7M5 12h14" /></svg>
@@ -72,7 +115,7 @@ export default function DashboardFrame({ children }: { children: React.ReactNode
           )}
         </div>
         <div className={s.sidebarBody}>
-          {collapsed && (
+          {!compact && collapsed && (
             <button type="button" className={s.collapseToggle} onClick={toggleCollapsed} title="Navigation ausklappen"
               aria-expanded={!collapsed} aria-controls="dashboard-navigation" aria-label="Navigation ausklappen">
               <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" data-flip="true"><path d="M11 5 5 12l6 7M5 12h14" /></svg>
@@ -82,21 +125,28 @@ export default function DashboardFrame({ children }: { children: React.ReactNode
             {items.map((item) => {
               const active = pathname === item.href || pathname.startsWith(item.href + "/");
               return (
-                <Link key={item.href} href={item.href} className={s.navItem} aria-current={active ? "page" : undefined} data-active={active} title={collapsed ? item.label : undefined}>
+                <Link key={item.href} href={item.href} className={s.navItem} aria-current={active ? "page" : undefined} data-active={active}
+                  title={collapsed ? item.label : undefined} aria-label={collapsed ? item.label : undefined}>
                   <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">{item.icon}</svg>
                   <span>{item.label}</span>
                 </Link>
               );
             })}
           </nav>
-          <button type="button" className={s.logoutItem} onClick={logout} disabled={signingOut} title={collapsed ? "Abmelden" : undefined}>
+          <button type="button" className={s.logoutItem} onClick={logout} disabled={signingOut}
+            title={collapsed ? "Abmelden" : undefined} aria-label={collapsed ? "Abmelden" : undefined}>
             <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M9 20H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h3" /><path d="M15 16l4-4-4-4M19 12H9" /></svg>
             <span>{signingOut ? "Wird abgemeldet …" : "Abmelden"}</span>
           </button>
         </div>
       </aside>
-      <div className={s.workspace}>
+      {drawerOpen && <div className={s.backdrop} onClick={closeDrawer} aria-hidden="true" />}
+      <div className={s.workspace} inert={drawerOpen}>
         <header className={s.topbar}>
+          <button ref={menuButtonRef} type="button" className={s.menuButton} onClick={() => setOpenedAt(pathname)}
+            aria-label="Navigation öffnen" aria-expanded={drawerOpen} aria-controls="app-sidebar">
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4 7h16M4 12h16M4 17h16" /></svg>
+          </button>
           <div className={s.search}>
             <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
             <input type="search" placeholder="Kurse, Dokumente, Karteikarten durchsuchen …" aria-label="Globale Suche" />
