@@ -1,0 +1,9 @@
+.feedback { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 8px; }
+.actions { display: inline-flex; gap: 4px; }
+.button { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; padding: 0; color: var(--doc-muted, #5c655f); background: transparent; border: 1px solid transparent; border-radius: 8px; cursor: pointer; }
+.button svg { width: 15px; height: 15px; }
+.button:hover:not(:disabled) { color: var(--doc-ink, #10201a); background: #eef2ee; }
+.button:focus-visible { outline: 2px solid var(--doc-accent-b, #0e8850); outline-offset: 2px; }
+.button[aria-pressed="true"] { color: var(--doc-accent-b, #0e8850); background: #e6f3ec; border-color: currentColor; }
+.button:disabled { opacity: .6; cursor: progress; }
+.error { margin: 0; color: #b3392c; font-size: 12px; }

@@ -12,6 +12,9 @@ export type ChatMessage = {
   role: "user" | "assistant";
   content: string;
   request_id?: string;
+  // Own rating of an assistant answer: null/undefined = not rated. `helpful_at` is server-owned.
+  helpful?: boolean | null;
+  helpful_at?: string | null;
   chat_message_sources: ChatSource[];
 };
 // `material_ids` is the backend's optional material scope: omitted means the whole
@@ -60,6 +63,7 @@ export function chatErrorMessage(code: string): string {
     INVALID_CITATION: "Die Antwort enthielt ungültige Quellen. Bitte versuche dieselbe Anfrage erneut.",
     INCOMPLETE_ANSWER: "Die Antwort konnte nicht vollständig erzeugt werden. Bitte versuche es erneut.",
     INVALID_ANSWER_RESPONSE: "Es wurde keine gültige Antwort geliefert. Bitte versuche es erneut.",
+    FEEDBACK_FAILED: "Feedback konnte nicht gespeichert werden.",
     UNUSABLE_AI_OUTPUT: "Die KI-Antwort konnte nicht vollständig verarbeitet werden. Bitte versuche es erneut.",
     REQUEST_CANCELLED: "Die Verarbeitung wurde unterbrochen. Bitte versuche es erneut.",
     CHAT_UNAVAILABLE: "Der Chat ist vorübergehend nicht verfügbar. Bitte versuche es erneut.",
@@ -81,6 +85,20 @@ export function canDiscardRequest(code: string): boolean {
 /** Limits a request to a single material, e.g. the document that is currently open. */
 export function withMaterialScope(request: ChatRequest, materialId: string): ChatRequest {
   return { ...request, material_ids: [materialId] };
+}
+
+/** Only persisted assistant answers can be rated; the backend enforces this again. */
+export function canRate(message: Pick<ChatMessage, "id" | "role">): boolean {
+  return message.role === "assistant" && message.id.length > 0;
+}
+
+/** Clicking the current rating withdraws it (the backend accepts `null`), otherwise it switches. */
+export function nextFeedback(current: boolean | null, clicked: boolean): boolean | null {
+  return current === clicked ? null : clicked;
+}
+
+export function withFeedback(messages: ChatMessage[], id: string, helpful: boolean | null): ChatMessage[] {
+  return messages.map((message) => (message.id === id ? { ...message, helpful } : message));
 }
 
 export function mergeExchange(history: ChatMessage[], exchange: ChatExchange): ChatMessage[] {

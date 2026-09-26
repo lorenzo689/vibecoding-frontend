@@ -7,6 +7,8 @@ import type { AuthChangeEvent } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/browser";
 import { createConversation, hasIndexedMaterial, loadConversations, loadCourses, loadHistory, sendChat } from "@/lib/chat";
 import { ChatError, canDiscardRequest, mergeExchange, sendBlockedReason, type ChatCourse, type ChatMessage, type ChatRequest, type Conversation } from "@/lib/chatProtocol";
+import MessageFeedback from "@/components/chat/MessageFeedback";
+import { useMessageFeedback } from "@/components/chat/useMessageFeedback";
 import s from "./assistant.module.css";
 
 const storagePrefix = "lernapp.chat.pending:";
@@ -105,6 +107,7 @@ function CourseChat({ courseId, userId, setLocked }: { courseId: string; userId:
   const [conversationId, setConversationId] = useState(() => readPending(storageKey)?.conversation_id ?? "");
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const feedback = useMessageFeedback(setMessages);
   const [question, setQuestion] = useState(() => readPending(storageKey)?.question ?? "");
   const [indexed, setIndexed] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(Boolean(courseId));
@@ -269,6 +272,7 @@ function CourseChat({ courseId, userId, setLocked }: { courseId: string; userId:
                   <blockquote>{source.excerpt}</blockquote>
                 </details>)}
             </div>}
+            <MessageFeedback message={message} pending={feedback.pending.has(message.id)} failed={feedback.failedId === message.id} onRate={feedback.rate} />
           </div>
         </li>)}
         {pending && !messages.some((message) => message.request_id === pending.request_id) && <li className={s.messageRow} data-role="user"><div className={s.messageBubble}><p>{pending.question}</p></div></li>}

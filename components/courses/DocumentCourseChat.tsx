@@ -5,6 +5,8 @@ import { createClient } from "@/lib/supabase/browser";
 import { createConversation, loadConversations, loadHistory, sendChat } from "@/lib/chat";
 import { ChatError, mergeExchange, sendBlockedReason, withMaterialScope, type ChatMessage, type ChatRequest } from "@/lib/chatProtocol";
 import { useAuthenticatedProfile } from "@/lib/auth/useAuthenticatedProfile";
+import MessageFeedback from "@/components/chat/MessageFeedback";
+import { useMessageFeedback } from "@/components/chat/useMessageFeedback";
 import styles from "@/components/documents/documents.module.css";
 
 function asChatError(error: unknown): ChatError {
@@ -29,6 +31,7 @@ export default function DocumentCourseChat({ courseId, courseTitle, materialId }
   const { initial } = useAuthenticatedProfile();
   const [conversationId, setConversationId] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const feedback = useMessageFeedback(setMessages);
   const [question, setQuestion] = useState("");
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
@@ -130,6 +133,7 @@ export default function DocumentCourseChat({ courseId, courseTitle, materialId }
                     ))}
                   </div>
                 )}
+                <MessageFeedback message={message} pending={feedback.pending.has(message.id)} failed={feedback.failedId === message.id} onRate={feedback.rate} />
               </div>
               {message.role === "user" && (
                 <span className={styles.chatAvatar} data-role="user" aria-hidden="true">{initial}</span>

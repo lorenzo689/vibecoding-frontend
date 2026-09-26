@@ -36,12 +36,23 @@ export async function loadHistory(client: SupabaseClient<Database>, conversation
   // Explicit pagination avoids silently dropping history beyond the API row limit.
   for (let offset = 0; ; offset += 100) {
     const { data, error } = await client.from("chat_messages")
-      .select("id, seq, role, content, request_id, chat_message_sources(citation_no, material_title, page_number, excerpt)")
+      .select("id, seq, role, content, request_id, helpful, helpful_at, chat_message_sources(citation_no, material_title, page_number, excerpt)")
       .eq("conversation_id", conversationId).order("seq").range(offset, offset + 99);
     if (error) throw new ChatError("LOAD_FAILED");
     messages.push(...(data ?? []) as ChatMessage[]);
     if (!data || data.length < 100) return messages;
   }
+}
+
+/**
+ * Rates one assistant answer of the signed-in user (`null` withdraws the rating). Feedback is a
+ * column update on `chat_messages.helpful`; RLS limits it to own assistant answers and hides
+ * everything else from the update instead of raising, so zero affected rows means "not allowed".
+ */
+export async function setMessageFeedback(client: SupabaseClient<Database>, messageId: string, helpful: boolean | null): Promise<boolean | null> {
+  const { data, error } = await client.from("chat_messages").update({ helpful }).eq("id", messageId).select("id, helpful");
+  if (error || data?.length !== 1) throw new ChatError("FEEDBACK_FAILED");
+  return data[0].helpful;
 }
 
 export async function sendChat(client: SupabaseClient<Database>, request: ChatRequest): Promise<ChatExchange> {
