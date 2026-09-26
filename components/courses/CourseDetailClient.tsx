@@ -20,6 +20,12 @@ import { deriveCourseBadge } from "@/lib/courseBadge";
 import DocumentIndexingStatus from "./DocumentIndexingStatus";
 import DocumentRetryButton from "./DocumentRetryButton";
 import { describeIndexingProgress, retryStage, STATUS_POLL_INTERVAL_MS, STATUS_POLL_MAX_ATTEMPTS } from "./documentIndexing";
+import {
+  DOCUMENT_UPLOAD_ACCEPT,
+  DOCUMENT_UPLOAD_ERROR_MESSAGES,
+  DOCUMENT_UPLOAD_HINT,
+  validateDocumentFile,
+} from "@/lib/documentUpload";
 import styles from "./coursesList.module.css";
 
 function formatSize(bytes: number): string {
@@ -42,8 +48,7 @@ function renameFile(file: File, title: string): File {
 }
 
 const UPLOAD_ERROR_MESSAGES: Record<string, string> = {
-  INVALID_FILE: "Nur PDF, PPTX, DOCX und TXT werden unterstützt.",
-  FILE_TOO_LARGE: "Die Datei ist größer als 50 MiB.",
+  ...DOCUMENT_UPLOAD_ERROR_MESSAGES,
   COURSE_NOT_FOUND: "Dieser Kurs wurde nicht gefunden. Bitte lade die Seite neu.",
   UPLOAD_KEY_CONFLICT: "Der Upload-Vorgang steht in Konflikt. Bitte versuche es erneut.",
   UPLOAD_DELETED: "Dieser Upload wurde bereits gelöscht. Bitte versuche es erneut.",
@@ -181,6 +186,13 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
 
   function pickFile(file: File | undefined) {
     if (!file) return;
+    const validation = validateDocumentFile(file);
+    if (!validation.ok) {
+      setSelectedFile(null);
+      setTitleValue("");
+      setDialogError(DOCUMENT_UPLOAD_ERROR_MESSAGES[validation.code]);
+      return;
+    }
     setSelectedFile(file);
     setTitleValue(splitName(file.name).base);
     setDialogError(null);
@@ -329,7 +341,7 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
           </button>
         </div>
         <p className={styles.uploadHint}>
-          PDF, PowerPoint (.pptx), Word (.docx) oder Text (.txt), max. 50 MiB.
+          {DOCUMENT_UPLOAD_HINT}.
         </p>
         {actionError && <p className={styles.uploadHint} role="alert">{actionError}</p>}
 
@@ -439,12 +451,12 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
                   ) : selectedFile ? (
                     <>
                       <p className={styles.dropzoneFile}>{selectedFile.name}</p>
-                      <small>PDF, PPTX, DOCX oder TXT bis 50 MiB</small>
+                      <small>{DOCUMENT_UPLOAD_HINT}</small>
                     </>
                   ) : (
                     <>
                       <p>Datei hierher ziehen oder klicken zum Auswählen</p>
-                      <small>PDF, PPTX, DOCX oder TXT bis 50 MiB</small>
+                      <small>{DOCUMENT_UPLOAD_HINT}</small>
                     </>
                   )}
                   <input
@@ -452,7 +464,7 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
                     id="course-document-file"
                     className={styles.dropzoneHidden}
                     type="file"
-                    accept=".pdf,.pptx,.docx,.txt"
+                    accept={DOCUMENT_UPLOAD_ACCEPT}
                     onChange={handleDialogFileChange}
                     disabled={uploading}
                   />

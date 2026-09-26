@@ -22,6 +22,12 @@ import {
   STATUS_POLL_MAX_ATTEMPTS,
   type IndexingTone,
 } from "./documentIndexing";
+import {
+  DOCUMENT_UPLOAD_ACCEPT,
+  DOCUMENT_UPLOAD_ERROR_MESSAGES,
+  DOCUMENT_UPLOAD_HINT,
+  validateDocumentFile,
+} from "@/lib/documentUpload";
 import styles from "@/components/documents/documents.module.css";
 
 function formatSize(bytes: number): string {
@@ -63,8 +69,7 @@ const TONE_LABELS: Record<IndexingTone, string> = {
 };
 
 const UPLOAD_ERROR_MESSAGES: Record<string, string> = {
-  INVALID_FILE: "Nur PDF, PPTX, DOCX und TXT werden unterstützt.",
-  FILE_TOO_LARGE: "Die Datei ist größer als 50 MiB.",
+  ...DOCUMENT_UPLOAD_ERROR_MESSAGES,
   COURSE_NOT_FOUND: "Dieser Kurs wurde nicht gefunden. Bitte lade die Seite neu.",
   UPLOAD_KEY_CONFLICT: "Der Upload-Vorgang steht in Konflikt. Bitte versuche es erneut.",
   UPLOAD_DELETED: "Dieser Upload wurde bereits gelöscht. Bitte versuche es erneut.",
@@ -211,6 +216,13 @@ export default function CourseDocuments({ courseId }: { courseId: string }) {
 
   function pickFile(file: File | undefined) {
     if (!file) return;
+    const validation = validateDocumentFile(file);
+    if (!validation.ok) {
+      setSelectedFile(null);
+      setTitleValue("");
+      setDialogError(DOCUMENT_UPLOAD_ERROR_MESSAGES[validation.code]);
+      return;
+    }
     setSelectedFile(file);
     setTitleValue(splitName(file.name).base);
     setDialogError(null);
@@ -410,12 +422,12 @@ export default function CourseDocuments({ courseId }: { courseId: string }) {
                   ) : selectedFile ? (
                     <>
                       <p className={styles.dropzoneFile}>{selectedFile.name}</p>
-                      <small>PDF, PPTX, DOCX oder TXT bis 50 MiB</small>
+                      <small>{DOCUMENT_UPLOAD_HINT}</small>
                     </>
                   ) : (
                     <>
                       <p>Datei hierher ziehen oder klicken zum Auswählen</p>
-                      <small>PDF, PPTX, DOCX oder TXT bis 50 MiB</small>
+                      <small>{DOCUMENT_UPLOAD_HINT}</small>
                     </>
                   )}
                   <input
@@ -423,7 +435,7 @@ export default function CourseDocuments({ courseId }: { courseId: string }) {
                     id="document-file"
                     className={styles.dropzoneHidden}
                     type="file"
-                    accept=".pdf,.pptx,.docx,.txt"
+                    accept={DOCUMENT_UPLOAD_ACCEPT}
                     onChange={handleDialogFileChange}
                     disabled={uploading}
                   />
