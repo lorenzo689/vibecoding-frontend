@@ -7,7 +7,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --test components/grades/calculations.test.mjs components/courses/documentIndexing.test.mjs components/calendar/dateUtils.test.mjs components/calendar/eventFilters.test.mjs lib/auth/validation.test.mjs lib/auth/profile.test.mjs lib/auth/confirmation.test.mjs lib/auth/routes.test.mjs lib/supabase/queries/summaries.test.mjs lib/supabase/queries/document-retry.test.mjs lib/supabase/queries/dashboard.test.mjs components/dashboard/dashboardModel.test.mjs components/shellState.test.mjs components/documents/libraryModel.test.mjs lib/supabase/queries/library.test.mjs lib/chat.test.mjs lib/aiOutput.test.mjs lib/aiScope.test.mjs lib/chatTemporary.test.mjs lib/documentUpload.test.mjs lib/chatFeedback.test.mjs lib/security.test.mjs"
+    "test": "node --test components/grades/calculations.test.mjs components/courses/documentIndexing.test.mjs components/calendar/dateUtils.test.mjs components/calendar/eventFilters.test.mjs lib/auth/validation.test.mjs lib/auth/profile.test.mjs lib/auth/confirmation.test.mjs lib/auth/routes.test.mjs lib/supabase/queries/summaries.test.mjs lib/supabase/queries/document-retry.test.mjs lib/supabase/queries/dashboard.test.mjs components/dashboard/dashboardModel.test.mjs components/shellState.test.mjs components/documents/libraryModel.test.mjs lib/supabase/queries/library.test.mjs lib/chat.test.mjs lib/aiOutput.test.mjs lib/aiScope.test.mjs lib/chatTemporary.test.mjs lib/documentUpload.test.mjs lib/chatFeedback.test.mjs lib/security.test.mjs",
+    "test:e2e": "playwright test",
+    "test:e2e:public": "playwright test",
+    "test:e2e:local": "playwright test --config playwright.local.config.ts"
   },
   "dependencies": {
     "@supabase/ssr": "0.12.7",
@@ -17,6 +20,7 @@
     "react-dom": "19.2.8"
   },
   "devDependencies": {
+    "@playwright/test": "1.63.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
