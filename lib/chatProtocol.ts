@@ -60,6 +60,7 @@ export function chatErrorMessage(code: string): string {
     INVALID_CITATION: "Die Antwort enthielt ungültige Quellen. Bitte versuche dieselbe Anfrage erneut.",
     INCOMPLETE_ANSWER: "Die Antwort konnte nicht vollständig erzeugt werden. Bitte versuche es erneut.",
     INVALID_ANSWER_RESPONSE: "Es wurde keine gültige Antwort geliefert. Bitte versuche es erneut.",
+    UNUSABLE_AI_OUTPUT: "Die KI-Antwort konnte nicht vollständig verarbeitet werden. Bitte versuche es erneut.",
     REQUEST_CANCELLED: "Die Verarbeitung wurde unterbrochen. Bitte versuche es erneut.",
     CHAT_UNAVAILABLE: "Der Chat ist vorübergehend nicht verfügbar. Bitte versuche es erneut.",
     NETWORK_ERROR: "Die Verbindung wurde unterbrochen. Die Anfrage könnte bereits verarbeitet sein. Mit Wiederholen rufst du dieselbe Anfrage ab.",
