@@ -2,8 +2,8 @@
 
 import { useState, type FormEvent } from "react";
 import { createClient } from "@/lib/supabase/browser";
-import { createConversation, sendChat } from "@/lib/chat";
-import { ChatError, withMaterialScope } from "@/lib/chatProtocol";
+import { runTemporaryChat } from "@/lib/chat";
+import { ChatError } from "@/lib/chatProtocol";
 import { discardedNotice, parseQuiz } from "@/lib/aiOutput";
 import styles from "@/components/documents/documents.module.css";
 
@@ -170,12 +170,7 @@ export default function DocumentQuizzes({ courseId, materialId, fileName }: { co
     setNotice(null);
     try {
       const client = createClient();
-      const conversation = await createConversation(client, courseId);
-      const exchange = await sendChat(client, withMaterialScope({
-        conversation_id: conversation.id,
-        request_id: crypto.randomUUID(),
-        question: `Erstelle einen Multiple-Choice-Test mit ${count} Fragen (je 4 Antwortoptionen, genau eine richtig) aus den Kursunterlagen, mit Schwerpunkt auf "${fileName}" falls dort relevanter Text indexiert ist. Antworte ausschließlich in diesem Format, eine Zeile pro Eintrag, ohne zusätzlichen Text:\nF1: <Frage>\nO1A: <Option A>\nO1B: <Option B>\nO1C: <Option C>\nO1D: <Option D>\nK1: <Buchstabe der richtigen Option, z. B. B>\nE1: <kurze Erklärung mit Bezug zum Text>\n(und so weiter bis F${count})`,
-      }, materialId));
+      const exchange = await runTemporaryChat(client, courseId, materialId, `Erstelle einen Multiple-Choice-Test mit ${count} Fragen (je 4 Antwortoptionen, genau eine richtig) aus den Kursunterlagen, mit Schwerpunkt auf "${fileName}" falls dort relevanter Text indexiert ist. Antworte ausschließlich in diesem Format, eine Zeile pro Eintrag, ohne zusätzlichen Text:\nF1: <Frage>\nO1A: <Option A>\nO1B: <Option B>\nO1C: <Option C>\nO1D: <Option D>\nK1: <Buchstabe der richtigen Option, z. B. B>\nE1: <kurze Erklärung mit Bezug zum Text>\n(und so weiter bis F${count})`);
       const answer = exchange.messages.find((message) => message.role === "assistant")?.content ?? "";
       const parsed = parseQuiz(answer);
       if (!parsed.ok) {

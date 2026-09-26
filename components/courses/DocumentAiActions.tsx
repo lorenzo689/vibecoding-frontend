@@ -2,8 +2,8 @@
 
 import { useState, type FormEvent } from "react";
 import { createClient } from "@/lib/supabase/browser";
-import { createConversation, sendChat } from "@/lib/chat";
-import { ChatError, withMaterialScope } from "@/lib/chatProtocol";
+import { runTemporaryChat } from "@/lib/chat";
+import { ChatError } from "@/lib/chatProtocol";
 import { cleanProse } from "@/lib/aiOutput";
 import { saveCourseSummary } from "@/lib/supabase/queries/summaries";
 import styles from "@/components/documents/documents.module.css";
@@ -18,8 +18,7 @@ function asChatError(error: unknown): ChatError {
 // answer — a real AI action, not a canned response.
 async function askOnce(courseId: string, materialId: string, question: string): Promise<string> {
   const client = createClient();
-  const conversation = await createConversation(client, courseId);
-  const exchange = await sendChat(client, withMaterialScope({ conversation_id: conversation.id, request_id: crypto.randomUUID(), question }, materialId));
+  const exchange = await runTemporaryChat(client, courseId, materialId, question);
   const answer = exchange.messages.find((message) => message.role === "assistant");
   if (!answer) throw new ChatError("INVALID_ANSWER_RESPONSE");
   // Free prose stays free; only citation markers are removed and an empty answer is an error.
