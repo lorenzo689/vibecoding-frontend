@@ -1,6 +1,6 @@
 import { FunctionsHttpError, type SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
-import { ChatError, type ChatCourse, type ChatExchange, type ChatMessage, type ChatRequest, type Conversation } from "./chatProtocol";
+import { ChatError, withMaterialScope, type ChatCourse, type ChatExchange, type ChatMessage, type ChatRequest, type Conversation } from "./chatProtocol";
 
 export async function loadCourses(client: SupabaseClient<Database>): Promise<ChatCourse[]> {
   const { data, error } = await client.from("courses").select("id, title").order("title");
@@ -78,4 +78,35 @@ export async function sendChat(client: SupabaseClient<Database>, request: ChatRe
       && typeof source.material_title === "string" && typeof source.excerpt === "string"
       && (source.page_number === null || Number.isInteger(source.page_number)))) throw new ChatError("INVALID_ANSWER_RESPONSE");
   return exchange;
+}
+
+export async function deleteConversation(client: SupabaseClient<Database>, conversationId: string): Promise<void> {
+  const { error } = await client.from("chat_conversations").delete().eq("id", conversationId);
+  if (error) throw new ChatError("LOAD_FAILED");
+}
+
+/**
+ * One-off AI action on a single material (summary, flashcards, quiz, …). The helper owns a
+ * throwaway conversation so these internal prompts never pile up in the user's chat history:
+ * create → chat → delete. The conversation only carries this one exchange, and the backend
+ * stores the answer before responding, so deleting after the request has ended cannot lose
+ * the answer the caller already holds. Deletion failing is logged and never fails the action.
+ * Not for interactive chats: those must stay persistent.
+ */
+export async function runTemporaryChat(
+  client: SupabaseClient<Database>,
+  courseId: string,
+  materialId: string,
+  question: string,
+): Promise<ChatExchange> {
+  const conversation = await createConversation(client, courseId);
+  try {
+    return await sendChat(client, withMaterialScope({ conversation_id: conversation.id, request_id: crypto.randomUUID(), question }, materialId));
+  } finally {
+    try {
+      await deleteConversation(client, conversation.id);
+    } catch {
+      console.warn(`Temporary AI conversation ${conversation.id} could not be deleted.`);
+    }
+  }
 }

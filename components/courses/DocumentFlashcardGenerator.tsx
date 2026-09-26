@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/browser";
-import { createConversation, sendChat } from "@/lib/chat";
-import { ChatError, withMaterialScope } from "@/lib/chatProtocol";
+import { runTemporaryChat } from "@/lib/chat";
+import { ChatError } from "@/lib/chatProtocol";
 import { discardedNotice, parseFlashcards } from "@/lib/aiOutput";
 import { addFlashcard, createDeck } from "@/lib/supabase/queries/flashcards";
 import styles from "@/components/documents/documents.module.css";
@@ -47,12 +47,7 @@ export default function DocumentFlashcardGenerator({
     setNotice(null);
     try {
       const client = createClient();
-      const conversation = await createConversation(client, courseId);
-      const exchange = await sendChat(client, withMaterialScope({
-        conversation_id: conversation.id,
-        request_id: crypto.randomUUID(),
-        question: `Erstelle 8 Lernkarteikarten (Frage und Antwort) aus den Kursunterlagen, mit Schwerpunkt auf "${fileName}" falls dort relevanter Text indexiert ist. Antworte ausschließlich in diesem Format, eine Zeile pro Eintrag, ohne zusätzlichen Text:\nF1: <Frage>\nA1: <Antwort>\nF2: <Frage>\nA2: <Antwort>\n(und so weiter bis F8/A8)`,
-      }, materialId));
+      const exchange = await runTemporaryChat(client, courseId, materialId, `Erstelle 8 Lernkarteikarten (Frage und Antwort) aus den Kursunterlagen, mit Schwerpunkt auf "${fileName}" falls dort relevanter Text indexiert ist. Antworte ausschließlich in diesem Format, eine Zeile pro Eintrag, ohne zusätzlichen Text:\nF1: <Frage>\nA1: <Antwort>\nF2: <Frage>\nA2: <Antwort>\n(und so weiter bis F8/A8)`);
       const answer = exchange.messages.find((message) => message.role === "assistant")?.content ?? "";
       const parsed = parseFlashcards(answer);
       if (!parsed.ok) {
