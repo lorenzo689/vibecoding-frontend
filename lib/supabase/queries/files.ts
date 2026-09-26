@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/browser";
 import { getSupabaseConfig } from "@/lib/supabase/config";
 import type { Tables } from "@/lib/supabase/database.types";
+import { validateDocumentFile } from "@/lib/documentUpload";
 
 // Real backend contract (see ../lernapp/docs/storage.md): metadata lives in
 // `files`, actual bytes live in the private `learning-files` Storage bucket.
@@ -36,34 +37,6 @@ function mapFile(row: FileRow): CourseFile {
   };
 }
 
-const ALLOWED_MIME_TYPES = [
-  "application/pdf",
-  "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-  "text/plain",
-];
-
-const EXTENSION_MIME: Record<string, string> = {
-  pdf: "application/pdf",
-  pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-  docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-  txt: "text/plain",
-};
-
-const MAX_FILE_SIZE = 52_428_800;
-
-// Browsers sometimes leave file.type empty for these formats; fall back to
-// the extension. The backend rejects application/octet-stream outright.
-export function resolveMimeType(file: File): string | null {
-  if (ALLOWED_MIME_TYPES.includes(file.type)) return file.type;
-  const ext = file.name.split(".").pop()?.toLowerCase();
-  return ext ? (EXTENSION_MIME[ext] ?? null) : null;
-}
-
-export function isFileSizeAllowed(size: number): boolean {
-  return size >= 1 && size <= MAX_FILE_SIZE;
-}
-
 async function callFilesFunction<T>(body: Record<string, unknown>): Promise<T> {
   const { data, error } = await createClient().functions.invoke("files", { body });
   if (error) {
@@ -95,9 +68,10 @@ export async function listCourseFiles(courseId: string): Promise<CourseFile[]> {
 }
 
 export async function uploadCourseFile(courseId: string, file: File): Promise<CourseFile> {
-  const mimeType = resolveMimeType(file);
-  if (!mimeType) throw new Error("INVALID_FILE");
-  if (!isFileSizeAllowed(file.size)) throw new Error("FILE_TOO_LARGE");
+  // Early UX check; the backend validates again and stays authoritative.
+  const validation = validateDocumentFile(file);
+  if (!validation.ok) throw new Error(validation.code);
+  const mimeType = validation.mimeType;
 
   const uploadKey = crypto.randomUUID();
   const prepared = await callFilesFunction<{
