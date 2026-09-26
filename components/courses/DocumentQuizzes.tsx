@@ -4,6 +4,7 @@ import { useState, type FormEvent } from "react";
 import { createClient } from "@/lib/supabase/browser";
 import { createConversation, sendChat } from "@/lib/chat";
 import { ChatError, withMaterialScope } from "@/lib/chatProtocol";
+import { discardedNotice, parseQuiz } from "@/lib/aiOutput";
 import styles from "@/components/documents/documents.module.css";
 
 function asChatError(error: unknown): ChatError {
@@ -20,44 +21,9 @@ type Quiz = {
   submitted: boolean;
 };
 
-const LETTERS = ["A", "B", "C", "D"] as const;
-
 // There is no quiz/question/score table in the backend yet, so a generated
 // quiz only lives in this component's state — real AI content from the
-// existing course chat, but nothing is written to the database.
-function parseQuiz(text: string): QuizQuestion[] {
-  const questions = new Map<number, string>();
-  const options = new Map<number, Map<string, string>>();
-  const correct = new Map<number, string>();
-  const explanations = new Map<number, string>();
-  for (const line of text.split("\n")) {
-    const q = line.match(/^\s*F(\d+)\s*:\s*(.+)$/);
-    if (q) { questions.set(Number(q[1]), q[2].trim()); continue; }
-    const o = line.match(/^\s*O(\d+)([A-D])\s*:\s*(.+)$/);
-    if (o) {
-      const n = Number(o[1]);
-      if (!options.has(n)) options.set(n, new Map());
-      options.get(n)!.set(o[2], o[3].trim());
-      continue;
-    }
-    const k = line.match(/^\s*K(\d+)\s*:\s*([A-D])/);
-    if (k) { correct.set(Number(k[1]), k[2]); continue; }
-    const e = line.match(/^\s*E(\d+)\s*:\s*(.+)$/);
-    if (e) explanations.set(Number(e[1]), e[2].trim());
-  }
-  const result: QuizQuestion[] = [];
-  for (const [n, question] of [...questions.entries()].sort((a, b) => a[0] - b[0])) {
-    const optionMap = options.get(n);
-    const correctLetter = correct.get(n);
-    const explanation = explanations.get(n);
-    if (!optionMap || !correctLetter || !explanation) continue;
-    const opts = LETTERS.map((letter) => optionMap.get(letter)).filter((value): value is string => Boolean(value));
-    const correctIndex = LETTERS.indexOf(correctLetter as (typeof LETTERS)[number]);
-    if (opts.length < 2 || correctIndex < 0 || correctIndex >= opts.length) continue;
-    result.push({ question, options: opts, correctIndex, explanation });
-  }
-  return result;
-}
+// existing course chat (parsed by lib/aiOutput.ts), but nothing is written to the database.
 
 function QuizTaking({ quiz, onAnswer, onFinish }: { quiz: Quiz; onAnswer: (questionIndex: number, optionIndex: number) => void; onFinish: () => void }) {
   const [index, setIndex] = useState(0);
@@ -192,6 +158,7 @@ export default function DocumentQuizzes({ courseId, materialId, fileName }: { co
   const [count, setCount] = useState(5);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   const openQuiz = quizzes.find((quiz) => quiz.id === openId) ?? null;
   const resultsQuiz = quizzes.find((quiz) => quiz.id === showResultsId) ?? null;
@@ -200,6 +167,7 @@ export default function DocumentQuizzes({ courseId, materialId, fileName }: { co
     event.preventDefault();
     setGenerating(true);
     setError(null);
+    setNotice(null);
     try {
       const client = createClient();
       const conversation = await createConversation(client, courseId);
@@ -209,11 +177,12 @@ export default function DocumentQuizzes({ courseId, materialId, fileName }: { co
         question: `Erstelle einen Multiple-Choice-Test mit ${count} Fragen (je 4 Antwortoptionen, genau eine richtig) aus den Kursunterlagen, mit Schwerpunkt auf "${fileName}" falls dort relevanter Text indexiert ist. Antworte ausschließlich in diesem Format, eine Zeile pro Eintrag, ohne zusätzlichen Text:\nF1: <Frage>\nO1A: <Option A>\nO1B: <Option B>\nO1C: <Option C>\nO1D: <Option D>\nK1: <Buchstabe der richtigen Option, z. B. B>\nE1: <kurze Erklärung mit Bezug zum Text>\n(und so weiter bis F${count})`,
       }, materialId));
       const answer = exchange.messages.find((message) => message.role === "assistant")?.content ?? "";
-      const questions = parseQuiz(answer);
-      if (questions.length === 0) {
-        setError("Die Antwort konnte nicht als Test erkannt werden. Du kannst es erneut versuchen.");
+      const parsed = parseQuiz(answer);
+      if (!parsed.ok) {
+        setError(new ChatError("UNUSABLE_AI_OUTPUT").message);
         return;
       }
+      const questions = parsed.questions;
       const quiz: Quiz = {
         id: crypto.randomUUID(),
         title: `${fileName.replace(/\.[^.]+$/, "")} – Test`,
@@ -223,6 +192,7 @@ export default function DocumentQuizzes({ courseId, materialId, fileName }: { co
         submitted: false,
       };
       setQuizzes((current) => [quiz, ...current]);
+      setNotice(discardedNotice(parsed.discarded));
       setDialogOpen(false);
       setOpenId(quiz.id);
     } catch (failure) {
@@ -270,7 +240,8 @@ export default function DocumentQuizzes({ courseId, materialId, fileName }: { co
         </button>
       </div>
 
-      {error && <p className={styles.errorHint} role="alert">{error}</p>}
+      {notice && <p className={styles.noticeHint} role="status">{notice}</p>}
+      {error && !dialogOpen && <p className={styles.errorHint} role="alert">{error}</p>}
 
       {quizzes.length === 0 ? (
         <div className={styles.panelEmpty}>

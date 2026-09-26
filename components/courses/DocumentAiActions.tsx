@@ -4,6 +4,7 @@ import { useState, type FormEvent } from "react";
 import { createClient } from "@/lib/supabase/browser";
 import { createConversation, sendChat } from "@/lib/chat";
 import { ChatError, withMaterialScope } from "@/lib/chatProtocol";
+import { cleanProse } from "@/lib/aiOutput";
 import { saveCourseSummary } from "@/lib/supabase/queries/summaries";
 import styles from "@/components/documents/documents.module.css";
 
@@ -21,7 +22,10 @@ async function askOnce(courseId: string, materialId: string, question: string): 
   const exchange = await sendChat(client, withMaterialScope({ conversation_id: conversation.id, request_id: crypto.randomUUID(), question }, materialId));
   const answer = exchange.messages.find((message) => message.role === "assistant");
   if (!answer) throw new ChatError("INVALID_ANSWER_RESPONSE");
-  return answer.content;
+  // Free prose stays free; only citation markers are removed and an empty answer is an error.
+  const text = cleanProse(answer.content);
+  if (!text) throw new ChatError("UNUSABLE_AI_OUTPUT");
+  return text;
 }
 
 export default function DocumentAiActions({ courseId, courseTitle, fileName, materialId }: { courseId: string; courseTitle: string; fileName: string; materialId: string }) {
