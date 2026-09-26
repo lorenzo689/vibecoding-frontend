@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/browser";
 import { getSupabaseConfig } from "@/lib/supabase/config";
 import type { Tables } from "@/lib/supabase/database.types";
 import { validateDocumentFile } from "@/lib/documentUpload";
+import { resolveSameOriginUrl } from "@/lib/safeUrl";
 
 // Real backend contract (see ../lernapp/docs/storage.md): metadata lives in
 // `files`, actual bytes live in the private `learning-files` Storage bucket.
@@ -126,7 +127,7 @@ export async function getCourseFileDownloadUrl(
     download,
   });
   const { url } = getSupabaseConfig();
-  return new URL(result.path, url).href;
+  return resolveSameOriginUrl(result.path, url);
 }
 
 export async function deleteCourseFile(fileId: string): Promise<void> {
