@@ -48,6 +48,59 @@
   --background: var(--paper);
   --foreground: var(--ink);
   color-scheme: dark;
+
+  /* Brand palette (UniVerse), exact values from the delivered design-system sheet.
+     Teal is the primary mark, cyan/purple/blue are sparing accents. Used by the
+     light application shell (sidebar/topbar) and dashboard; the dark marketing/auth
+     surfaces above are untouched. */
+  --brand-teal: #14b8a6;       /* Primary */
+  --brand-teal-dark: #0d9488;  /* Primary Hover */
+  --brand-cyan: #22d3ee;       /* Accent Cyan */
+  --brand-purple: #8b5cf6;     /* Accent Purple */
+  --brand-purple-dark: #7c3aed;
+  --brand-blue: #6366f1;       /* Accent Blue */
+  --brand-orange: #d97706;
+  --brand-rose: #e8637a;
+  --brand-app-bg: #f8fbff;     /* Background */
+  --brand-surface: #ffffff;    /* Card */
+  --brand-ink: #0f172a;        /* Text Primary */
+  --brand-muted: #64748b;      /* Text Secondary */
+  --brand-line: #e5e7eb;       /* Border */
+  --brand-teal-soft: #e3f7f3;
+  --brand-teal-soft-line: #bfe9e2;
+  --brand-purple-soft: #efeaff;
+  --brand-blue-soft: #e9f0ff;
+  --brand-orange-soft: #fdf1e0;
+  --brand-rose-soft: #fbe9ec;
+
+  /* UniVerse dashboard refinement pass: a small local design-token layer, used only
+     by the authenticated dashboard shell (DashboardFrame/home.module.css), so the
+     card/icon/sidebar system reads as one family without a wider token refactor. */
+  --uv-teal-fg: #0ea58f;
+  --uv-teal-bg: rgba(20, 184, 166, .10);
+  --uv-purple-fg: #7457f5;
+  --uv-purple-bg: rgba(116, 87, 245, .10);
+  --uv-orange-fg: #f59e0b;
+  --uv-orange-bg: rgba(245, 158, 11, .11);
+  --uv-blue-fg: #3b82f6;
+  --uv-blue-bg: rgba(59, 130, 246, .10);
+
+  --uv-surface: rgba(255, 255, 255, .90);
+  --uv-surface-light: rgba(255, 255, 255, .72);
+  --uv-border: rgba(110, 125, 170, .16);
+
+  --uv-radius-hero: 26px;
+  --uv-radius-lg: 20px;
+  --uv-radius-md: 15px;
+  --uv-radius-tile: 11px;
+
+  --uv-shadow-card: 0 12px 35px rgba(40, 55, 100, .06);
+  --uv-shadow-hover: 0 16px 40px rgba(40, 55, 100, .09);
+  --uv-shadow-hero: 0 18px 50px rgba(10, 20, 50, .14);
+
+  /* A softer, more decelerated curve than the global `ease` used for hover lifts
+     on dashboard cards/rows — smoother settle, still quick to respond. */
+  --uv-ease: cubic-bezier(0.22, 1, 0.36, 1);
 }
 :root[data-theme="light"] { color-scheme: light; }
 

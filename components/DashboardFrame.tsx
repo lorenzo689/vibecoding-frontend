@@ -1,23 +1,23 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useAuthenticatedProfile } from "@/lib/auth/useAuthenticatedProfile";
-import logo from "@/components/ui/logo.png";
+import BrandLogo from "@/components/ui/BrandLogo";
 import { COMPACT_MEDIA_QUERY, effectiveCollapsed, isDrawerOpen } from "./shellState";
 import s from "./dashboardFrame.module.css";
 
 const sidebarStorageKey = "lernapp-dashboard-sidebar";
 
 const items = [
-  { href: "/dashboard", label: "Übersicht", icon: <path d="M4 4h7v7H4V4Zm9 0h7v4h-7V4ZM4 13h7v7H4v-7Zm9-2h7v9h-7v-9Z" /> },
-  { href: "/assistant", label: "KI-Assistent", icon: <><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v8a2.5 2.5 0 0 1-2.5 2.5H10l-4.5 4v-4H6.5A2.5 2.5 0 0 1 4 13.5v-8Z" /></> },
+  { href: "/dashboard", label: "Übersicht", icon: <><path d="M4 11.5 12 4l8 7.5" /><path d="M6 10v8.5a1 1 0 0 0 1 1h3v-6h4v6h3a1 1 0 0 0 1-1V10" /></> },
+  { href: "/assistant", label: "KI-Assistent", badge: "Neu", icon: <path d="M12 3.5 13.9 9l5.6 1.9-5.6 1.9L12 18.4l-1.9-5.6L4.5 10.9l5.6-1.9L12 3.5Z" strokeLinejoin="round" /> },
   { href: "/courses", label: "Kurse", icon: <><path d="M4 5.5C4 4.67 4.67 4 5.5 4H13v16H5.5A1.5 1.5 0 0 1 4 18.5v-13Z" /><path d="M20 5.5c0-.83-.67-1.5-1.5-1.5H13v16h5.5a1.5 1.5 0 0 0 1.5-1.5v-13Z" /></> },
   { href: "/calendar", label: "Kalender", icon: <><rect x="4" y="5" width="16" height="15" rx="2" /><path d="M4 9.5h16M8 3v3.4M16 3v3.4" /></> },
-  { href: "/documents", label: "Unterlagen", icon: <><path d="M7 3.5h7l4 4V20a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4.5a1 1 0 0 1 1-1Z" /><path d="M13.6 3.6V8h4.3" /></> },
+  { href: "/documents", label: "Unterlagen", icon: <path d="M4 6.5A1.5 1.5 0 0 1 5.5 5h4l2 2h7A1.5 1.5 0 0 1 20 8.5v9A1.5 1.5 0 0 1 18.5 19h-13A1.5 1.5 0 0 1 4 17.5v-11Z" /> },
   { href: "/grades", label: "Noten", icon: <><path d="M5 20V11M12 20V4M19 20v-7" /></> },
+  { href: "/profile", label: "Profil", icon: <><circle cx="12" cy="8.2" r="3.2" /><path d="M5 20c1.2-3.6 4-5.5 7-5.5s5.8 1.9 7 5.5" /></> },
 ];
 
 // The server always renders the desktop variant; the real value is applied right
@@ -88,19 +88,11 @@ export default function DashboardFrame({ children }: { children: React.ReactNode
 
   return (
     <div className={s.shell}>
+      <div className={s.atmosphere} aria-hidden="true" />
       <aside id="app-sidebar" className={s.sidebar} data-collapsed={collapsed} data-drawer-open={drawerOpen}>
         <div className={s.brandRow}>
           <Link href="/dashboard" className={s.brand} title={collapsed ? "UniVerse" : undefined} aria-label={collapsed ? "UniVerse – Übersicht" : undefined}>
-            {collapsed ? (
-              <span className={s.logo} aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="6" cy="7" r="2.4" /><circle cx="18" cy="7" r="2.4" /><circle cx="12" cy="18" r="2.4" />
-                  <path d="M8.1 8.2 10.5 16M15.9 8.2 13.5 16M8.4 7h7.2" />
-                </svg>
-              </span>
-            ) : (
-              <Image src={logo} alt="UniVerse" className={s.wordmark} priority />
-            )}
+            <BrandLogo mark={collapsed} />
           </Link>
           {compact ? (
             <button ref={closeButtonRef} type="button" className={s.collapseToggle} onClick={closeDrawer}
@@ -129,15 +121,27 @@ export default function DashboardFrame({ children }: { children: React.ReactNode
                   title={collapsed ? item.label : undefined} aria-label={collapsed ? item.label : undefined}>
                   <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">{item.icon}</svg>
                   <span>{item.label}</span>
+                  {item.badge && !collapsed && <span className={s.navBadge}>{item.badge}</span>}
                 </Link>
               );
             })}
           </nav>
-          <button type="button" className={s.logoutItem} onClick={logout} disabled={signingOut}
-            title={collapsed ? "Abmelden" : undefined} aria-label={collapsed ? "Abmelden" : undefined}>
-            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M9 20H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h3" /><path d="M15 16l4-4-4-4M19 12H9" /></svg>
-            <span>{signingOut ? "Wird abgemeldet …" : "Abmelden"}</span>
-          </button>
+          <div className={s.sidebarFooter}>
+            <Link href="/profile" className={s.profileRow} title={collapsed ? name : undefined} aria-label={collapsed ? `${name} – Profil` : undefined}>
+              <span className={s.avatar} aria-hidden="true">{initial}</span>
+              {!collapsed && (
+                <>
+                  <span className={s.identity}><strong>{name}</strong><small>{detail}</small></span>
+                  <svg aria-hidden="true" className={s.gear} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3" /><path d="M19.4 13a7.6 7.6 0 0 0 0-2l2-1.5-2-3.5-2.4 1a7.7 7.7 0 0 0-1.7-1L15 3h-4l-.3 2.5a7.7 7.7 0 0 0-1.7 1l-2.4-1-2 3.5L6.6 11a7.6 7.6 0 0 0 0 2l-2 1.5 2 3.5 2.4-1a7.7 7.7 0 0 0 1.7 1L11 21h4l.3-2.5a7.7 7.7 0 0 0 1.7-1l2.4 1 2-3.5-2-1.5Z" /></svg>
+                </>
+              )}
+            </Link>
+            <button type="button" className={s.logoutItem} onClick={logout} disabled={signingOut}
+              title={collapsed ? "Abmelden" : undefined} aria-label={collapsed ? "Abmelden" : undefined}>
+              <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M9 20H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h3" /><path d="M15 16l4-4-4-4M19 12H9" /></svg>
+              <span>{signingOut ? "Wird abgemeldet …" : "Abmelden"}</span>
+            </button>
+          </div>
         </div>
       </aside>
       {drawerOpen && <div className={s.backdrop} onClick={closeDrawer} aria-hidden="true" />}
@@ -149,7 +153,8 @@ export default function DashboardFrame({ children }: { children: React.ReactNode
           </button>
           <div className={s.search}>
             <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
-            <input type="search" placeholder="Kurse, Dokumente, Karteikarten durchsuchen …" aria-label="Globale Suche" />
+            <input type="search" placeholder="Kurse, Dokumente, Karteikarten, ..." aria-label="Globale Suche" />
+            <kbd className={s.searchHint} aria-hidden="true">⌘K</kbd>
           </div>
           <div className={s.topbarRight}>
             <button type="button" className={s.bell} aria-label="Benachrichtigungen">
@@ -159,6 +164,7 @@ export default function DashboardFrame({ children }: { children: React.ReactNode
             <Link href="/profile" className={s.profileChip}>
               <span className={s.avatar} aria-hidden="true">{initial}</span>
               <span className={s.identity}><strong>{name}</strong><small>{detail}</small></span>
+              <svg aria-hidden="true" className={s.chevronDown} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
             </Link>
           </div>
         </header>
