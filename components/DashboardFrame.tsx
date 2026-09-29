@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useAuthenticatedProfile } from "@/lib/auth/useAuthenticatedProfile";
 import BrandLogo from "@/components/ui/BrandLogo";
+import ThemeToggle from "@/components/ui/ThemeToggle";
 import { COMPACT_MEDIA_QUERY, effectiveCollapsed, isDrawerOpen } from "./shellState";
 import s from "./dashboardFrame.module.css";
 
@@ -44,12 +45,9 @@ export default function DashboardFrame({ children }: { children: React.ReactNode
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const wasDrawerOpen = useRef(false);
 
-  useEffect(() => {
-    document.documentElement.dataset.theme = "light";
-    return () => {
-      delete document.documentElement.dataset.theme;
-    };
-  }, []);
+  // No theme effect here on purpose. The shell used to pin `data-theme="light"`,
+  // which overrode the user's choice on every mount. The theme is now resolved
+  // once by the head script in app/layout.tsx (stored choice, else system).
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -129,6 +127,7 @@ export default function DashboardFrame({ children }: { children: React.ReactNode
             })}
           </nav>
           <div className={s.sidebarFooter}>
+            <ThemeToggle compact={collapsed} />
             <Link href="/profile" className={s.profileRow} title={collapsed ? name : undefined} aria-label={collapsed ? `${name} – Profil` : undefined}>
               <span className={s.avatar} aria-hidden="true">{initial}</span>
               {!collapsed && (
