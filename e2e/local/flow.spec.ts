@@ -35,7 +35,7 @@ test("global document library renders", async ({ page }) => {
 
 test("calendar renders", async ({ page }) => {
   await page.goto("/calendar");
-  await expectPage(page, /Termine/);
+  await expectPage(page, /Kalender/);
 });
 
 test("grades render", async ({ page }) => {
@@ -45,7 +45,7 @@ test("grades render", async ({ page }) => {
 
 test("profile renders the signed-in user", async ({ page }) => {
   await page.goto("/profile");
-  await expectPage(page, "Dein Profil");
+  await expectPage(page, "Profil");
 });
 
 test("the upload dialog states the supported formats and rejects an unsupported file early", async ({ page }) => {

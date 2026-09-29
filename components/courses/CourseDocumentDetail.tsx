@@ -194,7 +194,8 @@ export default function CourseDocumentDetail({ courseId, fileId }: { courseId: s
       </header>
       {actionError && <p className={styles.errorHint} role="alert">{actionError}</p>}
 
-      <div className={styles.tabs} role="tablist">
+      <div className={styles.documentWorkspace}>
+      <div className={styles.tabs} role="tablist" aria-label="Dokumentwerkzeuge">
         <button type="button" role="tab" aria-selected={tab === "content"} className={styles.tab} data-active={tab === "content"} onClick={() => setTab("content")}>Inhalt</button>
         <button type="button" role="tab" aria-selected={tab === "chat"} className={styles.tab} data-active={tab === "chat"} onClick={() => setTab("chat")}>Chat</button>
         <button type="button" role="tab" aria-selected={tab === "actions"} className={styles.tab} data-active={tab === "actions"} onClick={() => setTab("actions")}>KI-Aktionen</button>
@@ -202,7 +203,7 @@ export default function CourseDocumentDetail({ courseId, fileId }: { courseId: s
         <button type="button" role="tab" aria-selected={tab === "quizzes"} className={styles.tab} data-active={tab === "quizzes"} onClick={() => setTab("quizzes")}>Tests</button>
       </div>
 
-      {tab === "content" && (
+      {(
         <section className={styles.viewerCard}>
           <div className={styles.viewerHeader}>
             <span>Dokumentvorschau</span>
@@ -244,6 +245,14 @@ export default function CourseDocumentDetail({ courseId, fileId }: { courseId: s
         </section>
       )}
 
+      {tab === "content" && <aside className={styles.documentTools}>
+        <h2>Mit deinen Unterlagen lernen</h2>
+        <p>Erstelle eine Zusammenfassung, lerne mit Karteikarten oder stelle Fragen zu diesem Dokument.</p>
+        <button type="button" className={styles.uploadButton} onClick={() => setTab("actions")}>Zusammenfassung erstellen</button>
+        <button type="button" className={styles.toolLink} onClick={() => setTab("flashcards")}>Karteikarten öffnen →</button>
+        <button type="button" className={styles.toolLink} onClick={() => setTab("chat")}>Frage zum Dokument stellen →</button>
+      </aside>}
+
       {(tab === "chat" || tab === "actions" || tab === "quizzes") && !materialId && (
         <section className={styles.viewerCard}>
           <div className={styles.viewerEmpty}>
@@ -276,6 +285,8 @@ export default function CourseDocumentDetail({ courseId, fileId }: { courseId: s
           <DocumentQuizzes courseId={courseId} materialId={materialId} fileName={file.name} />
         </section>
       )}
+
+      </div>
 
       {confirmingDelete && (
         <div className={styles.backdrop} onClick={(event) => { if (event.target === event.currentTarget && !deleting) setConfirmingDelete(false); }}>

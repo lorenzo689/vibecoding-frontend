@@ -174,9 +174,6 @@ export default function AuthForm({ mode, next, initialError, initialNotice }: {
 
   return (
     <div className={styles.formContent}>
-      <p className={styles.eyebrow}>{registering ? "Kostenlos starten" : "Kontozugang"}</p>
-      <h1>{registering ? "Konto erstellen" : "Willkommen zurück"}</h1>
-      <p className={styles.subtitle}>{registering ? "Zwei Minuten Einrichtung, dann läuft dein erster Kurs." : "Melde dich an, um bei deinen Unterlagen weiterzumachen."}</p>
       {confirmationEmail ? (
         <section className={styles.confirmation} aria-labelledby="confirmation-heading">
           <span aria-hidden="true">✓</span>
@@ -199,7 +196,7 @@ export default function AuthForm({ mode, next, initialError, initialNotice }: {
       ) : (
         <form onSubmit={submit}>
           {registering && <div className={styles.field}>
-            <label htmlFor="display-name">ANZEIGENAME</label>
+            <label htmlFor="display-name">Anzeigename</label>
             <div className={styles.inputIcon}>
               <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><circle cx="12" cy="8" r="4" /><path d="M4 20c0-3.6 3.4-6.5 8-6.5s8 2.9 8 6.5" /></svg>
               <input id="display-name" name="display_name" autoComplete="nickname" placeholder="Wie dürfen wir dich nennen?" required disabled={pending} />
@@ -207,14 +204,14 @@ export default function AuthForm({ mode, next, initialError, initialNotice }: {
             <small>1–60 Zeichen</small>
           </div>}
           <div className={styles.field}>
-            <label htmlFor="email">E-MAIL</label>
+            <label htmlFor="email">E-Mail</label>
             <div className={styles.inputIcon}>
               <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><rect x="3" y="5" width="18" height="14" rx="2.5" /><path d="m4 7 8 6 8-6" /></svg>
               <input id="email" name="email" type="email" autoComplete="email" autoCapitalize="none" spellCheck={false} placeholder="du@hochschule.de" required disabled={pending} />
             </div>
           </div>
           <div className={styles.field}>
-            <label htmlFor="password">PASSWORT</label>
+            <label htmlFor="password">Passwort</label>
             <div className={`${styles.inputIcon} ${styles.passwordWrap}`}>
               <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><rect x="4.5" y="10.5" width="15" height="9.5" rx="2.2" /><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3" /></svg>
               <input id="password" name="password" type={visible ? "text" : "password"} autoComplete={registering ? "new-password" : "current-password"} placeholder={registering ? "Mindestens 8 Zeichen" : "Dein Passwort"} minLength={registering ? 8 : undefined} required disabled={pending} />
@@ -232,7 +229,12 @@ export default function AuthForm({ mode, next, initialError, initialNotice }: {
           <button className={styles.primary} type="submit" disabled={pending}>{pending ? "Bitte warten …" : registering ? "Konto erstellen" : "Anmelden"}<span aria-hidden="true">→</span></button>
         </form>
       )}
-      {!confirmationEmail && !profileUserId && <p className={styles.alternative}>{registering ? "Du hast bereits ein Konto?" : "Du hast noch kein Konto?"}{" "}<Link href={registering ? "/login" : "/register"}>{registering ? "Anmelden" : "Jetzt registrieren"}</Link></p>}
+      {!confirmationEmail && !profileUserId && <>
+        <div className={styles.divider}><span>oder</span></div>
+        <button type="button" className={styles.googleButton} disabled aria-describedby="google-unavailable"><span className={styles.googleMark} aria-hidden="true">G</span>Mit Google {registering ? "registrieren" : "anmelden"}</button>
+        <p className={styles.providerHint} id="google-unavailable">Google-Anmeldung ist noch nicht eingerichtet.</p>
+        {!registering && <p className={styles.alternative}>Du hast noch kein Konto? <Link href="/register">Jetzt registrieren</Link></p>}
+      </>}
     </div>
   );
 }

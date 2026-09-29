@@ -16,6 +16,7 @@ const items = [
   { href: "/courses", label: "Kurse", icon: <><path d="M4 5.5C4 4.67 4.67 4 5.5 4H13v16H5.5A1.5 1.5 0 0 1 4 18.5v-13Z" /><path d="M20 5.5c0-.83-.67-1.5-1.5-1.5H13v16h5.5a1.5 1.5 0 0 0 1.5-1.5v-13Z" /></> },
   { href: "/calendar", label: "Kalender", icon: <><rect x="4" y="5" width="16" height="15" rx="2" /><path d="M4 9.5h16M8 3v3.4M16 3v3.4" /></> },
   { href: "/documents", label: "Unterlagen", icon: <path d="M4 6.5A1.5 1.5 0 0 1 5.5 5h4l2 2h7A1.5 1.5 0 0 1 20 8.5v9A1.5 1.5 0 0 1 18.5 19h-13A1.5 1.5 0 0 1 4 17.5v-11Z" /> },
+  { href: "/flashcards", label: "Karteikarten", icon: <><rect x="7" y="3" width="13" height="14" rx="2"/><path d="M16 17v3H4V7h3M11 8h5M11 12h3"/></> },
   { href: "/grades", label: "Noten", icon: <><path d="M5 20V11M12 20V4M19 20v-7" /></> },
   { href: "/profile", label: "Profil", icon: <><circle cx="12" cy="8.2" r="3.2" /><path d="M5 20c1.2-3.6 4-5.5 7-5.5s5.8 1.9 7 5.5" /></> },
 ];
@@ -115,7 +116,8 @@ export default function DashboardFrame({ children }: { children: React.ReactNode
           )}
           <nav aria-label="Hauptnavigation" id="dashboard-navigation">
             {items.map((item) => {
-              const active = pathname === item.href || pathname.startsWith(item.href + "/");
+              const inFlashcards = /^\/courses\/[^/]+\/flashcards(?:\/|$)/.test(pathname);
+              const active = item.href === "/flashcards" ? pathname === item.href || inFlashcards : (pathname === item.href || pathname.startsWith(item.href + "/")) && !(item.href === "/courses" && inFlashcards);
               return (
                 <Link key={item.href} href={item.href} className={s.navItem} aria-current={active ? "page" : undefined} data-active={active}
                   title={collapsed ? item.label : undefined} aria-label={collapsed ? item.label : undefined}>

@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import PageHeading from "@/components/ui/PageHeading";
 import {
   announceProfileUpdate,
   profileInitial,
@@ -161,27 +162,19 @@ export default function ProfilePage({
 
   return (
     <div className={s.page}>
-      <header className={s.pageHeader}>
-        <div>
-          <p className={s.eyebrow}>07 / PERSÖNLICHER BEREICH</p>
-          <h1>Dein Profil</h1>
-          <p className={s.intro}>
-            Verwalte deinen Anzeigenamen und behalte deine Kontoangaben im Blick.
-          </p>
-        </div>
-        <div className={s.identity}>
-          <span aria-hidden="true">{profileInitial(profile.name)}</span>
-          <div>
-            <strong>{profile.name}</strong>
-            <small>{email}</small>
-          </div>
-        </div>
-      </header>
+      <PageHeading title="Profil" description="Verwalte deine persönlichen Einstellungen." />
 
       <div className={s.grid}>
+        <aside className={s.profileCard} aria-label="Dein Profil">
+          <span className={s.avatar} aria-hidden="true">{profileInitial(profile.name)}</span>
+          <h2>{profile.name}</h2>
+          <p>{email}</p>
+          <a href="#display-name" className={s.editLink}>Profil bearbeiten</a>
+          <div className={s.membership}><strong>Mitglied seit</strong><p>{formatDate(profile.created_at)}</p></div>
+        </aside>
+        <div className={s.detailsColumn}>
         <section className={s.card} aria-labelledby="profile-details-heading">
-          <p className={s.sectionLabel}>BEARBEITBAR</p>
-          <h2 id="profile-details-heading">Profilinformationen</h2>
+          <h2 id="profile-details-heading">Persönliche Informationen</h2>
           <p className={s.supportingText}>
             Dieser Name wird in deinem persönlichen Studienraum angezeigt.
           </p>
@@ -236,6 +229,7 @@ export default function ProfilePage({
             Deine E-Mail-Adresse gehört zu deiner Anmeldung und kann hier nicht geändert werden.
           </p>
         </aside>
+        </div>
       </div>
     </div>
   );

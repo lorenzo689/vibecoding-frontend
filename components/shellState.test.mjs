@@ -48,6 +48,7 @@ test("the shell keeps every navigation entry", async () => {
     "/courses|Kurse",
     "/calendar|Kalender",
     "/documents|Unterlagen",
+    "/flashcards|Karteikarten",
     "/grades|Noten",
     "/profile|Profil",
   ]);

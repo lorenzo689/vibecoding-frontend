@@ -5,6 +5,7 @@ import Link from "next/link";
 import { createCourse, deleteCourse, listCourses, type Course } from "@/lib/supabase/queries/courses";
 import { deriveCourseBadge } from "@/lib/courseBadge";
 import CreateCourseDialog from "@/components/courses/CreateCourseDialog";
+import PageHeading from "@/components/ui/PageHeading";
 import styles from "@/components/courses/coursesList.module.css";
 
 function formatCreatedAt(iso: string) {
@@ -17,6 +18,8 @@ export default function CoursesPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const visibleCourses = courses.filter((course) => `${course.title} ${course.description ?? ""}`.toLocaleLowerCase("de").includes(search.toLocaleLowerCase("de")));
 
   function fetchCourses() {
     return listCourses()
@@ -83,15 +86,15 @@ export default function CoursesPage() {
 
   return (
     <div className={styles.page}>
-      <header className={styles.header}>
-        <div>
-          <h1>Kurse</h1>
-          <p className={styles.subhead}>Material, Notizen und Termine bleiben pro Kurs an einem Ort.</p>
-        </div>
+      <PageHeading title="Kurse" description="Verwalte deine Kurse und verfolge deinen Lernfortschritt.">
         <button type="button" className={styles.createButton} onClick={() => setDialogOpen(true)}>
-          <span aria-hidden="true">+</span> Kurs anlegen
+          <span aria-hidden="true">+</span> Kurs hinzufügen
         </button>
-      </header>
+      </PageHeading>
+      <div className={styles.filterBar}>
+        <span className={styles.filterActive}>Alle Kurse ({courses.length})</span>
+        <label className={styles.searchField}><span className={styles.srOnly}>Kurse durchsuchen</span><input type="search" placeholder="Kurse durchsuchen …" value={search} onChange={(event) => setSearch(event.target.value)} /></label>
+      </div>
 
       {error && <p className={styles.errorHint} role="alert">{error}</p>}
 
@@ -103,11 +106,12 @@ export default function CoursesPage() {
         </div>
       ) : (
         <ul className={styles.grid}>
-          {courses.map((course) => {
+          {visibleCourses.map((course) => {
             const badge = deriveCourseBadge(course.title);
             return (
               <li key={course.id} className={styles.cardWrap}>
                 <Link href={`/courses/${course.id}`} className={styles.card}>
+                  <span className={styles.cover} data-tone={badge.color} aria-hidden="true" />
                   <span className={styles.icon} data-tone={badge.color} aria-hidden="true">{badge.code}</span>
                   <h2 className={styles.title}>{course.title}</h2>
                   <p className={styles.description}>{course.description || "Keine Beschreibung hinterlegt."}</p>
@@ -148,6 +152,7 @@ export default function CoursesPage() {
           })}
         </ul>
       )}
+      {courses.length > 0 && visibleCourses.length === 0 && <p className={styles.empty} role="status">Keine Kurse zu dieser Suche gefunden.</p>}
 
       {dialogOpen && <CreateCourseDialog onClose={() => setDialogOpen(false)} onCreate={handleCreate} />}
     </div>

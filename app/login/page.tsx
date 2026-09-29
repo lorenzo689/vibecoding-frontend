@@ -6,5 +6,5 @@ export const metadata: Metadata = { title: "Anmelden | UniVerse" };
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string; authError?: string; authNotice?: string }> }) {
   const params = await searchParams;
-  return <AuthShell><AuthForm mode="login" next={params.next} initialError={params.authError} initialNotice={params.authNotice} /></AuthShell>;
+  return <AuthShell variant="login"><AuthForm mode="login" next={params.next} initialError={params.authError} initialNotice={params.authNotice} /></AuthShell>;
 }

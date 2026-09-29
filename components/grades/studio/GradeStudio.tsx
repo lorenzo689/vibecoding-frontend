@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import PageHeading from "@/components/ui/PageHeading";
 import type { Course } from "@/lib/supabase/queries/courses";
 import type { Assessment } from "@/lib/supabase/queries/grades";
 import { deriveCourseBadge } from "@/lib/courseBadge";
@@ -22,8 +23,7 @@ export default function GradeStudio() {
 
   return (
     <div className={s.studio}>
-      <header className={s.contextBar}>
-        <div className={s.location}><span className={s.micro}>06 / NOTEN</span><h1>Noten.</h1></div>
+      <PageHeading title="Noten" description="Behalte den Überblick über deine Leistungen.">
         {data.courses.length > 0 && (
           <div className={s.contextSwitcher}>
             <label htmlFor="grades-course-select">Kurs</label>
@@ -33,7 +33,7 @@ export default function GradeStudio() {
             </select>
           </div>
         )}
-      </header>
+      </PageHeading>
 
       {data.loading ? <div className={s.pageState} role="status">Deine Kurse werden geladen …</div>
         : data.error && data.courses.length === 0 ? (
@@ -61,6 +61,13 @@ function CourseCanvas({ course }: { course: Course }) {
   return (
     <>
       <div className={s.container}>
+        <div className={s.stats} aria-label="Leistungsübersicht für diesen Kurs">
+          <div><strong>{summary.average === null ? "—" : formatGrade(summary.average)}</strong><span>Notendurchschnitt im Kurs</span></div>
+          <div><strong>{data.assessments.filter((item) => item.grade !== null).length}</strong><span>Bewertete Leistungen</span></div>
+          <div><strong>{data.assessments.filter((item) => item.grade === null).length}</strong><span>Ausstehende Bewertungen</span></div>
+        </div>
+        <details className={s.planning}>
+        <summary>Notenziel und Berechnung</summary>
         <div className={s.overviewGrid}>
           <section className={s.card} aria-labelledby="standing-heading">
             <div className={s.railHeading}><h2 id="standing-heading">Dein Stand</h2><span className={s.courseCode}>{deriveCourseBadge(course.title).code}</span></div>
@@ -74,6 +81,7 @@ function CourseCanvas({ course }: { course: Course }) {
           </section>
           <GoalEditor assessments={data.assessments} />
         </div>
+        </details>
 
         <section className={s.transcript} aria-labelledby="record-heading">
           <header className={s.recordHeading}>
@@ -88,10 +96,10 @@ function CourseCanvas({ course }: { course: Course }) {
           {data.sorted.length === 0 ? (
             <div className={s.emptyRecord}><span aria-hidden="true">00</span><h3>Hier beginnt dein Leistungsbild.</h3><p>Erfasse deine erste Prüfung, Abgabe oder Präsentation.</p><button className={s.textAction} onClick={() => data.setDialogOpen(true)}>Erste Leistung hinzufügen</button></div>
           ) : (
-            <ol className={s.recordList}>
-              {data.sorted.map((item, index) => <AssessmentEntry key={item.id} item={item} index={index}
+            <><div className={s.tableHead} aria-hidden="true"><span>Prüfung</span><span>Kurs</span><span>Note / LP</span><span>Datum</span><span>Aktionen</span></div><ol className={s.recordList}>
+              {data.sorted.map((item) => <AssessmentEntry key={item.id} item={item} courseTitle={course.title}
                 deleting={data.deletingId === item.id} onEdit={() => data.setEditingAssessment(item)} onDelete={() => data.handleDelete(item)} />)}
-            </ol>
+            </ol></>
           )}
 
           <footer className={s.recordFooter}>
@@ -107,22 +115,23 @@ function CourseCanvas({ course }: { course: Course }) {
   );
 }
 
-function AssessmentEntry({ item, index, deleting, onEdit, onDelete }: {
-  item: Assessment; index: number; deleting: boolean; onEdit: () => void; onDelete: () => void;
+function AssessmentEntry({ item, courseTitle, deleting, onEdit, onDelete }: {
+  item: Assessment; courseTitle: string; deleting: boolean; onEdit: () => void; onDelete: () => void;
 }) {
   return (
     <li className={s.entry}>
-      <div className={s.entryIndex} aria-hidden="true">{String(index + 1).padStart(2, "0")}</div>
       <div className={s.entryBody}>
         <div className={s.entryClassification}><span>{KIND_LABELS[item.kind]}</span><span className={s.entryStatus} data-status={item.status}>{STATUS_LABELS[item.status]}</span></div>
         <h3>{item.title}</h3>
-        <div className={s.entryMeta}>{item.assessmentDate && <time dateTime={item.assessmentDate}>{formatDate(item.assessmentDate)}</time>}
+        <div className={s.entryMeta}>
           {item.pointsEarned !== null && item.pointsMax !== null && <span>{formatGrade(item.pointsEarned)} / {formatGrade(item.pointsMax)} Punkte</span>}
         </div>
         {item.notes && <p className={s.entryNotes}>{item.notes}</p>}
-        <div className={s.entryActions}><button onClick={onEdit} disabled={deleting} aria-label={`${item.title} bearbeiten`}>Bearbeiten</button><button onClick={onDelete} disabled={deleting} aria-label={`${item.title} löschen`}>{deleting ? "Wird gelöscht …" : "Löschen"}</button></div>
       </div>
+      <span className={s.entryCourse}>{courseTitle}</span>
       <div className={s.entryResult}><strong aria-label={item.grade === null ? "Noch nicht bewertet" : `Note ${formatGrade(item.grade)}`}>{item.grade === null ? "—" : formatGrade(item.grade)}</strong><span>{formatEcts(item.ectsCredits)} ECTS</span></div>
+      <span className={s.entryDate}>{item.assessmentDate ? <time dateTime={item.assessmentDate}>{formatDate(item.assessmentDate)}</time> : "—"}</span>
+      <div className={s.entryActions}><button onClick={onEdit} disabled={deleting} aria-label={`${item.title} bearbeiten`}>Bearbeiten</button><button onClick={onDelete} disabled={deleting} aria-label={`${item.title} löschen`}>{deleting ? "Wird gelöscht …" : "Löschen"}</button></div>
     </li>
   );
 }
