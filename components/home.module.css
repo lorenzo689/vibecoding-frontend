@@ -208,3 +208,41 @@
   .empty { padding: var(--space-4); }
   .ctaLink { display: inline-flex; align-items: center; min-height: 40px; }
 }
+
+/* Reference dashboard: panoramic hero, three summaries, four learning tools. */
+.home { max-width: 1320px; gap: 16px; }
+.hero { min-height: 290px; }
+.heroContent { padding: 38px 32px 28px; gap: 12px; }
+.hero h1 { font-size: clamp(28px, 3vw, 40px); }
+.heroEyebrow { font-size: 11px; letter-spacing: .04em; color: #39e3d3; }
+.heroLead { font-size: 17px; }
+.heroQuote { padding: 14px 18px; border-radius: 10px; }
+.heroQuote p { font-size: 12px; }
+.heroQuote cite { font-size: 10px; }
+.heroTagline { right: 35px; font-size: 17px; transform: translateY(-40%) rotate(-15deg); }
+.summaryRow { gap: 14px; }
+.card { padding: 18px; }
+.cardHead { margin-bottom: 18px; gap: 8px; }
+.cardHead h2 { gap: 8px; font-size: 13px; }
+.cardIcon { width: 24px; height: 24px; border-radius: 6px; }
+.cardIcon svg { width: 16px; height: 16px; }
+.headLink { font-size: 10px; }
+.eventTitle, .courseTitle, .docName { font-size: 14px; }
+.nextEvent { flex-direction: row; flex-wrap: wrap; }
+.nextEventBody { flex: 1; }
+.nextEvent .primaryPill { margin-left: auto; }
+.primaryPill { min-height: 40px; border-radius: 9px; font-size: 12px; }
+.primaryPill[data-tone="purple"] { min-height: 40px; }
+.recentDoc { border: 0; padding: 0; }
+.courseBadge { width: 50px; height: 50px; border-radius: 12px; }
+.toolsCard { padding: 18px; }
+.toolsCard .cardHead h2 { font-size: 15px; }
+.toolsGrid { gap: 12px; }
+.toolCard { min-height: 78px; gap: 12px; padding: 12px; background: rgba(255,255,255,.65); }
+.toolIcon { width: 44px; height: 44px; border-radius: 10px; }
+.toolIcon svg { width: 24px; height: 24px; }
+.toolBody strong { font-size: 12px; }
+.toolBody span { font-size: 11px; }
+.chevron { width: 12px; }
+@media (min-width: 1050px) { .summaryRow { grid-template-columns: repeat(3,minmax(0,1fr)); } .toolsGrid { grid-template-columns: repeat(4,minmax(0,1fr)); } }
+@media (max-width: 640px) { .heroContent { padding: 24px 20px; } .hero { min-height: 270px; } .heroQuote { max-width: 100%; } }

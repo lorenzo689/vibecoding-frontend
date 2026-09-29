@@ -1,4 +1,4 @@
-.page { --doc-ink: #10201a; --doc-muted: #6b7570; --doc-line: #e7e9e6; --doc-accent-a: #14b878; --doc-accent-b: #0e8850; max-width: var(--content-width); margin-inline: auto; color: var(--doc-ink); }
+.page { --doc-ink: #111735; --doc-muted: #63749a; --doc-line: #e8edf9; --doc-accent-a: #9570ff; --doc-accent-b: #7545ff; max-width: var(--content-width); margin-inline: auto; color: var(--doc-ink); }
 .eyebrow, .sectionLabel { font: 650 11px/1.5 var(--font-geist-sans), sans-serif; letter-spacing: .06em; color: var(--doc-muted); text-transform: uppercase; }
 .page h1 { margin-top: var(--space-2); font-size: clamp(1.75rem, 2.6vw, 2.25rem); font-weight: 700; letter-spacing: -.03em; overflow-wrap: anywhere; }
 .intro { max-width: 54ch; margin-top: var(--space-3); color: var(--doc-muted); font-size: var(--font-body); line-height: 1.6; }
@@ -11,12 +11,12 @@
 .identity small { margin-top: 1px; color: var(--doc-muted); font-size: 12px; }
 
 .grid { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(280px, .8fr); gap: var(--space-5); }
-.card, .errorCard { padding: var(--space-6); background: #fff; border: 1px solid var(--doc-line); border-radius: 20px; }
+.card, .errorCard { padding: var(--space-6); background: #fff; border: 1px solid var(--doc-line); border-radius: 12px; }
 .card h2, .errorCard h2 { margin-top: var(--space-2); font-size: 19px; font-weight: 700; letter-spacing: -.02em; }
 .supportingText, .errorCard p { margin-top: var(--space-2); color: var(--doc-muted); font-size: 13px; line-height: 1.6; }
 .card form { margin-top: var(--space-6); }
 .card label { display: block; margin-bottom: var(--space-2); color: var(--doc-ink); font-size: 13px; font-weight: 650; }
-.card input { width: 100%; padding: var(--space-3) var(--space-4); color: var(--doc-ink); background: #f7f8f7; border: 1.5px solid var(--doc-line); border-radius: 12px; font-size: 14px; transition: border-color var(--motion), box-shadow var(--motion); }
+.card input { width: 100%; padding: var(--space-3) var(--space-4); color: var(--doc-ink); background: #f7f9ff; border: 1.5px solid var(--doc-line); border-radius: 12px; font-size: 14px; transition: border-color var(--motion), box-shadow var(--motion); }
 .card input:focus-visible { outline: none; background: #fff; border-color: var(--doc-accent-b); box-shadow: 0 0 0 4px rgba(14, 136, 80, 0.14); }
 .fieldHelp { display: flex; justify-content: space-between; margin-top: var(--space-2); color: var(--doc-muted); font-size: 11px; }
 .statusMessage, .errorMessage { min-height: 30px; padding-top: var(--space-2); font-size: 13px; line-height: 1.5; }
@@ -31,10 +31,10 @@
 .accountDetails > div:last-child { border-bottom: 0; }
 .accountDetails dt { color: var(--doc-muted); font-size: 10.5px; font-weight: 650; letter-spacing: .06em; text-transform: uppercase; }
 .accountDetails dd { margin-top: var(--space-2); overflow-wrap: anywhere; color: var(--doc-ink); font-size: 14px; font-weight: 600; }
-.securityNote { margin-top: var(--space-5); padding: var(--space-4); background: #f7f8f7; border-left: 2px solid var(--doc-accent-b); border-radius: 0 12px 12px 0; color: var(--doc-muted); font-size: 12.5px; line-height: 1.6; }
+.securityNote { margin-top: var(--space-5); padding: var(--space-4); background: #f7f9ff; border-left: 2px solid var(--doc-accent-b); border-radius: 0 12px 12px 0; color: var(--doc-muted); font-size: 12.5px; line-height: 1.6; }
 .errorCard { max-width: 620px; }
 
-.loadingCard { width: min(100%, 680px); height: 250px; margin-top: var(--space-6); background: linear-gradient(100deg, #f7f8f7 20%, #fff 40%, #f7f8f7 60%); background-size: 200% 100%; border-radius: 20px; animation: loading 1.5s ease-in-out infinite; }
+.loadingCard { width: min(100%, 680px); height: 250px; margin-top: var(--space-6); background: linear-gradient(100deg, #f7f9ff 20%, #fff 40%, #f7f9ff 60%); background-size: 200% 100%; border-radius: 12px; animation: loading 1.5s ease-in-out infinite; }
 @keyframes loading { to { background-position-x: -200%; } }
 
 @media (max-width: 800px) {
@@ -46,3 +46,25 @@
   .identity { min-width: 0; }
 }
 @media (prefers-reduced-motion: reduce) { .loadingCard { animation: none; } }
+
+/* Shared light workspace surface from the reference screens. */
+.grid { grid-template-columns: minmax(220px,.8fr) minmax(0,1.2fr); gap: 20px; }
+.profileCard { display: flex; flex-direction: column; align-items: center; padding: 36px 24px; background: #fff; border: 1px solid #e8edf9; border-radius: 12px; text-align: center; }
+.avatar { display: grid; place-items: center; width: 78px; height: 78px; margin-bottom: 16px; border-radius: 50%; background: linear-gradient(135deg,#11c6b2,#00958d); color: #fff; font-size: 30px; }
+.profileCard h2 { font-size: 22px; font-weight: 700; }
+.profileCard p { margin-top: 5px; color: #63749a; font-size: 13px; overflow-wrap: anywhere; }
+.editLink { margin-top: 20px; padding: 10px 20px; border-radius: 10px; background: #e9f2ff; color: #2475ec; font-size: 12px; font-weight: 600; }
+.membership { margin-top: auto; padding-top: 44px; font-size: 13px; }
+.detailsColumn { display: grid; gap: 16px; min-width: 0; }
+.card { padding: 22px; }
+.card h2 { margin: 0; font-size: 16px; }
+.card form { margin-top: 18px; }
+.card input { border-width: 1px; border-radius: 8px; }
+.card button { background: #eeebff; color: #7545ff; font-size: 12px; }
+.accountDetails > div { display: grid; grid-template-columns: 120px minmax(0,1fr); gap: 12px; border: 0; padding-block: 8px; }
+.accountDetails dt { text-transform: none; font-size: 12px; letter-spacing: 0; }
+.accountDetails dd { margin: 0; font-size: 12px; }
+.sectionLabel { display: none; }
+@media (max-width: 800px) { .grid { grid-template-columns: 1fr; } .profileCard { padding: 24px; } .membership { padding-top: 20px; } }
+.page { min-height: calc(100svh - 102px); padding: 26px; background: rgba(255,255,255,.76); border: 1px solid #e7edfb; border-radius: 14px; box-shadow: 0 5px 24px rgba(104,133,190,.035); }
+@media (max-width: 640px) { .page { padding: 18px 14px; min-height: calc(100svh - 100px); } }

@@ -44,19 +44,17 @@ export default function ForgotPasswordForm() {
 
   return (
     <div className={styles.formContent}>
-      <p className={styles.eyebrow}>Zurück in deinen Studienraum</p>
-      <h1>Passwort vergessen?</h1>
-      <p className={styles.subtitle}>Gib deine E-Mail-Adresse ein. Wir senden dir einen sicheren Link zum Zurücksetzen.</p>
       <form onSubmit={submit}>
         <div className={styles.field}>
           <label htmlFor="recovery-email">E-Mail-Adresse</label>
-          <input id="recovery-email" name="email" type="email" autoComplete="email" autoCapitalize="none" spellCheck={false} required disabled={state.status === "pending"} />
+          <div className={styles.inputIcon}><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="m4 7 8 6 8-6"/></svg><input id="recovery-email" name="email" type="email" autoComplete="email" autoCapitalize="none" spellCheck={false} placeholder="deine@hochschule.de" required disabled={state.status === "pending"} /></div>
         </div>
         {(state.status === "success" || state.status === "error") && (
           <p className={styles.notice} data-tone={state.status} role={state.status === "error" ? "alert" : "status"}>{state.message}</p>
         )}
         <button className={styles.primary} type="submit" disabled={state.status === "pending"}>
           {state.status === "pending" ? "Wird gesendet …" : "Reset-Link anfordern"}
+          <span aria-hidden="true">→</span>
         </button>
       </form>
       <p className={styles.alternative}><Link href="/login">Zurück zur Anmeldung</Link></p>

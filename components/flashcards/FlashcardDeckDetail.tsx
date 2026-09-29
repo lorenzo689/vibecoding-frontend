@@ -141,7 +141,7 @@ export default function FlashcardDeckDetail({
           <h1>{deck.title}</h1>
           <p className={styles.subhead}>{deck.cards.length} {deck.cards.length === 1 ? "Karte" : "Karten"}</p>
         </div>
-        <button type="button" className={styles.dangerButtonSolid} onClick={() => setConfirmingDelete(true)}>
+        <button type="button" className={styles.deleteSetButton} onClick={() => setConfirmingDelete(true)}>
           <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M5 7h14M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2m2 0-.9 12.1a2 2 0 0 1-2 1.9H8.9a2 2 0 0 1-2-1.9L6 7Z" /></svg>
           Set löschen
         </button>

@@ -6,5 +6,5 @@ export const metadata: Metadata = { title: "Registrieren | UniVerse" };
 
 export default async function RegisterPage({ searchParams }: { searchParams: Promise<{ next?: string }> }) {
   const params = await searchParams;
-  return <AuthShell><AuthForm mode="register" next={params.next} /></AuthShell>;
+  return <AuthShell variant="register"><AuthForm mode="register" next={params.next} /></AuthShell>;
 }

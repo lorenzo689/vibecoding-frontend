@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import PageHeading from "@/components/ui/PageHeading";
 import { createClient } from "@/lib/supabase/browser";
 import { LIBRARY_LIMIT, listLibraryDocuments, type LibraryDocument } from "@/lib/supabase/queries/library";
 import DocumentRetryButton from "@/components/courses/DocumentRetryButton";
@@ -98,15 +99,9 @@ export default function DocumentLibrary() {
 
   return (
     <div className={s.page}>
-      <header className={s.header}>
-        <div className={s.titleRow}>
-          <h1>Unterlagen</h1>
-          {documents && total > 0 && (
-            <span className={s.count}>{total} {total === 1 ? "Unterlage" : "Unterlagen"}</span>
-          )}
-        </div>
-        <p className={s.subhead}>Finde deine Dokumente kursübergreifend und lerne direkt weiter.</p>
-      </header>
+      <PageHeading title="Unterlagen" description="Alle deine Lernmaterialien an einem Ort.">
+        <Link href="/courses" className={s.uploadAction}>+ Unterlagen hochladen</Link>
+      </PageHeading>
 
       {state.status === "error" && (
         <div className={s.notice} role="alert">
@@ -198,19 +193,23 @@ export default function DocumentLibrary() {
               </button>
             </div>
           ) : (
+            <div>
+            <div className={s.tableHead} aria-hidden="true"><span>Name</span><span>Kurs</span><span>Status</span><span>Größe</span><span>Hinzugefügt</span><span /></div>
             <ul className={s.list}>
               {visible.map(({ document, progress, retry }) => (
                 <li key={document.fileId} className={s.item}>
                   <Link href={`/courses/${document.courseId}/documents/${document.fileId}`} className={s.row} data-status={progress.tone}>
-                    <span className={s.type} aria-hidden="true">{documentTypeLabel(document.mimeType)}</span>
                     <span className={s.body}>
+                      <span className={s.type} aria-hidden="true">{documentTypeLabel(document.mimeType)}</span>
+                      <span className={s.nameBody}>
                       <strong className={s.name} title={document.name}>{document.name}</strong>
-                      <span className={s.meta}>
-                        {document.courseTitle} · {formatUploaded(document.uploadedAt)} · {formatFileSize(document.sizeBytes)}
-                      </span>
                       {progress.tone === "failed" && progress.detail && <span className={s.detail}>{progress.detail}</span>}
+                      </span>
                     </span>
+                    <span className={s.meta}>{document.courseTitle}</span>
                     <span className={s.chip} data-tone={progress.tone}>{TONE_LABELS[progress.tone]}</span>
+                    <span className={s.meta}>{formatFileSize(document.sizeBytes)}</span>
+                    <span className={s.meta}>{formatUploaded(document.uploadedAt)}</span>
                     <svg className={s.chevron} aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="m9 6 6 6-6 6" /></svg>
                   </Link>
                   {retry && (
@@ -227,6 +226,7 @@ export default function DocumentLibrary() {
                 </li>
               ))}
             </ul>
+            </div>
           )}
         </>
       )}

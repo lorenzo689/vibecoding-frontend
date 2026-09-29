@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
+import PageHeading from "@/components/ui/PageHeading";
 import { useRouter } from "next/navigation";
 import type { AuthChangeEvent } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/browser";
@@ -77,11 +78,7 @@ export default function AssistantWorkspace() {
 
   return (
     <div className={s.workspace} data-full-bleed>
-      <header className={s.topbar}>
-        <div>
-          <p className={s.micro}>02 / KI-Assistent</p>
-          <h1>Frag dein Material.</h1>
-        </div>
+      <PageHeading title="KI-Assistent" description="Stelle Fragen zu deinen Unterlagen und erhalte verständliche Erklärungen.">
         <div className={s.courseField}>
           <label htmlFor="assistant-context">Kurs</label>
           <select id="assistant-context" value={courseId} disabled={locked || loading || !courses.length}
@@ -90,7 +87,7 @@ export default function AssistantWorkspace() {
             {courses.map((course) => <option key={course.id} value={course.id}>{course.title}</option>)}
           </select>
         </div>
-      </header>
+      </PageHeading>
       {loading && <p className={s.status} role="status">Chat wird geladen …</p>}
       {error && <div className={s.error} role="alert"><p>{error.message}</p>
         {error.code === "UNAUTHENTICATED" ? <Link href="/login?next=%2Fassistant">Erneut anmelden</Link>
@@ -255,6 +252,11 @@ function CourseChat({ courseId, userId, setLocked }: { courseId: string; userId:
           <p>Antworten kommen nur aus deinen hochgeladenen Unterlagen, mit Quellenangabe zu Folie und Seite.</p>
         </div>
       )}
+      {!messages.length && !pending && !busy && courseId && <div className={s.suggestions}>
+        <h3>Beispiel-Fragen</h3>
+        {["Erkläre die wichtigsten Begriffe aus meinen Unterlagen.", "Fasse die zentralen Themen dieses Kurses zusammen.", "Wie hängen die wichtigsten Konzepte miteinander zusammen?", "Erstelle Übungsfragen zu diesem Thema."].map((prompt) =>
+          <button key={prompt} type="button" onClick={() => { setQuestion(prompt); inputRef.current?.focus(); }}><span aria-hidden="true">▧</span>{prompt}</button>)}
+      </div>}
       {!courseId && <p className={s.status}>In deinem Konto sind noch keine Kurse vorhanden. <Link href="/courses">Lege einen Kurs an und lade deine Unterlagen hoch.</Link></p>}
       {loading || historyLoading ? <p className={s.status} role="status">Kurs und Unterhaltung werden geladen …</p>
         : courseId && indexed === false && !loadFailed && <p className={s.status}>Bei der letzten Prüfung waren noch keine durchsuchbaren Unterlagen verfügbar. Beim Senden prüft der Chat den aktuellen Stand. <Link href={`/courses/${courseId}`}>Unterlagen im Kurs verwalten</Link></p>}

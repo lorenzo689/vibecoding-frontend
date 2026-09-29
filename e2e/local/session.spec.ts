@@ -5,8 +5,8 @@ import { expectPage, login } from "./helpers";
 
 test("wrong credentials show a friendly error and stay on the login page", async ({ page }) => {
   await page.goto("/login");
-  await page.getByLabel("E-MAIL").fill("anna@example.com");
-  await page.getByLabel("PASSWORT", { exact: true }).fill("definitely-wrong");
+  await page.getByLabel("E-Mail").fill("anna@example.com");
+  await page.getByLabel("Passwort", { exact: true }).fill("definitely-wrong");
   await page.getByRole("button", { name: "Anmelden" }).click();
   await expect(page.getByText("E-Mail-Adresse oder Passwort ist nicht korrekt.")).toBeVisible();
   await expect(page).toHaveURL(/\/login/);

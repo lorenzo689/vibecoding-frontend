@@ -1,4 +1,21 @@
 .shell {
+  color-scheme: light;
+  --ink: #111735;
+  --muted: #63749a;
+  --paper: #ffffff;
+  --canvas: #f7f9ff;
+  --line: #e8edf9;
+  --forest: #7545ff;
+  --signal: #7545ff;
+  --radius-control: 9px;
+  --radius-panel: 14px;
+  --content-width: 1320px;
+  --page-gutter: clamp(16px, 1.8vw, 28px);
+  --uv-radius-hero: 14px;
+  --uv-radius-lg: 12px;
+  --uv-radius-md: 10px;
+  --uv-shadow-card: 0 3px 16px rgba(83, 111, 166, .035);
+  --uv-border: #e8edf9;
   --dash-bg: var(--brand-app-bg);
   --dash-ink: var(--brand-ink);
   --dash-muted: var(--brand-muted);
@@ -27,7 +44,7 @@
   pointer-events: none;
   background-color: var(--dash-bg);
   background-image:
-    linear-gradient(rgba(248, 251, 255, .34), rgba(248, 251, 255, .34)),
+    linear-gradient(rgba(248, 251, 255, .78), rgba(248, 251, 255, .78)),
     url("/brand/app-background.png");
   /* A fixed, more moderate scale instead of `cover` — `cover` was upscaling the
      source ~2.5–3x on wide viewports (soft, but visibly less crisp). The image's
@@ -41,10 +58,10 @@
 .sidebar {
   display: flex;
   flex-direction: column;
-  width: 264px;
+  width: 220px;
   flex-shrink: 0;
   height: 100%;
-  background-color: rgba(255, 255, 255, .82);
+  background: linear-gradient(rgba(255,255,255,.55), rgba(255,255,255,.55)), url("/brand/sidebar-background.png") left bottom / 100% auto no-repeat, rgba(255, 255, 255, .82);
   backdrop-filter: blur(22px) saturate(1.1);
   -webkit-backdrop-filter: blur(22px) saturate(1.1);
   border-right: 1px solid var(--uv-border);
@@ -182,3 +199,28 @@
   .topbar { padding-inline: var(--space-4); }
   .main { padding: var(--space-6) var(--space-4) var(--space-8); }
 }
+
+/* Compact proportions keep the navigation and page on the same baseline. */
+.brandRow { min-height: 76px; padding-inline: 22px; border-bottom: 0; }
+.sidebarBody { padding: 8px 16px 16px; }
+.sidebarBody nav { gap: 5px; }
+.collapseToggle { width: 28px; height: 28px; margin-bottom: 10px; border: 0; background: transparent; color: #7180a2; }
+.navItem { min-height: 43px; padding-inline: 13px; border-radius: 8px; color: #596b94; font-size: 13px; gap: 14px; }
+.navItem svg { width: 18px; height: 18px; }
+.navBadge { color: #7545ff; background: #eee8ff; padding: 2px 5px; border-radius: 5px; font-size: 9px; }
+.profileRow { background: transparent; padding-inline: 2px; }
+.identity strong { font-size: 12px; }
+.identity small { font-size: 10px; }
+.logoutItem { min-height: 32px; font-size: 12px; }
+.logoutItem svg { color: #ec6d88; }
+.topbar { min-height: 72px; max-width: calc(1320px + 2 * var(--page-gutter)); }
+.search { max-width: 620px; }
+.search input { min-height: 42px; border-radius: 9px; font-size: 12px; }
+.searchHint { height: 23px; border: 0; border-radius: 5px; background: #f0f3fc; }
+.bell { width: 38px; height: 38px; border-radius: 50%; background: #fff; border: 1px solid #e8edf9; }
+.profileChip .avatar { width: 39px; height: 39px; }
+.topbarRight { gap: 16px; }
+.main { padding-top: 0; padding-bottom: 20px; }
+.shell :is(a, button, input, textarea, select, [tabindex]):focus-visible { outline: 2px solid #7545ff; outline-offset: 3px; }
+@media (max-width: 900px) { .sidebar { width: min(288px, 86vw); } }
+@media (max-width: 640px) { .main { padding: 0 10px 16px; } }

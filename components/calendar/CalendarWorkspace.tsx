@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import PageHeading from "@/components/ui/PageHeading";
 import s from "./calendar.module.css";
 import { listCourses, type Course } from "@/lib/supabase/queries/courses";
 import {
@@ -199,17 +200,12 @@ export default function CalendarWorkspace() {
 
   return (
     <div className={s.page}>
-      <header className={s.masthead}>
-        <div className={s.mastheadText}>
-          <p className={s.micro}>04 / KALENDER</p>
-          <h1>Termine.</h1>
-          <p className={s.subhead}>{upcoming.length} anstehend, über alle Kurse.</p>
-        </div>
+      <PageHeading title="Kalender" description={`Alle wichtigen Termine und Deadlines auf einen Blick. ${upcoming.length} anstehend.`}>
         <div className={s.mastheadActions}>
           <div className={s.todayBadge}><span>HEUTE</span><strong>{Number(today.slice(-2))}</strong><small>{formatDateKey(today, { month: "long", year: "numeric" })}</small></div>
-          <button type="button" className={s.createButton} onClick={() => setDialogOpen(true)}>+ Termin</button>
+          <button type="button" className={s.createButton} onClick={() => setDialogOpen(true)}>+ Termin hinzufügen</button>
         </div>
-      </header>
+      </PageHeading>
       {actionError && <p className={s.errorHint} role="alert">{actionError}</p>}
       <p role="status" aria-live="polite" className={s.visuallyHidden}>{statusMessage}</p>
 
