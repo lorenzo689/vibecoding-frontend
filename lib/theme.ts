@@ -7,7 +7,7 @@ function isThemeChoice(value: unknown): value is ThemeChoice {
   return value === "light" || value === "dark" || value === "system";
 }
 
-export function readStoredChoice(): ThemeChoice {
+function readStoredChoice(): ThemeChoice {
   try {
     const stored = localStorage.getItem(THEME_STORAGE_KEY);
     return isThemeChoice(stored) ? stored : "system";
@@ -30,7 +30,37 @@ function resolveTheme(choice: ThemeChoice): ResolvedTheme {
 export function applyTheme(choice: ThemeChoice): ResolvedTheme {
   const resolved = resolveTheme(choice);
   document.documentElement.dataset.theme = resolved;
+  listeners.forEach((notify) => notify());
   return resolved;
+}
+
+// The theme lives outside React — in the <html> attribute, in storage and in
+// the OS setting — so components read it through useSyncExternalStore instead
+// of mirroring it into state from an effect.
+const listeners = new Set<() => void>();
+
+export function subscribeTheme(notify: () => void): () => void {
+  listeners.add(notify);
+  const media = window.matchMedia("(prefers-color-scheme: dark)");
+  function onSystemChange() {
+    // Follow the OS only while the user has not chosen explicitly.
+    if (readStoredChoice() === "system") applyTheme("system");
+  }
+  media.addEventListener("change", onSystemChange);
+  return () => {
+    listeners.delete(notify);
+    media.removeEventListener("change", onSystemChange);
+  };
+}
+
+export function getTheme(): ResolvedTheme {
+  return document.documentElement.dataset.theme === "dark" ? "dark" : "light";
+}
+
+// The server cannot know the stored choice; the head script corrects the
+// attribute before paint and the first subscription re-reads it.
+export function getServerTheme(): ResolvedTheme {
+  return "light";
 }
 
 export function storeChoice(choice: ThemeChoice): void {

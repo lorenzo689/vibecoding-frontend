@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import {
   applyTheme,
-  readStoredChoice,
+  getServerTheme,
+  getTheme,
   storeChoice,
-  type ResolvedTheme,
+  subscribeTheme,
   type ThemeChoice,
 } from "@/lib/theme";
 import s from "./themeToggle.module.css";
@@ -28,32 +29,15 @@ function MoonIcon() {
 }
 
 export default function ThemeToggle({ compact = false }: { compact?: boolean }) {
-  // Render the light icon until mounted: the server cannot know the stored
-  // choice, and reading it during render would mismatch the hydrated markup.
-  const [resolved, setResolved] = useState<ResolvedTheme>("light");
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-    const choice = readStoredChoice();
-    setResolved(applyTheme(choice));
-
-    const media = window.matchMedia("(prefers-color-scheme: dark)");
-    function onSystemChange() {
-      // Only follow the system while the user has not made an explicit choice.
-      if (readStoredChoice() === "system") setResolved(applyTheme("system"));
-    }
-    media.addEventListener("change", onSystemChange);
-    return () => media.removeEventListener("change", onSystemChange);
-  }, []);
+  const resolved = useSyncExternalStore(subscribeTheme, getTheme, getServerTheme);
+  const isDark = resolved === "dark";
 
   function toggle() {
-    const next: ThemeChoice = resolved === "dark" ? "light" : "dark";
+    const next: ThemeChoice = isDark ? "light" : "dark";
     storeChoice(next);
-    setResolved(applyTheme(next));
+    applyTheme(next);
   }
 
-  const isDark = mounted && resolved === "dark";
   const label = isDark ? "Zu hellem Erscheinungsbild wechseln" : "Zu dunklem Erscheinungsbild wechseln";
 
   return (
