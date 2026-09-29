@@ -6,14 +6,14 @@
   --ink: var(--brand-ink);
   --muted: var(--brand-muted);
   --line: var(--brand-line);
-  --line-soft: #eef0f9;
+  --line-soft: var(--app-neutral-tint);
   --tint: var(--brand-app-bg);
   --accent-a: var(--brand-teal);
   --accent-b: var(--brand-teal-dark);
   --accent-soft: var(--brand-teal-soft);
   --accent-line: var(--brand-teal-soft-line);
-  --danger: #b3392c;
-  --danger-soft: #fdecea;
+  --danger: var(--app-danger);
+  --danger-soft: var(--app-danger-soft);
   max-width: 1260px;
   margin-inline: auto;
   display: flex;
@@ -32,8 +32,8 @@
   overflow: hidden;
   min-height: 320px;
   border-radius: var(--uv-radius-hero);
-  color: #f4f6ff;
-  box-shadow: var(--uv-shadow-hero), inset 0 0 0 1px rgba(255, 255, 255, .10);
+  color: var(--app-on-media);
+  box-shadow: var(--uv-shadow-hero), inset 0 0 0 1px var(--app-veil-faint);
 }
 .heroImage {
   position: absolute;
@@ -49,18 +49,18 @@
 .heroScrim { position: absolute; inset: 0; background: linear-gradient(90deg, rgba(3, 13, 31, .90) 0%, rgba(3, 13, 31, .70) 25%, rgba(3, 13, 31, .28) 52%, rgba(3, 13, 31, .10) 72%, rgba(3, 13, 31, .24) 100%); }
 .heroContent { position: relative; z-index: 1; display: flex; flex-direction: column; gap: var(--space-4); max-width: min(54%, 630px); min-width: 0; padding: 52px 40px 40px; }
 .heroEyebrow { color: var(--brand-cyan); font-size: 12.5px; font-weight: 700; letter-spacing: .14em; }
-.hero h1 { font-size: clamp(2rem, 3.4vw, 2.875rem); font-weight: 750; letter-spacing: -.03em; line-height: 1.12; overflow-wrap: anywhere; }
-.heroTitleSkeleton { width: min(320px, 70%); height: clamp(2rem, 3vw, 2.6rem); background: rgba(255, 255, 255, .12); border-radius: 10px; }
-.heroLead { color: rgba(255, 255, 255, .92); font-size: 19px; font-weight: 400; }
+.hero h1 { color: var(--app-on-media); font-size: clamp(2rem, 3.4vw, 2.875rem); font-weight: 750; letter-spacing: -.03em; line-height: 1.12; overflow-wrap: anywhere; }
+.heroTitleSkeleton { width: min(320px, 70%); height: clamp(2rem, 3vw, 2.6rem); background: var(--app-veil-faint); border-radius: 10px; }
+.heroLead { color: var(--app-on-media-soft); font-size: 19px; font-weight: 400; }
 
 /* Glass surface: dark, translucent, blurred — a deliberately larger accent detail. */
 .heroQuote { display: flex; align-items: flex-start; gap: var(--space-4); max-width: 50ch; width: 100%; margin-top: var(--space-1); padding: var(--space-5); background: rgba(8, 14, 32, .42); border: 1px solid rgba(127, 227, 212, .28); border-radius: var(--uv-radius-md); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); box-shadow: 0 8px 24px rgba(6, 12, 30, .2); }
 .heroQuoteMark { flex-shrink: 0; color: var(--brand-cyan); font-size: 34px; font-weight: 700; line-height: .7; }
 .heroQuote div { display: flex; flex-direction: column; gap: 3px; }
-.heroQuote p { font-size: 15px; font-style: italic; line-height: 1.5; }
+.heroQuote p { color: var(--app-on-media-soft); font-size: 15px; font-style: italic; line-height: 1.5; }
 .heroQuote cite { color: rgba(244, 246, 255, .68); font-size: 12.5px; font-style: normal; }
 
-.heroTagline { position: absolute; z-index: 1; top: 50%; right: 44px; margin: 0; color: #fff; font-size: 18px; font-weight: 600; font-style: italic; line-height: 1.45; text-align: right; text-shadow: 0 2px 14px rgba(0, 0, 0, .35); transform: translateY(-50%); }
+.heroTagline { position: absolute; z-index: 1; top: 50%; right: 44px; margin: 0; color: var(--app-on-accent); font-size: 18px; font-weight: 600; font-style: italic; line-height: 1.45; text-align: right; text-shadow: 0 2px 14px rgba(0, 0, 0, .35); transform: translateY(-50%); }
 .heroTagline span { display: block; transform: rotate(-2deg); }
 .heroTagline .heroTaglineLast { color: #6fe3d0; }
 
@@ -69,7 +69,7 @@
 /* One card family: same radius/border/shadow/padding for all three main cards, so
    they read as one system instead of separately-styled boxes. */
 .card { display: flex; flex-direction: column; min-width: 0; padding: var(--space-6); background: var(--uv-surface); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid var(--uv-border); border-radius: var(--uv-radius-lg); box-shadow: var(--uv-shadow-card); }
-.attentionCard[data-tone="failed"] { border-color: #f0d6d2; box-shadow: inset 4px 0 0 #e39a91, var(--uv-shadow-card); }
+.attentionCard[data-tone="failed"] { border-color: var(--app-rose-line); box-shadow: inset 4px 0 0 #e39a91, var(--uv-shadow-card); }
 .attentionCard[data-tone="info"] { box-shadow: inset 4px 0 0 #a9c5f7, var(--uv-shadow-card); }
 .cardHead { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); margin-bottom: var(--space-5); }
 .cardHead h2 { display: flex; align-items: center; gap: var(--space-3); font-size: 16px; font-weight: 700; letter-spacing: -.01em; }
@@ -95,11 +95,11 @@
 .currentCourse { display: flex; flex-direction: column; gap: var(--space-4); flex: 1; }
 .currentCourseRow { display: flex; align-items: center; gap: var(--space-4); }
 .courseTitle { overflow: hidden; font-size: 16px; font-weight: 700; letter-spacing: -.01em; text-overflow: ellipsis; white-space: nowrap; }
-.courseBadge { display: grid; place-items: center; flex-shrink: 0; width: 58px; height: 58px; color: #fff; border-radius: 15px; font-size: 18px; font-weight: 700; letter-spacing: -.02em; }
+.courseBadge { display: grid; place-items: center; flex-shrink: 0; width: 58px; height: 58px; color: var(--app-on-accent); border-radius: 15px; font-size: 18px; font-weight: 700; letter-spacing: -.02em; }
 .courseBadge[data-tone="green"] { background: linear-gradient(135deg, #34d399, #0e8850); }
 .courseBadge[data-tone="amber"] { background: linear-gradient(135deg, #fbbf24, #d97706); }
 .courseBadge[data-tone="sage"] { background: linear-gradient(135deg, #a3b899, #5f7a52); }
-.courseBadge[data-tone="blue"] { background: linear-gradient(135deg, #60a5fa, #2563eb); }
+.courseBadge[data-tone="blue"] { background: linear-gradient(135deg, #60a5fa, var(--app-blue)); }
 .courseBadge[data-tone="rose"] { background: linear-gradient(135deg, #fb7185, #e11d48); }
 .courseBadge[data-tone="violet"] { background: linear-gradient(135deg, var(--brand-purple), var(--brand-purple-dark)); }
 .courseBadge[data-tone="teal"] { background: linear-gradient(135deg, #2dd4bf, #0f766e); }
@@ -111,7 +111,7 @@
 .rowSub { overflow: hidden; color: var(--muted); font-size: 12.5px; line-height: 1.5; text-overflow: ellipsis; white-space: nowrap; }
 .rowDetail { color: var(--danger); font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
 
-.primaryPill { align-self: flex-start; display: inline-flex; align-items: center; justify-content: center; gap: 6px; margin-top: auto; min-height: 44px; padding: 0 var(--space-5); color: #fff; background: linear-gradient(135deg, var(--accent-a), var(--accent-b)); border-radius: 999px; font-size: 13.5px; font-weight: 650; text-decoration: none; transition: box-shadow 320ms var(--uv-ease), background 320ms var(--uv-ease), transform 320ms var(--uv-ease); }
+.primaryPill { align-self: flex-start; display: inline-flex; align-items: center; justify-content: center; gap: 6px; margin-top: auto; min-height: 44px; padding: 0 var(--space-5); color: var(--app-on-accent); background: linear-gradient(135deg, var(--accent-a), var(--accent-b)); border-radius: 999px; font-size: 13.5px; font-weight: 650; text-decoration: none; transition: box-shadow 320ms var(--uv-ease), background 320ms var(--uv-ease), transform 320ms var(--uv-ease); }
 .primaryPill:hover { box-shadow: 0 10px 22px -12px rgba(13, 148, 136, .5); }
 /* "Aktueller Kurs" CTA: a wide, dezent tinted lavender surface rather than a bold
    primary button — the course avatar/badge already carries the violet accent. */
@@ -121,7 +121,7 @@
 
 /* Zuletzt hinzugefügt */
 .recentDoc { display: flex; align-items: center; gap: var(--space-4); flex: 1; padding: var(--space-3); border: 1px solid var(--uv-border); border-radius: var(--uv-radius-md); color: inherit; text-decoration: none; transition: background 320ms var(--uv-ease), border-color 320ms var(--uv-ease), box-shadow 320ms var(--uv-ease), transform 320ms var(--uv-ease); }
-.recentDoc:hover { background: rgba(255, 255, 255, .68); border-color: rgba(110, 125, 170, .3); box-shadow: 0 10px 26px rgba(40, 55, 100, .07); }
+.recentDoc:hover { background: var(--app-veil); border-color: rgba(110, 125, 170, .3); box-shadow: 0 10px 26px rgba(40, 55, 100, .07); }
 .docType { display: grid; place-items: center; flex-shrink: 0; width: 46px; height: 46px; color: var(--brand-rose); background: var(--brand-rose-soft); border-radius: 12px; font-size: 10.5px; font-weight: 700; letter-spacing: .02em; }
 .docName { overflow: hidden; font-size: 14.5px; font-weight: 700; letter-spacing: -.01em; text-overflow: ellipsis; white-space: nowrap; }
 .chip { flex-shrink: 0; padding: 3px 10px; color: var(--muted); background: var(--line-soft); border-radius: 999px; font-size: 11px; font-weight: 650; white-space: nowrap; }
@@ -131,7 +131,7 @@
 
 .docGrid { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); gap: var(--space-2) var(--space-3); }
 .docRow { display: flex; align-items: center; gap: var(--space-4); min-width: 0; min-height: 52px; padding: var(--space-3) var(--space-4); color: inherit; border: 1px solid var(--uv-border); border-radius: var(--uv-radius-md); text-decoration: none; transition: background 320ms var(--uv-ease), border-color 320ms var(--uv-ease), box-shadow 320ms var(--uv-ease), transform 320ms var(--uv-ease); }
-.docRow:hover { background: rgba(255, 255, 255, .68); border-color: rgba(110, 125, 170, .3); box-shadow: 0 10px 26px rgba(40, 55, 100, .07); }
+.docRow:hover { background: var(--app-veil); border-color: rgba(110, 125, 170, .3); box-shadow: 0 10px 26px rgba(40, 55, 100, .07); }
 .docRow[data-attention="failed"] .docType { color: var(--danger); background: var(--danger-soft); }
 
 .more { margin-top: var(--space-4); color: var(--muted); font-size: 12.5px; }
@@ -147,9 +147,9 @@
 .emptyBody p { margin-top: 2px; color: var(--muted); font-size: 12.5px; line-height: 1.5; }
 /* Clean outlined teal button, not a filled pill. */
 .ctaLink { flex-shrink: 0; padding: var(--space-2) var(--space-4); color: var(--accent-b); background: transparent; border: 1.5px solid var(--accent-b); border-radius: 999px; font-size: 13px; font-weight: 650; text-decoration: none; transition: background var(--motion), color var(--motion); }
-.ctaLink:hover { background: var(--accent-b); color: #fff; }
+.ctaLink:hover { background: var(--accent-b); color: var(--app-on-accent); }
 
-.blockError { padding: var(--space-4) var(--space-5); color: var(--danger); background: #fdf3f1; border-radius: 14px; font-size: 13px; }
+.blockError { padding: var(--space-4) var(--space-5); color: var(--danger); background: var(--app-rose-tint); border-radius: 14px; font-size: 13px; }
 .blockError p { margin-bottom: var(--space-2); }
 .textButton { padding: 0; color: var(--accent-b); background: none; border: 0; font-size: 13px; font-weight: 650; cursor: pointer; }
 .textButton:hover { text-decoration: underline; text-underline-offset: 3px; }
@@ -168,7 +168,7 @@
 .toolsCard .cardIcon svg { width: 23px; height: 23px; }
 .toolsGrid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-4); }
 .toolCard { display: flex; align-items: center; gap: var(--space-4); min-height: 92px; padding: var(--space-4); border: 1px solid var(--uv-border); border-radius: var(--uv-radius-md); color: inherit; text-decoration: none; transition: background 340ms var(--uv-ease), border-color 340ms var(--uv-ease), box-shadow 340ms var(--uv-ease), transform 340ms var(--uv-ease); }
-.toolCard:hover { background: rgba(255, 255, 255, .6); border-color: rgba(110, 125, 170, .32); box-shadow: 0 14px 32px rgba(40, 55, 100, .09); }
+.toolCard:hover { background: var(--app-veil-soft); border-color: rgba(110, 125, 170, .32); box-shadow: 0 14px 32px rgba(40, 55, 100, .09); }
 .toolIcon { display: grid; place-items: center; flex-shrink: 0; width: 58px; height: 58px; color: var(--uv-purple-fg); background: var(--uv-purple-bg); border-radius: 15px; }
 .toolIcon[data-icon="quiz"] { color: var(--uv-orange-fg); background: var(--uv-orange-bg); }
 .toolIcon[data-icon="summary"] { color: var(--uv-blue-fg); background: var(--uv-blue-bg); }
@@ -238,7 +238,7 @@
 .toolsCard { padding: 18px; }
 .toolsCard .cardHead h2 { font-size: 15px; }
 .toolsGrid { gap: 12px; }
-.toolCard { min-height: 78px; gap: 12px; padding: 12px; background: rgba(255,255,255,.65); }
+.toolCard { min-height: 78px; gap: 12px; padding: 12px; background: var(--app-veil-soft); }
 .toolIcon { width: 44px; height: 44px; border-radius: 10px; }
 .toolIcon svg { width: 24px; height: 24px; }
 .toolBody strong { font-size: 12px; }
