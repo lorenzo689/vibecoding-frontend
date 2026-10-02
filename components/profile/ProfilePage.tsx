@@ -1,8 +1,13 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import PageHeading from "@/components/ui/PageHeading";
+import {
+  getSubscription,
+  isActive,
+} from "@/lib/supabase/queries/billing";
 import {
   announceProfileUpdate,
   profileInitial,
@@ -140,6 +145,19 @@ export default function ProfilePage({
     }
   }
 
+  // undefined while unknown, so the offer is not shown to a paying user first.
+  const [subscribed, setSubscribed] = useState<boolean | undefined>(undefined);
+
+  useEffect(() => {
+    let active = true;
+    getSubscription()
+      .then((value) => { if (active) setSubscribed(isActive(value)); })
+      // A failed status read must not hide the offer: showing it is the safe
+      // default, and /billing rejects a purchase that already exists.
+      .catch(() => { if (active) setSubscribed(false); });
+    return () => { active = false; };
+  }, []);
+
   if (loadState.status !== "ready") {
     return (
       <div className={s.page}>
@@ -170,6 +188,37 @@ export default function ProfilePage({
           <h2>{profile.name}</h2>
           <p>{email}</p>
           <a href="#display-name" className={s.editLink}>Profil bearbeiten</a>
+
+          {/* Hidden while the subscription is active — no point selling what the
+              user already has. Until the status has loaded it stays hidden too,
+              so a paying user never sees the offer flash up. */}
+          {subscribed === false && (
+            <section className={s.upsell} aria-label="Premium-Abo">
+              <span className={s.upsellBadge}>PREMIUM</span>
+              <p className={s.upsellPrice}>
+                <strong>6,99 €</strong> <span>pro Monat</span>
+              </p>
+              <ul className={s.upsellList}>
+                <li>Unbegrenzte Nutzung des KI-Assistenten</li>
+                <li>Unbegrenzt viele Karteikarten</li>
+                <li>Unbegrenzt Vorlesungsfolien hochladen</li>
+              </ul>
+              {/* The purchase itself lives on /billing — one place owns the
+                  checkout call, so the flow and its error handling are not
+                  duplicated across two pages. */}
+              <Link href="/billing" className={s.upsellButton}>Premium ansehen</Link>
+              <p className={s.upsellNote}>Jederzeit kündbar</p>
+            </section>
+          )}
+
+          {subscribed === true && (
+            <section className={s.upsell} aria-label="Premium-Abo">
+              <span className={s.upsellBadge}>PREMIUM</span>
+              <p className={s.upsellActive}>Dein Abo ist aktiv</p>
+              <Link href="/billing" className={s.upsellManage}>Abo verwalten</Link>
+            </section>
+          )}
+
           <div className={s.membership}><strong>Mitglied seit</strong><p>{formatDate(profile.created_at)}</p></div>
         </aside>
         <div className={s.detailsColumn}>

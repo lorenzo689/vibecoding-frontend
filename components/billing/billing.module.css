@@ -1,0 +1,131 @@
+/* The whole column centres together — heading and card — so they stay aligned
+   with each other instead of the heading sitting left of a centred card. */
+.page { max-width: 720px; margin-inline: auto; }
+
+
+
+.lead { margin-top: 16px; color: var(--app-muted); font-size: 14px; line-height: 1.65; max-width: 56ch; }
+
+.primaryButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  margin-top: 20px;
+  padding: 0 20px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--app-purple);
+  color: var(--app-on-accent);
+  font-size: 13.5px;
+  font-weight: 650;
+  text-decoration: none;
+  cursor: pointer;
+}
+.primaryButton:disabled { opacity: .55; cursor: not-allowed; }
+.secondaryButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  margin-top: 20px;
+  padding: 0 20px;
+  border: 1px solid var(--app-line-strong);
+  border-radius: 10px;
+  color: var(--app-ink);
+  font-size: 13.5px;
+  font-weight: 650;
+  text-decoration: none;
+}
+.note { margin-top: 12px; color: var(--app-muted); font-size: 11.5px; }
+
+.status { color: var(--app-muted); font-size: 13px; }
+.status[data-tone="error"] { color: var(--app-danger); }
+
+/* Checkout return pages */
+.resultCard {
+  padding: 40px 32px;
+  background: var(--app-surface);
+  border: 1px solid var(--app-line);
+  border-radius: 14px;
+  text-align: center;
+}
+.resultIcon {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  margin: 0 auto;
+  border-radius: 50%;
+}
+.resultIcon svg { width: 26px; height: 26px; }
+.resultIcon[data-tone="success"] { background: var(--app-teal-soft); color: var(--app-fg-teal); }
+.resultIcon[data-tone="neutral"] { background: var(--app-neutral-soft); color: var(--app-muted); }
+.resultCard h1 { margin-top: 18px; font-size: 22px; font-weight: 700; }
+.resultCard .lead { margin-inline: auto; }
+.resultActions { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; }
+
+@media (max-width: 560px) {
+  .resultActions > * { width: 100%; }
+}
+
+/* Plan card: a tinted head carrying name and price, a plain body for what you
+   get, and a footer for the action — so the eye lands on price, then value,
+   then button, instead of scanning one undifferentiated block of text. */
+.plan {
+  overflow: hidden;
+  background: var(--app-surface);
+  border: 1px solid var(--app-line);
+  border-radius: 16px;
+  box-shadow: var(--uv-shadow-card);
+}
+.planHead {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 24px 28px;
+  background: var(--app-purple-tint);
+  border-bottom: 1px solid var(--app-purple-line);
+}
+.plan[data-active] .planHead {
+  background: var(--app-teal-soft);
+  border-bottom-color: var(--app-teal-line);
+}
+.planName { font-size: 15px; font-weight: 700; letter-spacing: -.01em; }
+.statusBadge {
+  margin-left: 10px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--app-surface);
+  color: var(--app-fg-teal);
+  font-size: 11px;
+  font-weight: 650;
+  vertical-align: 2px;
+}
+.statusBadge[data-tone="past_due"], .statusBadge[data-tone="unpaid"] { color: var(--app-danger); }
+.statusBadge[data-tone="canceled"] { color: var(--app-muted); }
+.price { display: flex; align-items: baseline; gap: 6px; }
+.price strong { font-size: 32px; font-weight: 750; letter-spacing: -.03em; }
+.price span { color: var(--app-muted); font-size: 13px; }
+.period { color: var(--app-muted); font-size: 12.5px; }
+.period strong { color: var(--app-ink); font-weight: 650; }
+
+.benefits { margin: 0; padding: 24px 28px; list-style: none; display: grid; gap: 12px; }
+.benefits li { display: flex; align-items: flex-start; gap: 11px; font-size: 14px; line-height: 1.45; }
+.check {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  margin-top: 1px;
+  border-radius: 50%;
+  background: var(--app-teal-soft);
+  color: var(--app-fg-teal);
+}
+.check svg { width: 12px; height: 12px; }
+
+.planFoot { padding: 0 28px 26px; }
+.planFoot .primaryButton { margin-top: 0; }

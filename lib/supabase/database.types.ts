@@ -1,4 +1,4 @@
-// Synchronized verbatim from ../backend/types/database.types.ts at backend dev 71d0389
+// Synchronized verbatim from ../backend/types/database.types.ts at backend dev 59301ea
 // (branch dev, before the pending dev -> main release merge). Do not edit by hand:
 // regenerate in the backend repo, then copy the file and update this header.
 // Keep this copy local so the standalone frontend CI does not depend on a sibling checkout.
@@ -269,6 +269,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "chat_messages"
             referencedColumns: ["id", "role"]
+          },
+          {
+            foreignKeyName: "chat_message_sources_source_document_id_fkey"
+            columns: ["source_document_id"]
+            isOneToOne: false
+            referencedRelation: "document_pipeline_timings"
+            referencedColumns: ["document_id"]
+          },
+          {
+            foreignKeyName: "chat_message_sources_source_document_id_fkey"
+            columns: ["source_document_id"]
+            isOneToOne: false
+            referencedRelation: "document_worker_metrics"
+            referencedColumns: ["document_id"]
           },
           {
             foreignKeyName: "chat_message_sources_source_document_id_fkey"
@@ -600,6 +614,20 @@ export type Database = {
             foreignKeyName: "document_chunks_document_id_fkey"
             columns: ["document_id"]
             isOneToOne: false
+            referencedRelation: "document_pipeline_timings"
+            referencedColumns: ["document_id"]
+          },
+          {
+            foreignKeyName: "document_chunks_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "document_worker_metrics"
+            referencedColumns: ["document_id"]
+          },
+          {
+            foreignKeyName: "document_chunks_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
             referencedRelation: "source_documents"
             referencedColumns: ["id"]
           },
@@ -638,6 +666,66 @@ export type Database = {
             foreignKeyName: "document_indexing_jobs_document_id_fkey"
             columns: ["document_id"]
             isOneToOne: true
+            referencedRelation: "document_pipeline_timings"
+            referencedColumns: ["document_id"]
+          },
+          {
+            foreignKeyName: "document_indexing_jobs_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: true
+            referencedRelation: "document_worker_metrics"
+            referencedColumns: ["document_id"]
+          },
+          {
+            foreignKeyName: "document_indexing_jobs_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: true
+            referencedRelation: "source_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      document_pipeline_events: {
+        Row: {
+          detail: Json
+          document_id: string
+          event: string
+          id: number
+          occurred_at: string
+        }
+        Insert: {
+          detail?: Json
+          document_id: string
+          event: string
+          id?: never
+          occurred_at?: string
+        }
+        Update: {
+          detail?: Json
+          document_id?: string
+          event?: string
+          id?: never
+          occurred_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_pipeline_events_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "document_pipeline_timings"
+            referencedColumns: ["document_id"]
+          },
+          {
+            foreignKeyName: "document_pipeline_events_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "document_worker_metrics"
+            referencedColumns: ["document_id"]
+          },
+          {
+            foreignKeyName: "document_pipeline_events_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
             referencedRelation: "source_documents"
             referencedColumns: ["id"]
           },
@@ -647,6 +735,7 @@ export type Database = {
         Row: {
           attempts: number
           available_at: string
+          checkpoint: Json | null
           document_id: string
           file_id: string
           lease_token: string | null
@@ -655,6 +744,7 @@ export type Database = {
         Insert: {
           attempts?: number
           available_at?: string
+          checkpoint?: Json | null
           document_id: string
           file_id: string
           lease_token?: string | null
@@ -663,12 +753,27 @@ export type Database = {
         Update: {
           attempts?: number
           available_at?: string
+          checkpoint?: Json | null
           document_id?: string
           file_id?: string
           lease_token?: string | null
           lease_until?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "document_processing_jobs_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: true
+            referencedRelation: "document_pipeline_timings"
+            referencedColumns: ["document_id"]
+          },
+          {
+            foreignKeyName: "document_processing_jobs_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: true
+            referencedRelation: "document_worker_metrics"
+            referencedColumns: ["document_id"]
+          },
           {
             foreignKeyName: "document_processing_jobs_document_id_fkey"
             columns: ["document_id"]
@@ -681,6 +786,193 @@ export type Database = {
             columns: ["file_id"]
             isOneToOne: true
             referencedRelation: "files"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      document_processing_runs: {
+        Row: {
+          batch_start: number | null
+          completed_at: string | null
+          document_id: string
+          duration_ms: number | null
+          id: string
+          phases: Json
+          started_at: string
+          status: string
+          worker: string
+        }
+        Insert: {
+          batch_start?: number | null
+          completed_at?: string | null
+          document_id: string
+          duration_ms?: number | null
+          id: string
+          phases?: Json
+          started_at: string
+          status?: string
+          worker: string
+        }
+        Update: {
+          batch_start?: number | null
+          completed_at?: string | null
+          document_id?: string
+          duration_ms?: number | null
+          id?: string
+          phases?: Json
+          started_at?: string
+          status?: string
+          worker?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_processing_runs_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "document_pipeline_timings"
+            referencedColumns: ["document_id"]
+          },
+          {
+            foreignKeyName: "document_processing_runs_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "document_worker_metrics"
+            referencedColumns: ["document_id"]
+          },
+          {
+            foreignKeyName: "document_processing_runs_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "source_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      document_provider_limits: {
+        Row: {
+          blocked_until: string
+          concurrency: number
+          provider: string
+          starts: number
+          starts_per_minute: number
+          window_start: string
+        }
+        Insert: {
+          blocked_until?: string
+          concurrency: number
+          provider: string
+          starts?: number
+          starts_per_minute: number
+          window_start?: string
+        }
+        Update: {
+          blocked_until?: string
+          concurrency?: number
+          provider?: string
+          starts?: number
+          starts_per_minute?: number
+          window_start?: string
+        }
+        Relationships: []
+      }
+      document_provider_slots: {
+        Row: {
+          document_id: string | null
+          expires_at: string
+          provider: string
+          token: string
+        }
+        Insert: {
+          document_id?: string | null
+          expires_at: string
+          provider: string
+          token?: string
+        }
+        Update: {
+          document_id?: string | null
+          expires_at?: string
+          provider?: string
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_provider_slots_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "document_pipeline_timings"
+            referencedColumns: ["document_id"]
+          },
+          {
+            foreignKeyName: "document_provider_slots_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "document_worker_metrics"
+            referencedColumns: ["document_id"]
+          },
+          {
+            foreignKeyName: "document_provider_slots_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "source_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_provider_slots_provider_fkey"
+            columns: ["provider"]
+            isOneToOne: false
+            referencedRelation: "document_provider_limits"
+            referencedColumns: ["provider"]
+          },
+        ]
+      }
+      document_worker_events: {
+        Row: {
+          detail: Json
+          document_id: string
+          event: string
+          id: number
+          occurred_at: string
+          run_id: string
+          worker: string
+        }
+        Insert: {
+          detail: Json
+          document_id: string
+          event: string
+          id?: never
+          occurred_at?: string
+          run_id: string
+          worker: string
+        }
+        Update: {
+          detail?: Json
+          document_id?: string
+          event?: string
+          id?: never
+          occurred_at?: string
+          run_id?: string
+          worker?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_worker_events_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "document_pipeline_timings"
+            referencedColumns: ["document_id"]
+          },
+          {
+            foreignKeyName: "document_worker_events_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "document_worker_metrics"
+            referencedColumns: ["document_id"]
+          },
+          {
+            foreignKeyName: "document_worker_events_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "source_documents"
             referencedColumns: ["id"]
           },
         ]
@@ -1222,6 +1514,60 @@ export type Database = {
           },
         ]
       }
+      stripe_events: {
+        Row: {
+          event_id: string
+          event_type: string
+          processed_at: string
+        }
+        Insert: {
+          event_id: string
+          event_type: string
+          processed_at?: string
+        }
+        Update: {
+          event_id?: string
+          event_type?: string
+          processed_at?: string
+        }
+        Relationships: []
+      }
+      subscriptions: {
+        Row: {
+          cancel_at_period_end: boolean
+          created_at: string
+          current_period_end: string | null
+          price_id: string | null
+          status: string
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          cancel_at_period_end?: boolean
+          created_at?: string
+          current_period_end?: string | null
+          price_id?: string | null
+          status: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          cancel_at_period_end?: boolean
+          created_at?: string
+          current_period_end?: string | null
+          price_id?: string | null
+          status?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       summaries: {
         Row: {
           content: Json
@@ -1276,9 +1622,67 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      document_pipeline_timings: {
+        Row: {
+          chunk_count: number | null
+          document_id: string | null
+          error_code: string | null
+          extraction_duration: string | null
+          indexing_claims: number | null
+          indexing_completed_at: string | null
+          indexing_duration: string | null
+          indexing_error: string | null
+          indexing_queued_at: string | null
+          indexing_started_at: string | null
+          indexing_status: string | null
+          indexing_wait: string | null
+          mime_type: string | null
+          ocr_duration: string | null
+          ocr_started_at: string | null
+          original_filename: string | null
+          page_count: number | null
+          processing_claims: number | null
+          processing_completed_at: string | null
+          processing_queued_at: string | null
+          processing_started_at: string | null
+          processing_status: string | null
+          processing_wait: string | null
+          size_bytes: number | null
+          text_chars: number | null
+          total_duration: string | null
+          upload_completed_at: string | null
+          upload_duration: string | null
+          upload_started_at: string | null
+        }
+        Relationships: []
+      }
+      document_worker_metrics: {
+        Row: {
+          between_steps_ms: number | null
+          document_id: string | null
+          embedding_batches: number | null
+          embedding_request_ms: number | null
+          failed_requests: number | null
+          gemini_request_ms: number | null
+          indexing_wait: string | null
+          inline_retries: number | null
+          interrupted_or_running: number | null
+          processing_wait: string | null
+          total_duration: string | null
+          worker_active_ms: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
+      acquire_document_provider_slot: {
+        Args: {
+          p_document_id: string
+          p_lease_token: string
+          p_provider: string
+        }
+        Returns: string
+      }
       append_chat_exchange: {
         Args: {
           p_answer: string
@@ -1344,6 +1748,7 @@ export type Database = {
         Args: { p_api_url: string; p_service_key: string }
         Returns: undefined
       }
+      dispatch_document_work: { Args: never; Returns: undefined }
       expire_file_uploads: { Args: never; Returns: undefined }
       fail_chat_request: {
         Args: {
@@ -1382,6 +1787,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      log_document_pipeline_event: {
+        Args: { p_detail?: Json; p_document_id: string; p_event: string }
+        Returns: undefined
+      }
       normalize_chat_material_ids: {
         Args: { p_material_ids: string[] }
         Returns: string[]
@@ -1415,6 +1824,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      release_document_provider_slot: {
+        Args: { p_retry_ms?: number; p_token: string }
+        Returns: undefined
       }
       reserve_chat_request: {
         Args: {
@@ -1490,6 +1903,19 @@ export type Database = {
           p_through_seq: number
           p_user_id: string
         }
+        Returns: boolean
+      }
+      save_document_processing_checkpoint: {
+        Args: {
+          p_checkpoint: Json
+          p_document_id: string
+          p_lease_token: string
+          p_release?: boolean
+        }
+        Returns: boolean
+      }
+      save_document_processing_page: {
+        Args: { p_document_id: string; p_lease_token: string; p_page: Json }
         Returns: boolean
       }
       search_document_chunks:
@@ -1581,6 +2007,16 @@ export type Database = {
               similarity: number
             }[]
           }
+      yield_document_work: {
+        Args: {
+          p_delay_ms?: number
+          p_document_id: string
+          p_failed?: boolean
+          p_lease_token: string
+          p_provider: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never

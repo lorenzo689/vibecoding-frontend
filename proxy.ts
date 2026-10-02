@@ -11,6 +11,7 @@ export const config = {
     "/register",
     "/auth/confirm",
     "/auth/reset-password",
+    "/billing/:path*",
     "/dashboard/:path*",
     "/assistant/:path*",
     "/courses/:path*",

@@ -54,6 +54,71 @@
 .profileCard h2 { font-size: 22px; font-weight: 700; }
 .profileCard p { margin-top: 5px; color: var(--app-muted); font-size: 13px; overflow-wrap: anywhere; }
 .editLink { margin-top: 20px; padding: 10px 20px; border-radius: 10px; background: var(--app-blue-tint); color: var(--app-fg-blue); font-size: 12px; font-weight: 600; }
+/* Premium upsell, filling the empty space between the edit link and the
+   membership footer. Tinted rather than another white card so it reads as a
+   distinct offer inside the profile card. */
+.upsell {
+  width: 100%;
+  margin-top: 28px;
+  padding: 20px 18px;
+  background: var(--app-purple-tint);
+  border: 1px solid var(--app-purple-line);
+  border-radius: 12px;
+  text-align: left;
+}
+.upsellBadge {
+  display: inline-block;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--app-purple);
+  color: var(--app-on-accent);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .08em;
+}
+.upsellPrice { margin-top: 14px; display: flex; align-items: baseline; gap: 6px; }
+.upsellPrice strong { color: var(--app-ink); font-size: 24px; font-weight: 750; letter-spacing: -.02em; }
+.upsellPrice span { color: var(--app-muted); font-size: 12.5px; }
+.upsellList { margin: 12px 0 0; padding: 0; list-style: none; display: grid; gap: 7px; }
+.upsellList li {
+  position: relative;
+  padding-left: 18px;
+  color: var(--app-muted);
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+.upsellList li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 7px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--app-purple);
+}
+/* Used on a link, not a button: without an explicit box display an <a> stays
+   inline, so width and height are ignored and it shrink-wraps the label. */
+.upsellButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 42px;
+  margin-top: 16px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--app-purple);
+  color: var(--app-on-accent);
+  font-size: 13px;
+  font-weight: 650;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background var(--motion);
+}
+.upsellButton:hover { background: var(--app-purple-strong); }
+.upsellNote { margin-top: 8px; text-align: center; font-size: 11px; }
+
 .membership { margin-top: auto; padding-top: 44px; font-size: 13px; }
 .detailsColumn { display: grid; gap: 16px; min-width: 0; }
 .card { padding: 22px; }
@@ -68,3 +133,12 @@
 @media (max-width: 800px) { .grid { grid-template-columns: 1fr; } .profileCard { padding: 24px; } .membership { padding-top: 20px; } }
 .page { min-height: calc(100svh - 102px); padding: 26px; background: var(--app-veil); border: 1px solid var(--app-line-soft); border-radius: 14px; box-shadow: 0 5px 24px rgba(104,133,190,.035); }
 @media (max-width: 640px) { .page { padding: 18px 14px; min-height: calc(100svh - 100px); } }
+.upsellActive { margin-top: 12px; color: var(--app-ink); font-size: 14px; font-weight: 600; }
+.upsellManage {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 12px;
+  color: var(--app-purple);
+  font-size: 12.5px;
+  font-weight: 650;
+}

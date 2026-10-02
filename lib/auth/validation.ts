@@ -1,6 +1,7 @@
 export const DEFAULT_AUTH_REDIRECT = "/dashboard";
 
 const protectedPrefixes = [
+  "/billing",
   "/dashboard",
   "/assistant",
   "/courses",

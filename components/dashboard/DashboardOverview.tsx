@@ -231,6 +231,17 @@ export default function DashboardOverview() {
               <cite>— {quote.author}</cite>
             </div>
           </blockquote>
+          {/* Goes straight to the billing page, which owns the purchase. */}
+          <Link href="/billing" className={s.heroPremium}>
+            <span className={s.heroPremiumMark} aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l1.9 5.3 5.6.4-4.3 3.6 1.4 5.4L12 14.3l-4.6 2.9 1.4-5.4L4.5 8.2l5.6-.4L12 2.5Z" /></svg>
+            </span>
+            <span className={s.heroPremiumText}>
+              <strong>Premium freischalten</strong>
+              <small>Unbegrenzt lernen · 6,99 € im Monat</small>
+            </span>
+            <span className={s.heroPremiumArrow} aria-hidden="true">→</span>
+          </Link>
         </div>
         <p className={s.heroTagline} aria-hidden="true">
           <span>Lernen.</span>
