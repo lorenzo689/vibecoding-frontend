@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { createClient } from "@/lib/supabase/browser";
 import { runTemporaryChat } from "@/lib/chat";
-import { ChatError } from "@/lib/chatProtocol";
+import { ChatError, type ChatSource } from "@/lib/chatProtocol";
 import { cleanProse } from "@/lib/aiOutput";
-import { saveCourseSummary } from "@/lib/supabase/queries/summaries";
+import { getDocumentSummary, saveDocumentSummary } from "@/lib/supabase/queries/document-summaries";
+import { deleteLearningDraft, getLearningDraft, saveLearningDraft } from "@/lib/supabase/queries/learning-drafts";
 import styles from "@/components/documents/documents.module.css";
 
 function asChatError(error: unknown): ChatError {
@@ -16,7 +17,7 @@ function asChatError(error: unknown): ChatError {
 // below ask the same real course RAG chat (lib/chat.ts) a crafted one-off
 // question, scoped to the open document via `material_ids`, and show the
 // answer — a real AI action, not a canned response.
-async function askOnce(courseId: string, materialId: string, question: string): Promise<string> {
+async function askOnce(courseId: string, materialId: string, question: string): Promise<{ text: string; sources: ChatSource[] }> {
   const client = createClient();
   const exchange = await runTemporaryChat(client, courseId, materialId, question);
   const answer = exchange.messages.find((message) => message.role === "assistant");
@@ -24,15 +25,38 @@ async function askOnce(courseId: string, materialId: string, question: string): 
   // Free prose stays free; only citation markers are removed and an empty answer is an error.
   const text = cleanProse(answer.content);
   if (!text) throw new ChatError("UNUSABLE_AI_OUTPUT");
-  return text;
+  return { text, sources: exchange.sources };
 }
 
-export default function DocumentAiActions({ courseId, courseTitle, fileName, materialId }: { courseId: string; courseTitle: string; fileName: string; materialId: string }) {
+export default function DocumentAiActions({ courseId, fileName, materialId }: { courseId: string; fileName: string; materialId: string }) {
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [summaryResult, setSummaryResult] = useState<string | null>(null);
   const [summaryError, setSummaryError] = useState<string | null>(null);
   const [savingSummary, setSavingSummary] = useState(false);
   const [summarySaved, setSummarySaved] = useState(false);
+  const [summarySources, setSummarySources] = useState<ChatSource[]>([]);
+  const [existingSummary, setExistingSummary] = useState(false);
+  const [summaryReady, setSummaryReady] = useState(false);
+  const [summaryLoadFailed, setSummaryLoadFailed] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    Promise.all([getDocumentSummary(materialId), getLearningDraft<{ text: string; sources: ChatSource[] }>(materialId, "summary")])
+      .then(([saved, draft]) => {
+        if (!active) return;
+        if (saved) setExistingSummary(true);
+        if (draft && typeof draft.text === "string") {
+          setSummaryResult(draft.text);
+          setSummarySources(draft.sources ?? []);
+          setSummarySaved(false);
+        } else if (saved) {
+          setSummaryResult(saved.content);
+          setSummarySaved(true);
+        }
+      }).catch(() => { if (active) { setSummaryLoadFailed(true); setSummaryError("Gespeicherte Zusammenfassung konnte nicht geladen werden."); } })
+      .finally(() => { if (active) setSummaryReady(true); });
+    return () => { active = false; };
+  }, [materialId]);
 
   const [topic, setTopic] = useState("");
   const [explainLoading, setExplainLoading] = useState(false);
@@ -42,10 +66,12 @@ export default function DocumentAiActions({ courseId, courseTitle, fileName, mat
   async function handleSummarize() {
     setSummaryLoading(true);
     setSummaryError(null);
-    setSummarySaved(false);
     try {
-      const answer = await askOnce(courseId, materialId, `Fasse den Inhalt der Kursunterlagen kurz und verständlich zusammen. Achte besonders auf "${fileName}", falls dort relevanter Text indexiert ist.`);
-      setSummaryResult(answer);
+      const answer = await askOnce(courseId, materialId, `Fasse den Inhalt von "${fileName}" anhand der verfügbaren Quellen zusammen. Benenne, wenn die gefundenen Passagen nicht das ganze Dokument abdecken.`);
+      await saveLearningDraft(materialId, "summary", { text: answer.text, sources: answer.sources });
+      setSummaryResult(answer.text);
+      setSummarySources(answer.sources);
+      setSummarySaved(false);
     } catch (error) {
       setSummaryError(asChatError(error).message);
     } finally {
@@ -55,10 +81,13 @@ export default function DocumentAiActions({ courseId, courseTitle, fileName, mat
 
   async function handleSaveSummary() {
     if (!summaryResult) return;
+    if ((existingSummary || summaryLoadFailed) && !window.confirm("Eine eventuell vorhandene Zusammenfassung dieses Dokuments ersetzen?")) return;
     setSavingSummary(true);
     try {
-      await saveCourseSummary(courseId, { title: courseTitle, text: summaryResult });
+      await saveDocumentSummary(materialId, `Zusammenfassung: ${fileName}`, summaryResult, summarySources);
       setSummarySaved(true);
+      setExistingSummary(true);
+      await deleteLearningDraft(materialId, "summary").catch(() => setSummaryError("Die Zusammenfassung ist gespeichert; der Entwurf konnte nicht entfernt werden."));
     } catch {
       setSummaryError("Die Zusammenfassung konnte nicht gespeichert werden.");
     } finally {
@@ -74,7 +103,7 @@ export default function DocumentAiActions({ courseId, courseTitle, fileName, mat
     setExplainError(null);
     try {
       const answer = await askOnce(courseId, materialId, `Erkläre das Konzept "${trimmed}" verständlich anhand der Kursunterlagen. Nutze wenn möglich ein Beispiel.`);
-      setExplainResult(answer);
+      setExplainResult(answer.text);
     } catch (error) {
       setExplainError(asChatError(error).message);
     } finally {
@@ -90,7 +119,7 @@ export default function DocumentAiActions({ courseId, courseTitle, fileName, mat
         </span>
         <div>
           <h2>KI-Aktionen</h2>
-          <p>Angetrieben von der Dokumentensuche dieses Kurses.</p>
+          <p>Ergebnisse aus ausgewählten, relevanten Passagen dieses Dokuments. Eine vollständige Kapitelabdeckung ist nicht garantiert.</p>
         </div>
       </div>
 
@@ -101,9 +130,9 @@ export default function DocumentAiActions({ courseId, courseTitle, fileName, mat
           </span>
           <div>
             <h3>Zusammenfassung erstellen</h3>
-            <p>Lass dir den Inhalt der Kursunterlagen in wenigen Sätzen zusammenfassen.</p>
+            <p>Erstelle eine Zusammenfassung aus gefundenen Passagen des geöffneten Dokuments.</p>
           </div>
-          <button type="button" className={styles.runButton} onClick={() => void handleSummarize()} disabled={summaryLoading}>
+          <button type="button" className={styles.runButton} onClick={() => void handleSummarize()} disabled={summaryLoading || !summaryReady}>
             {summaryLoading ? "Wird erstellt …" : "Zusammenfassen"}
           </button>
         </div>
@@ -112,7 +141,7 @@ export default function DocumentAiActions({ courseId, courseTitle, fileName, mat
           <div className={styles.actionResult}>
             <p>{summaryResult}</p>
             <button type="button" className={styles.viewerLink} onClick={() => void handleSaveSummary()} disabled={savingSummary || summarySaved}>
-              {summarySaved ? "Als Kurs-Zusammenfassung gespeichert ✓" : savingSummary ? "Wird gespeichert …" : "Als Kurs-Zusammenfassung übernehmen"}
+              {summarySaved ? "Für dieses Dokument gespeichert ✓" : savingSummary ? "Wird gespeichert …" : existingSummary ? "Dokumentzusammenfassung ersetzen" : "Für dieses Dokument speichern"}
             </button>
           </div>
         )}

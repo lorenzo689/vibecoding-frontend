@@ -22,7 +22,7 @@ const FORMAT_LIST = SUPPORTED_FORMATS.map((format) => format.label).join(" oder 
 const MAX_MIB = DOCUMENT_UPLOAD_MAX_BYTES / (1024 * 1024);
 
 /** Visible upload hint, e.g. "PDF oder TXT, maximal 10 MiB". */
-export const DOCUMENT_UPLOAD_HINT = `${FORMAT_LIST}, maximal ${MAX_MIB} MiB`;
+export const DOCUMENT_UPLOAD_HINT = `${FORMAT_LIST}, maximal ${MAX_MIB} MiB und 100 Seiten, kein OCR (Scans ohne Text werden nicht gelesen)`;
 
 export type DocumentUploadErrorCode = "INVALID_FILE" | "FILE_TOO_LARGE" | "EMPTY_FILE";
 

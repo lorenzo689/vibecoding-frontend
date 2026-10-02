@@ -8,10 +8,12 @@ export async function loadCourses(client: SupabaseClient<Database>): Promise<Cha
   return data ?? [];
 }
 
-export async function loadConversations(client: SupabaseClient<Database>, courseId: string): Promise<Conversation[]> {
-  const { data, error } = await client.from("chat_conversations")
+export async function loadConversations(client: SupabaseClient<Database>, courseId: string, sourceMaterialId?: string): Promise<Conversation[]> {
+  let query = client.from("chat_conversations")
     .select("id, course_id, title, updated_at").eq("course_id", courseId)
     .order("updated_at", { ascending: false });
+  query = sourceMaterialId ? query.eq("source_material_id", sourceMaterialId) : query.is("source_material_id", null);
+  const { data, error } = await query;
   if (error) throw new ChatError("LOAD_FAILED");
   return data ?? [];
 }
@@ -24,8 +26,8 @@ export async function hasIndexedMaterial(client: SupabaseClient<Database>, cours
   return Boolean(data?.length);
 }
 
-export async function createConversation(client: SupabaseClient<Database>, courseId: string): Promise<Conversation> {
-  const { data, error } = await client.from("chat_conversations").insert({ course_id: courseId })
+export async function createConversation(client: SupabaseClient<Database>, courseId: string, sourceMaterialId?: string): Promise<Conversation> {
+  const { data, error } = await client.from("chat_conversations").insert({ course_id: courseId, source_material_id: sourceMaterialId ?? null })
     .select("id, course_id, title, updated_at").single();
   if (error || !data) throw new ChatError("LOAD_FAILED");
   return data;
@@ -36,12 +38,33 @@ export async function loadHistory(client: SupabaseClient<Database>, conversation
   // Explicit pagination avoids silently dropping history beyond the API row limit.
   for (let offset = 0; ; offset += 100) {
     const { data, error } = await client.from("chat_messages")
-      .select("id, seq, role, content, request_id, helpful, helpful_at, chat_message_sources(citation_no, material_title, page_number, excerpt)")
+    .select("id, seq, role, content, request_id, helpful, helpful_at, chat_message_sources(citation_no, chunk_id, source_document_id, material_id, material_title, page_number, excerpt)")
       .eq("conversation_id", conversationId).order("seq").range(offset, offset + 99);
     if (error) throw new ChatError("LOAD_FAILED");
     messages.push(...(data ?? []) as ChatMessage[]);
     if (!data || data.length < 100) return messages;
   }
+}
+
+export async function loadHistoryPage(client: SupabaseClient<Database>, conversationId: string, beforeSeq?: number): Promise<{ messages: ChatMessage[]; hasOlder: boolean }> {
+  let query = client.from("chat_messages")
+    .select("id, seq, role, content, request_id, helpful, helpful_at, chat_message_sources(citation_no, chunk_id, source_document_id, material_id, material_title, page_number, excerpt)")
+    .eq("conversation_id", conversationId).order("seq", { ascending: false }).limit(101);
+  if (beforeSeq !== undefined) query = query.lt("seq", beforeSeq);
+  const { data, error } = await query;
+  if (error) throw new ChatError("LOAD_FAILED");
+  return { messages: ((data ?? []).slice(0, 100) as ChatMessage[]).reverse(), hasOlder: (data?.length ?? 0) > 100 };
+}
+
+export async function sourceDocumentLinks(client: SupabaseClient<Database>, messages: ChatMessage[]): Promise<Map<string, string>> {
+  const ids = [...new Set(messages.flatMap((message) => message.chat_message_sources ?? [])
+    .map((source) => source.material_id).filter((id): id is string => Boolean(id)))];
+  if (!ids.length) return new Map();
+  const { data, error } = await client.from("materials").select("id,course_id,file_id")
+    .eq("type", "source_document").in("id", ids);
+  if (error) throw error;
+  return new Map(data.filter((row) => row.file_id)
+    .map((row) => [row.id, `/courses/${row.course_id}/documents/${row.file_id}`]));
 }
 
 /**
@@ -93,6 +116,11 @@ export async function sendChat(client: SupabaseClient<Database>, request: ChatRe
 
 export async function deleteConversation(client: SupabaseClient<Database>, conversationId: string): Promise<void> {
   const { error } = await client.from("chat_conversations").delete().eq("id", conversationId);
+  if (error) throw new ChatError("LOAD_FAILED");
+}
+
+export async function renameConversation(client: SupabaseClient<Database>, conversationId: string, title: string): Promise<void> {
+  const { error } = await client.from("chat_conversations").update({ title: title.trim() }).eq("id", conversationId);
   if (error) throw new ChatError("LOAD_FAILED");
 }
 

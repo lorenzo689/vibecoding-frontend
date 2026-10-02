@@ -9,8 +9,7 @@ import type { Database } from "../database.types";
 
 type Client = SupabaseClient<Database>;
 
-/** Newest documents that are loaded. The library tells the user when this cap is reached. */
-export const LIBRARY_LIMIT = 500;
+export const LIBRARY_LIMIT = 100;
 
 export type LibraryDocument = {
   /** `source_documents.id`, needed for the processing/indexing retry. */
@@ -72,7 +71,7 @@ export function mapLibraryRows(rows: LibraryRow[]): LibraryDocument[] {
   });
 }
 
-export async function listLibraryDocuments(client: Client): Promise<LibraryDocument[]> {
+export async function listLibraryDocuments(client: Client, offset = 0, limit = LIBRARY_LIMIT): Promise<LibraryDocument[]> {
   const { data, error } = await client
     .from("materials")
     .select(
@@ -81,7 +80,7 @@ export async function listLibraryDocuments(client: Client): Promise<LibraryDocum
     .eq("type", "source_document")
     .not("file_id", "is", null)
     .order("created_at", { ascending: false })
-    .range(0, LIBRARY_LIMIT - 1);
+    .range(offset, offset + limit - 1);
 
   if (error) throw error;
   return mapLibraryRows(data);

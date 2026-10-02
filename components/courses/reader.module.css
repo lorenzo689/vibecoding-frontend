@@ -1,0 +1,35 @@
+.reader { display: grid; gap: var(--space-4); min-width: 0; }
+.muted { color: var(--app-muted); font-size: 13px; line-height: 1.6; }
+.error { color: var(--app-danger); font-size: 13px; }
+.pager { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); }
+.pager button, .toolbar button, .rowActions button, .noteForm button, .unresolved button {
+  min-height: 38px; padding-inline: var(--space-4); color: var(--app-ink); background: var(--app-surface); border: 1.5px solid var(--app-line); border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer;
+}
+.pager button:disabled, .toolbar button:disabled, .rowActions button:disabled, .noteForm button:disabled { opacity: .5; cursor: not-allowed; }
+.pager button:focus-visible, .toolbar button:focus-visible, .rowActions button:focus-visible, .noteForm button:focus-visible, .unresolved button:focus-visible, .pageText:focus-visible { outline: 2px solid var(--app-purple); outline-offset: 2px; }
+.pageSelect { display: inline-flex; align-items: center; gap: var(--space-2); color: var(--app-muted); font-size: 13px; }
+.pageSelect select { min-height: 36px; padding-inline: var(--space-3); color: var(--app-ink); background: var(--app-surface); border: 1.5px solid var(--app-line); border-radius: 10px; }
+.pageText { max-height: 38svh; overflow: auto; padding: var(--space-4); color: var(--app-ink); background: var(--app-bg); border-radius: 12px; font-size: 14px; line-height: 1.7; white-space: pre-wrap; overflow-wrap: anywhere; }
+.pageText mark { background: color-mix(in srgb, var(--app-purple) 22%, transparent); color: inherit; border-radius: 3px; }
+.toolbar { display: flex; flex-wrap: wrap; gap: var(--space-3); }
+.quote { color: var(--app-muted); font-size: 12.5px; }
+.explanation { padding: var(--space-4); background: var(--app-bg); border-left: 3px solid var(--app-purple); border-radius: 8px; font-size: 14px; line-height: 1.6; white-space: pre-wrap; }
+.label { display: block; margin-bottom: var(--space-1); color: var(--app-muted); font-size: 10.5px; font-weight: 700; letter-spacing: .08em; }
+.noteForm { display: grid; gap: var(--space-2); }
+.noteForm label, .review label { color: var(--app-muted); font-size: 12px; font-weight: 650; }
+.noteForm textarea, .review input, .review select { width: 100%; padding: var(--space-3); color: var(--app-ink); background: var(--app-bg); border: 1.5px solid var(--app-line); border-radius: 10px; }
+.noteForm textarea { min-height: 80px; resize: vertical; }
+.noteForm button { justify-self: start; }
+.notes { display: grid; gap: var(--space-3); margin: 0; padding: 0; list-style: none; }
+.notes li { padding: var(--space-4); background: var(--app-bg); border-radius: 12px; font-size: 14px; line-height: 1.55; }
+.notes li[data-status="resolved"], .notes li[data-status="rejected"] { opacity: .65; }
+.notes blockquote { margin: var(--space-2) 0; padding-left: var(--space-3); color: var(--app-muted); border-left: 2px solid var(--app-line); font-size: 13px; }
+.notes p { margin-top: var(--space-1); white-space: pre-wrap; overflow-wrap: anywhere; }
+.source { color: var(--app-muted); font-size: 12px; }
+.rowActions { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-3); }
+.rowActions a { align-self: center; color: var(--app-purple); font-size: 13px; }
+.group h3, .unresolved h3 { margin-bottom: var(--space-2); font-size: 14px; font-weight: 700; }
+.unresolved ul { display: grid; gap: var(--space-2); margin: 0; padding: 0; list-style: none; }
+.unresolved button { width: 100%; text-align: left; font-weight: 500; }
+.review { display: grid; gap: var(--space-3); margin-top: var(--space-3); }
+.pdfLink { color: var(--app-purple); font-size: 13px; }

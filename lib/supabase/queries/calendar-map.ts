@@ -19,6 +19,10 @@ export type CalendarEvent = {
   startsAt: string;
   endsAt: string | null;
   allDay: boolean;
+  /** Set when the event came from a confirmed document suggestion. */
+  sourceSuggestionId: string | null;
+  /** Set when the event mirrors a grade assessment. */
+  assessmentId: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -46,6 +50,8 @@ export function mapEvent(row: CalendarEventRow): CalendarEvent {
     startsAt: row.starts_at,
     endsAt: row.ends_at,
     allDay: row.all_day,
+    sourceSuggestionId: row.source_suggestion_id,
+    assessmentId: row.assessment_id,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };

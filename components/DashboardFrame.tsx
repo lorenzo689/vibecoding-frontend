@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { searchGlobal, type SearchResult } from "@/lib/supabase/queries/global-search";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useAuthenticatedProfile } from "@/lib/auth/useAuthenticatedProfile";
 import BrandLogo from "@/components/ui/BrandLogo";
@@ -38,12 +39,38 @@ export default function DashboardFrame({ children }: { children: React.ReactNode
   // Desktop preference (persisted) and mobile drawer (not persisted) are separate.
   const [collapsedPreference, setCollapsedPreference] = useState(false);
   const [openedAt, setOpenedAt] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [results, setResults] = useState<SearchResult[]>([]);
+  const [searchError, setSearchError] = useState(false);
+  const searchRef = useRef<HTMLInputElement>(null);
   const compact = useSyncExternalStore(subscribeCompact, getCompact, getServerCompact);
   const collapsed = effectiveCollapsed(collapsedPreference, compact);
   const drawerOpen = isDrawerOpen(openedAt, pathname, compact);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const wasDrawerOpen = useRef(false);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault(); searchRef.current?.focus();
+      }
+      if (event.key === "Escape" && document.activeElement === searchRef.current) {
+        setSearch(""); searchRef.current?.blur();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    const timer = window.setTimeout(() => {
+      searchGlobal(search).then((items) => { if (active) { setResults(items); setSearchError(false); } })
+        .catch(() => { if (active) setSearchError(true); });
+    }, 250);
+    return () => { active = false; window.clearTimeout(timer); };
+  }, [search]);
 
   // No theme effect here on purpose. The shell used to pin `data-theme="light"`,
   // which overrode the user's choice on every mount. The theme is now resolved
@@ -154,14 +181,17 @@ export default function DashboardFrame({ children }: { children: React.ReactNode
           </button>
           <div className={s.search}>
             <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
-            <input type="search" placeholder="Kurse, Dokumente, Karteikarten, ..." aria-label="Globale Suche" />
+            <input ref={searchRef} type="search" value={search} onChange={(event) => setSearch(event.target.value)}
+              placeholder="Kurse, Dokumente, Karteikarten, ..." aria-label="Globale Suche" aria-controls="global-search-results" />
             <kbd className={s.searchHint} aria-hidden="true">⌘K</kbd>
+            {search.trim().length >= 2 && <div id="global-search-results" className={s.searchResults} role="region" aria-label="Suchergebnisse">
+              {searchError ? <p>Suche nicht verfügbar. Bitte erneut versuchen.</p>
+                : results.length ? results.map((result) => <Link key={result.id} href={result.href} onClick={() => setSearch("")}>
+                    <span>{result.label}</span><small>{result.kind}</small>
+                  </Link>) : <p>Keine passenden Einträge gefunden.</p>}
+            </div>}
           </div>
           <div className={s.topbarRight}>
-            <button type="button" className={s.bell} aria-label="Benachrichtigungen">
-              <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9a6 6 0 1 1 12 0c0 4 1.5 5.5 1.5 5.5h-15S6 13 6 9Z" /><path d="M10 19a2 2 0 0 0 4 0" /></svg>
-              <span className={s.dot} aria-hidden="true" />
-            </button>
             <Link href="/profile" className={s.profileChip}>
               <span className={s.avatar} aria-hidden="true">{initial}</span>
               <span className={s.identity}><strong>{name}</strong><small>{detail}</small></span>

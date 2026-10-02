@@ -49,6 +49,16 @@ export default function EventCard({
                 {course ? course.title : "Ohne Kurs"}
               </dd>
             </div>
+            {(event.sourceSuggestionId || event.assessmentId) && (
+              <div>
+                <dt>Herkunft</dt>
+                <dd>
+                  {event.assessmentId
+                    ? "Aus einer Prüfungsleistung – Titel, Art und Datum folgen dieser Leistung."
+                    : "Aus einem bestätigten Terminvorschlag in deinen Unterlagen."}
+                </dd>
+              </div>
+            )}
             {event.description && (
               <div>
                 <dt>Beschreibung</dt>

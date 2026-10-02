@@ -79,7 +79,7 @@ function CourseCanvas({ course }: { course: Course }) {
             <div className={s.averageBasis}><span>Grundlage</span><strong>{formatEcts(summary.gradedEcts)} bewertete ECTS</strong></div>
             <p className={s.standingNote}>{summary.average === null ? "Dein Schnitt erscheint mit der ersten bewerteten Leistung." : "Dein Zwischenstand aus bereits bewerteten Leistungen. Keine offizielle Hochschulnote."}</p>
           </section>
-          <GoalEditor assessments={data.assessments} />
+          <GoalEditor courseId={course.id} savedTarget={course.targetGrade} assessments={data.assessments} />
         </div>
         </details>
 
@@ -97,7 +97,7 @@ function CourseCanvas({ course }: { course: Course }) {
             <div className={s.emptyRecord}><span aria-hidden="true">00</span><h3>Hier beginnt dein Leistungsbild.</h3><p>Erfasse deine erste Prüfung, Abgabe oder Präsentation.</p><button className={s.textAction} onClick={() => data.setDialogOpen(true)}>Erste Leistung hinzufügen</button></div>
           ) : (
             <><div className={s.tableHead} aria-hidden="true"><span>Prüfung</span><span>Kurs</span><span>Note / LP</span><span>Datum</span><span>Aktionen</span></div><ol className={s.recordList}>
-              {data.sorted.map((item) => <AssessmentEntry key={item.id} item={item} courseTitle={course.title}
+              {data.sorted.map((item) => <AssessmentEntry key={item.id} item={item} courseTitle={course.title} inCalendar={data.calendarLinks.has(item.id)}
                 deleting={data.deletingId === item.id} onEdit={() => data.setEditingAssessment(item)} onDelete={() => data.handleDelete(item)} />)}
             </ol></>
           )}
@@ -110,13 +110,13 @@ function CourseCanvas({ course }: { course: Course }) {
       </div>
 
       {data.dialogOpen && <AssessmentDialog onClose={() => data.setDialogOpen(false)} onSave={data.handleCreate} />}
-      {data.editingAssessment && <AssessmentDialog initial={data.editingAssessment} onClose={() => data.setEditingAssessment(undefined)} onSave={data.handleUpdate} />}
+      {data.editingAssessment && <AssessmentDialog initial={data.editingAssessment} linkedToCalendar={data.calendarLinks.has(data.editingAssessment.id)} onClose={() => data.setEditingAssessment(undefined)} onSave={data.handleUpdate} />}
     </>
   );
 }
 
-function AssessmentEntry({ item, courseTitle, deleting, onEdit, onDelete }: {
-  item: Assessment; courseTitle: string; deleting: boolean; onEdit: () => void; onDelete: () => void;
+function AssessmentEntry({ item, courseTitle, inCalendar, deleting, onEdit, onDelete }: {
+  item: Assessment; courseTitle: string; inCalendar: boolean; deleting: boolean; onEdit: () => void; onDelete: () => void;
 }) {
   return (
     <li className={s.entry}>
@@ -130,7 +130,7 @@ function AssessmentEntry({ item, courseTitle, deleting, onEdit, onDelete }: {
       </div>
       <span className={s.entryCourse}>{courseTitle}</span>
       <div className={s.entryResult}><strong aria-label={item.grade === null ? "Noch nicht bewertet" : `Note ${formatGrade(item.grade)}`}>{item.grade === null ? "—" : formatGrade(item.grade)}</strong><span>{formatEcts(item.ectsCredits)} ECTS</span></div>
-      <span className={s.entryDate}>{item.assessmentDate ? <time dateTime={item.assessmentDate}>{formatDate(item.assessmentDate)}</time> : "—"}</span>
+      <span className={s.entryDate}>{item.assessmentDate ? <time dateTime={item.assessmentDate}>{formatDate(item.assessmentDate)}</time> : "—"}{inCalendar && <small> · im Kalender</small>}</span>
       <div className={s.entryActions}><button onClick={onEdit} disabled={deleting} aria-label={`${item.title} bearbeiten`}>Bearbeiten</button><button onClick={onDelete} disabled={deleting} aria-label={`${item.title} löschen`}>{deleting ? "Wird gelöscht …" : "Löschen"}</button></div>
     </li>
   );

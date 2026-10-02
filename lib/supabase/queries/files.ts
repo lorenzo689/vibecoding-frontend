@@ -56,16 +56,30 @@ async function callFilesFunction<T>(body: Record<string, unknown>): Promise<T> {
   return data as T;
 }
 
-export async function listCourseFiles(courseId: string): Promise<CourseFile[]> {
+export const COURSE_FILES_PAGE_SIZE = 50;
+
+export async function listCourseFiles(courseId: string, offset = 0, limit = COURSE_FILES_PAGE_SIZE): Promise<CourseFile[]> {
   const { data, error } = await createClient()
     .from("files")
     .select("id, original_filename, mime_type, size_bytes, status, error_code, created_at")
     .eq("course_id", courseId)
     .order("created_at", { ascending: false })
-    .range(0, 49);
+    .range(offset, offset + limit - 1);
 
   if (error) throw error;
   return data.map(mapFile);
+}
+
+/** Resolve a detail route independently of the capped course list. RLS remains authoritative. */
+export async function getCourseFile(courseId: string, fileId: string): Promise<CourseFile | null> {
+  const { data, error } = await createClient()
+    .from("files")
+    .select("id, original_filename, mime_type, size_bytes, status, error_code, created_at")
+    .eq("course_id", courseId)
+    .eq("id", fileId)
+    .maybeSingle();
+  if (error) throw error;
+  return data ? mapFile(data) : null;
 }
 
 export async function uploadCourseFile(courseId: string, file: File): Promise<CourseFile> {

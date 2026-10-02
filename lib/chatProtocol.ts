@@ -2,6 +2,9 @@ export type ChatCourse = { id: string; title: string };
 export type Conversation = { id: string; course_id: string; title: string; updated_at: string };
 export type ChatSource = {
   citation_no: number;
+  chunk_id?: string | null;
+  source_document_id?: string | null;
+  material_id?: string | null;
   material_title: string;
   page_number: number | null;
   excerpt: string;

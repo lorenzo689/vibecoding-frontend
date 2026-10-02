@@ -19,7 +19,7 @@ export default function CoursesPage() {
   const [error, setError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
-  const visibleCourses = courses.filter((course) => `${course.title} ${course.description ?? ""}`.toLocaleLowerCase("de").includes(search.toLocaleLowerCase("de")));
+  const visibleCourses = courses.filter((course) => `${course.title} ${course.description ?? ""} ${course.semester} ${course.lecturer}`.toLocaleLowerCase("de").includes(search.toLocaleLowerCase("de")));
 
   function fetchCourses() {
     return listCourses()
@@ -44,7 +44,7 @@ export default function CoursesPage() {
     fetchCourses();
   }, []);
 
-  async function handleCreate(input: { title: string; description: string }) {
+  async function handleCreate(input: { title: string; description: string; semester: string; lecturer: string }) {
     setError(null);
     try {
       const course = await createCourse(input);
@@ -114,7 +114,7 @@ export default function CoursesPage() {
                   <span className={styles.cover} data-tone={badge.color} aria-hidden="true" />
                   <span className={styles.icon} data-tone={badge.color} aria-hidden="true">{badge.code}</span>
                   <h2 className={styles.title}>{course.title}</h2>
-                  <p className={styles.description}>{course.description || "Keine Beschreibung hinterlegt."}</p>
+                  <p className={styles.description}>{[[course.semester, course.lecturer].filter(Boolean).join(" · "), course.description].filter(Boolean).join(" — ") || "Keine Beschreibung hinterlegt."}</p>
                 </Link>
                 <div className={styles.cardActions}>
                   <Link href={`/courses/${course.id}/flashcards`} className={styles.actionButton} data-tone="violet">

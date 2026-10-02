@@ -3,11 +3,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent, type DragEvent, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { deleteCourse, getCourse, type Course } from "@/lib/supabase/queries/courses";
+import { deleteCourse, getCourse, updateCourse, type Course } from "@/lib/supabase/queries/courses";
 import {
   deleteCourseFile,
   getCourseFileDownloadUrl,
   listCourseFiles,
+  COURSE_FILES_PAGE_SIZE,
   uploadCourseFile,
   type CourseFile,
 } from "@/lib/supabase/queries/files";
@@ -19,6 +20,7 @@ import {
 import { deriveCourseBadge } from "@/lib/courseBadge";
 import DocumentIndexingStatus from "./DocumentIndexingStatus";
 import DocumentRetryButton from "./DocumentRetryButton";
+import CourseLectures from "./CourseLectures";
 import { describeIndexingProgress, retryStage, STATUS_POLL_INTERVAL_MS, STATUS_POLL_MAX_ATTEMPTS } from "./documentIndexing";
 import {
   DOCUMENT_UPLOAD_ACCEPT,
@@ -63,7 +65,15 @@ function uploadErrorMessage(error: unknown): string {
 export default function CourseDetailClient({ courseId }: { courseId: string }) {
   const router = useRouter();
   const [course, setCourse] = useState<Course | null | undefined>(undefined);
+  const [editingCourse, setEditingCourse] = useState(false);
+  const [courseTitle, setCourseTitle] = useState("");
+  const [courseDescription, setCourseDescription] = useState("");
+  const [courseSemester, setCourseSemester] = useState("");
+  const [courseLecturer, setCourseLecturer] = useState("");
+  const [savingCourse, setSavingCourse] = useState(false);
   const [files, setFiles] = useState<CourseFile[]>([]);
+  const [hasMoreFiles, setHasMoreFiles] = useState(false);
+  const [loadingMoreFiles, setLoadingMoreFiles] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [removingId, setRemovingId] = useState<string | null>(null);
@@ -85,6 +95,7 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
         if (!active) return;
         setCourse(nextCourse);
         setFiles(nextFiles);
+        setHasMoreFiles(nextFiles.length === COURSE_FILES_PAGE_SIZE);
         setDocumentStatuses(nextStatuses);
       })
       .catch(() => {
@@ -113,11 +124,22 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
 
   const refreshStatuses = useCallback(async () => {
     const [nextFiles, nextStatuses] = await Promise.all([
-      listCourseFiles(courseId),
+      listCourseFiles(courseId, 0, Math.max(COURSE_FILES_PAGE_SIZE, files.length)),
       listCourseDocumentStatuses(courseId),
     ]);
     return { nextFiles, nextStatuses };
-  }, [courseId]);
+  }, [courseId, files.length]);
+
+  async function loadMoreFiles() {
+    setLoadingMoreFiles(true);
+    setActionError(null);
+    try {
+      const next = await listCourseFiles(courseId, files.length);
+      setFiles((current) => [...current, ...next.filter((file) => !current.some((known) => known.id === file.id))]);
+      setHasMoreFiles(next.length === COURSE_FILES_PAGE_SIZE);
+    } catch { setActionError("Weitere Dateien konnten nicht geladen werden."); }
+    finally { setLoadingMoreFiles(false); }
+  }
 
   // Reloads the real status after a retry was started; the unfinished document then
   // keeps the polling below running until it is ready or failed again.
@@ -273,6 +295,22 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
     }
   }
 
+  async function handleSaveCourse(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!courseTitle.trim()) return;
+    setSavingCourse(true);
+    setActionError(null);
+    try {
+      const saved = await updateCourse(courseId, { title: courseTitle, description: courseDescription, semester: courseSemester, lecturer: courseLecturer });
+      setCourse(saved);
+      setEditingCourse(false);
+    } catch {
+      setActionError("Der Kurs konnte nicht gespeichert werden.");
+    } finally {
+      setSavingCourse(false);
+    }
+  }
+
   if (course === undefined) return null;
 
   if (course === null) {
@@ -302,9 +340,24 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
         <span className={styles.icon} data-tone={badge.color}>{badge.code}</span>
         <div>
           <h1>{course.title}</h1>
+          {(course.semester || course.lecturer) && <p className={styles.subhead}>{[course.semester, course.lecturer].filter(Boolean).join(" · ")}</p>}
           <p className={styles.subhead}>{course.description || "Keine Beschreibung hinterlegt."}</p>
+          <button type="button" className={styles.uploadLabel} onClick={() => {
+            setCourseTitle(course.title); setCourseDescription(course.description); setCourseSemester(course.semester); setCourseLecturer(course.lecturer); setEditingCourse((open) => !open);
+          }}>Kurs bearbeiten</button>
         </div>
       </header>
+      {editingCourse && <form onSubmit={handleSaveCourse} className={styles.uploadSection}>
+        <label htmlFor="edit-course-title">Kurstitel</label>
+        <input id="edit-course-title" value={courseTitle} maxLength={200} onChange={(event) => setCourseTitle(event.target.value)} required />
+        <label htmlFor="edit-course-semester">Semester</label>
+        <input id="edit-course-semester" value={courseSemester} maxLength={100} placeholder="z. B. WS 26/27" onChange={(event) => setCourseSemester(event.target.value)} />
+        <label htmlFor="edit-course-lecturer">Dozent:in</label>
+        <input id="edit-course-lecturer" value={courseLecturer} maxLength={200} onChange={(event) => setCourseLecturer(event.target.value)} />
+        <label htmlFor="edit-course-description">Beschreibung</label>
+        <textarea id="edit-course-description" value={courseDescription} onChange={(event) => setCourseDescription(event.target.value)} />
+        <button type="submit" className={styles.uploadLabel} disabled={savingCourse || !courseTitle.trim()}>{savingCourse ? "Speichert …" : "Änderungen speichern"}</button>
+      </form>}
 
       <div className={styles.toolGrid}>
         <Link href={`/courses/${courseId}/flashcards`} className={styles.toolCard}>
@@ -332,6 +385,11 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
           <p>Das Wesentliche aus deinen Vorlesungen.</p>
         </Link>
       </div>
+
+      <CourseLectures courseId={courseId} documents={files.flatMap((file) => {
+        const materialId = statusByFile.get(file.id)?.materialId;
+        return materialId ? [{ materialId, fileId: file.id, name: file.name }] : [];
+      })} />
 
       <section className={styles.uploadSection}>
         <div className={styles.sectionHead}>
@@ -392,6 +450,9 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
             ))}
           </ul>
         )}
+        {hasMoreFiles && <button type="button" className={styles.uploadLabel} onClick={() => void loadMoreFiles()} disabled={loadingMoreFiles}>
+          {loadingMoreFiles ? "Dateien werden geladen …" : "Weitere Dateien laden"}
+        </button>}
       </section>
 
       <div className={styles.dangerZone}>

@@ -1,14 +1,32 @@
 "use client";
 
 import { useState } from "react";
+import { setCourseTargetGrade } from "@/lib/supabase/queries/courses";
 import { courseGradeSummary, formatGrade, formatEcts, parseTarget, targetGrade, type EctsAssessment } from "../calculations";
 import s from "./GradeStudio.module.css";
 
-export default function GoalEditor({ assessments }: { assessments: EctsAssessment[] }) {
-  const [input, setInput] = useState("2,0");
+export default function GoalEditor({ courseId, savedTarget, assessments }: { courseId: string; savedTarget: number | null; assessments: EctsAssessment[] }) {
+  const [input, setInput] = useState(savedTarget === null ? "2,0" : formatGrade(savedTarget));
+  const [saved, setSaved] = useState<number | null>(savedTarget);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const target = parseTarget(input);
   const result = targetGrade(assessments, target);
   const summary = courseGradeSummary(assessments);
+
+  async function persist(next: number | null) {
+    setSaving(true);
+    setSaveError(null);
+    try {
+      await setCourseTargetGrade(courseId, next);
+      setSaved(next);
+      if (next === null) setInput("2,0");
+    } catch {
+      setSaveError("Das Ziel konnte nicht gespeichert werden.");
+    } finally {
+      setSaving(false);
+    }
+  }
 
   return (
     <section className={s.card} aria-labelledby="goal-heading">
@@ -21,8 +39,11 @@ export default function GoalEditor({ assessments }: { assessments: EctsAssessmen
         <input id="target-grade" type="text" inputMode="decimal" value={input}
           onChange={(event) => setInput(event.target.value)}
           aria-invalid={result.kind === "invalid"} aria-describedby="target-help target-result" />
-        <button type="button" className={s.resetButton} onClick={() => setInput("2,0")}>Zurücksetzen</button>
+        <button type="button" className={s.resetButton} disabled={saving || target === null || target === saved} onClick={() => void persist(target)}>Als Ziel speichern</button>
+        {saved !== null && <button type="button" className={s.resetButton} disabled={saving} onClick={() => void persist(null)}>Ziel entfernen</button>}
       </div>
+      {saveError && <p role="alert">{saveError}</p>}
+      {saved !== null && <p className={s.micro}>GESPEICHERTES ZIEL: {formatGrade(saved)}</p>}
       <div id="target-result" className={s.goalResult} role="status" aria-atomic="true">
         {result.kind === "invalid" && <p>{result.message}</p>}
         {result.kind === "noOpenAssessments" && <>
@@ -48,7 +69,7 @@ export default function GoalEditor({ assessments }: { assessments: EctsAssessmen
       </div>
       <details className={s.goalMethod}>
         <summary>Berechnung & Hinweise</summary>
-        <p id="target-help">1,0 bis 5,0 · höchstens zwei Nachkommastellen, Komma oder Punkt. Eingaben werden nicht gespeichert.</p>
+        <p id="target-help">1,0 bis 5,0 · höchstens zwei Nachkommastellen, Komma oder Punkt. Gespeichert wird nur mit „Als Ziel speichern“ (pro Kurs); der Rechner selbst läuft im Browser.</p>
         <p>(Zielnote × erfasste ECTS − Summe aus Note × ECTS der bewerteten Leistungen) ÷ offene ECTS.</p>
         <p>Nur bereits erfasste Leistungen zählen. Jede Note fließt linear mit ihren ECTS ein; 1,0 ist die beste und 5,0 die schlechteste Note.</p>
         <p>Unverbindliche Rechnung. Hochschulspezifische Notenstufen, Rundungs-, Bestehens- und Prüfungsordnungsregeln werden nicht berücksichtigt.</p>

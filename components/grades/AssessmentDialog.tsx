@@ -9,12 +9,14 @@ import styles from "@/components/courses/coursesList.module.css";
 
 export default function AssessmentDialog({
   initial,
+  linkedToCalendar = false,
   onClose,
   onSave,
 }: {
   initial?: Assessment;
+  linkedToCalendar?: boolean;
   onClose: () => void;
-  onSave: (input: AssessmentInput) => Promise<void>;
+  onSave: (input: AssessmentInput, inCalendar: boolean) => Promise<void>;
 }) {
   const [title, setTitle] = useState(initial?.title ?? "");
   const [kind, setKind] = useState<AssessmentKind>(initial?.kind ?? "exam");
@@ -29,6 +31,7 @@ export default function AssessmentDialog({
     initial?.pointsMax !== null && initial?.pointsMax !== undefined ? String(initial.pointsMax).replace(".", ",") : "",
   );
   const [notes, setNotes] = useState(initial?.notes ?? "");
+  const [inCalendar, setInCalendar] = useState(linkedToCalendar);
   const titleInputRef = useRef<HTMLInputElement>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -75,7 +78,7 @@ export default function AssessmentDialog({
         pointsEarned: parsedPointsEarned,
         pointsMax: parsedPointsMax,
         notes: notes.trim(),
-      });
+      }, inCalendar && date !== "");
     } catch {
       setError("Die Prüfungsleistung konnte nicht gespeichert werden. Bitte versuche es erneut.");
       setSaving(false);
@@ -155,6 +158,15 @@ export default function AssessmentDialog({
           <div className={styles.field}>
             <label htmlFor="assessment-date">Termin (optional)</label>
             <input id="assessment-date" type="date" value={date} onChange={(event) => setDate(event.target.value)} disabled={saving} />
+          </div>
+          <div className={styles.field}>
+            <label htmlFor="assessment-calendar">
+              <input id="assessment-calendar" type="checkbox" checked={inCalendar && date !== ""} disabled={saving || date === ""}
+                onChange={(event) => setInCalendar(event.target.checked)} /> Im Kalender anzeigen
+            </label>
+            <p className={styles.hint}>
+              {date === "" ? "Erst einen Termin angeben." : "Legt einen ganztägigen Kalendereintrag an. Titel, Art und Datum bleiben mit dieser Leistung synchron; Änderungen am Eintrag selbst werden bei der nächsten Änderung hier überschrieben. Ohne Termin oder beim Löschen verschwindet der Eintrag."}
+            </p>
           </div>
           <div className={styles.field}>
             <label htmlFor="assessment-points-earned">Erreichte Punkte (optional)</label>

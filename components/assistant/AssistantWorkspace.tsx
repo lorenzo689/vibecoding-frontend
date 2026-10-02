@@ -6,7 +6,7 @@ import PageHeading from "@/components/ui/PageHeading";
 import { useRouter } from "next/navigation";
 import type { AuthChangeEvent } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/browser";
-import { createConversation, hasIndexedMaterial, loadConversations, loadCourses, loadHistory, sendChat } from "@/lib/chat";
+import { createConversation, deleteConversation, hasIndexedMaterial, loadConversations, loadCourses, loadHistoryPage, renameConversation, sendChat, sourceDocumentLinks } from "@/lib/chat";
 import { ChatError, canDiscardRequest, mergeExchange, sendBlockedReason, type ChatCourse, type ChatMessage, type ChatRequest, type Conversation } from "@/lib/chatProtocol";
 import MessageFeedback from "@/components/chat/MessageFeedback";
 import { useMessageFeedback } from "@/components/chat/useMessageFeedback";
@@ -104,11 +104,14 @@ function CourseChat({ courseId, userId, setLocked }: { courseId: string; userId:
   const [conversationId, setConversationId] = useState(() => readPending(storageKey)?.conversation_id ?? "");
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [sourceLinks, setSourceLinks] = useState<Map<string, string>>(new Map());
   const feedback = useMessageFeedback(setMessages);
   const [question, setQuestion] = useState(() => readPending(storageKey)?.question ?? "");
   const [indexed, setIndexed] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(Boolean(courseId));
   const [historyLoading, setHistoryLoading] = useState(false);
+  const [olderLoading, setOlderLoading] = useState(false);
+  const [hasOlder, setHasOlder] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<ChatError | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
@@ -137,6 +140,11 @@ function CourseChat({ courseId, userId, setLocked }: { courseId: string; userId:
     return () => window.clearInterval(timer);
   }, [retryAt]);
   useEffect(() => { endRef.current?.scrollIntoView({ block: "nearest" }); }, [messages, sending]);
+  useEffect(() => {
+    let active = true;
+    sourceDocumentLinks(createClient(), messages).then((links) => { if (active) setSourceLinks(links); }).catch(() => {});
+    return () => { active = false; };
+  }, [messages]);
 
   useEffect(() => {
     if (!courseId) return;
@@ -156,8 +164,9 @@ function CourseChat({ courseId, userId, setLocked }: { courseId: string; userId:
   useEffect(() => {
     if (!conversationId) return;
     let active = true;
-    loadHistory(createClient(), conversationId).then((history) => {
+    loadHistoryPage(createClient(), conversationId).then(({ messages: history, hasOlder: older }) => {
       if (!active) return;
+      setHasOlder(older);
       setMessages((current) => [...new Map([...history, ...current].map((message) => [message.id, message])).values()].sort((a, b) => a.seq - b.seq));
       const saved = readPending(storageKey);
       if (saved && history.some((message) => message.role === "assistant" && message.request_id === saved.request_id)) {
@@ -174,9 +183,41 @@ function CourseChat({ courseId, userId, setLocked }: { courseId: string; userId:
   function selectConversation(id: string) {
     setConversationId(id);
     setMessages([]);
+    setHasOlder(false);
     setQuestion("");
     setError(null);
     setHistoryLoading(Boolean(id));
+  }
+
+  async function loadOlder() {
+    if (!conversationId || !messages.length || olderLoading) return;
+    setOlderLoading(true);
+    try {
+      const page = await loadHistoryPage(createClient(), conversationId, messages[0].seq);
+      setHasOlder(page.hasOlder);
+      setMessages((current) => [...page.messages, ...current]);
+    } catch { setError(new ChatError("LOAD_FAILED")); }
+    finally { setOlderLoading(false); }
+  }
+
+  async function editConversationTitle() {
+    const selected = conversations.find((entry) => entry.id === conversationId);
+    if (!selected) return;
+    const title = window.prompt("Neuer Chat-Titel", selected.title)?.trim();
+    if (!title || title === selected.title) return;
+    try {
+      await renameConversation(createClient(), selected.id, title);
+      setConversations((list) => list.map((entry) => entry.id === selected.id ? { ...entry, title } : entry));
+    } catch { setError(new ChatError("LOAD_FAILED")); }
+  }
+
+  async function removeConversation() {
+    if (!conversationId || !window.confirm("Diesen Chat mit seinem Verlauf löschen?")) return;
+    try {
+      await deleteConversation(createClient(), conversationId);
+      setConversations((list) => list.filter((entry) => entry.id !== conversationId));
+      selectConversation("");
+    } catch { setError(new ChatError("LOAD_FAILED")); }
   }
 
   async function submit(event?: FormEvent) {
@@ -240,6 +281,8 @@ function CourseChat({ courseId, userId, setLocked }: { courseId: string; userId:
         {pending && !conversations.some((item) => item.id === conversationId) && <option value={conversationId}>Offene Anfrage</option>}
         {conversations.map((conversation) => <option key={conversation.id} value={conversation.id}>{conversation.title}</option>)}
       </select>
+      <button type="button" className={s.refreshButton} disabled={busy || Boolean(pending) || !conversationId} onClick={() => void editConversationTitle()} title="Chat umbenennen">Umbenennen</button>
+      <button type="button" className={s.refreshButton} disabled={busy || Boolean(pending) || !conversationId} onClick={() => void removeConversation()} title="Chat löschen">Löschen</button>
       <button type="button" className={s.refreshButton} disabled={busy || !courseId} title="Aktualisieren" onClick={() => {
         setLoadFailed(false); setLoading(Boolean(courseId)); setHistoryLoading(Boolean(conversationId)); setError(null); setReload((value) => value + 1);
       }}><span aria-hidden="true">↻</span><span className={s.srOnly}>Aktualisieren</span></button>
@@ -262,6 +305,9 @@ function CourseChat({ courseId, userId, setLocked }: { courseId: string; userId:
         : courseId && indexed === false && !loadFailed && <p className={s.status}>Bei der letzten Prüfung waren noch keine durchsuchbaren Unterlagen verfügbar. Beim Senden prüft der Chat den aktuellen Stand. <Link href={`/courses/${courseId}`}>Unterlagen im Kurs verwalten</Link></p>}
       {!busy && indexed && !messages.length && !pending && <p className={s.status}>Stelle eine Frage zu deinen Kursunterlagen.</p>}
 
+      {hasOlder && <button type="button" className={s.action} onClick={() => void loadOlder()} disabled={olderLoading}>
+        {olderLoading ? "Ältere Nachrichten werden geladen …" : "Ältere Nachrichten laden"}
+      </button>}
       <ul className={s.messages} aria-label="Fragen und Antworten">
         {messages.map((message) => <li key={message.id} className={s.messageRow} data-role={message.role}>
           <div className={s.messageBubble}>
@@ -272,6 +318,9 @@ function CourseChat({ courseId, userId, setLocked }: { courseId: string; userId:
                 <details key={source.citation_no}>
                   <summary>[{source.citation_no}] {source.material_title}{source.page_number !== null ? ` · S. ${source.page_number}` : ""}</summary>
                   <blockquote>{source.excerpt}</blockquote>
+                  {source.material_id && sourceLinks.has(source.material_id) && (
+                    <Link href={`${sourceLinks.get(source.material_id)}${source.page_number ? `?page=${source.page_number}` : ""}`}>Quelle öffnen</Link>
+                  )}
                 </details>)}
             </div>}
             <MessageFeedback message={message} pending={feedback.pending.has(message.id)} failed={feedback.failedId === message.id} onRate={feedback.rate} />

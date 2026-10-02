@@ -2,17 +2,17 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { getCourse, type Course } from "@/lib/supabase/queries/courses";
 import {
   deleteCourseFile,
+  getCourseFile,
   getCourseFileDownloadUrl,
-  listCourseFiles,
   type CourseFile,
 } from "@/lib/supabase/queries/files";
 import {
   indexDocumentStatusesByFile,
-  listCourseDocumentStatuses,
+  getFileDocumentStatus,
   type CourseDocumentStatus,
 } from "@/lib/supabase/queries/documents";
 import {
@@ -27,6 +27,8 @@ import DocumentCourseChat from "./DocumentCourseChat";
 import DocumentAiActions from "./DocumentAiActions";
 import DocumentFlashcards from "./DocumentFlashcards";
 import DocumentQuizzes from "./DocumentQuizzes";
+import DocumentReader from "./DocumentReader";
+import DocumentSuggestions from "./DocumentSuggestions";
 import styles from "@/components/documents/documents.module.css";
 
 const EXTENSION_LABELS: Record<string, string> = {
@@ -47,10 +49,13 @@ const TONE_LABELS: Record<IndexingTone, string> = {
   failed: "Fehlgeschlagen",
 };
 
-type Tab = "content" | "chat" | "actions" | "flashcards" | "quizzes";
+type Tab = "content" | "pages" | "detected" | "chat" | "actions" | "flashcards" | "quizzes";
 
 export default function CourseDocumentDetail({ courseId, fileId }: { courseId: string; fileId: string }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const requestedPage = Number(searchParams.get("page"));
+  const pdfPage = Number.isInteger(requestedPage) && requestedPage > 0 && requestedPage <= 100 ? requestedPage : null;
   const [course, setCourse] = useState<Course | null | undefined>(undefined);
   const [file, setFile] = useState<CourseFile | null | undefined>(undefined);
   const [documentStatuses, setDocumentStatuses] = useState<CourseDocumentStatus[]>([]);
@@ -64,12 +69,12 @@ export default function CourseDocumentDetail({ courseId, fileId }: { courseId: s
 
   useEffect(() => {
     let active = true;
-    Promise.all([getCourse(courseId), listCourseFiles(courseId), listCourseDocumentStatuses(courseId)])
-      .then(([nextCourse, files, nextStatuses]) => {
+    Promise.all([getCourse(courseId), getCourseFile(courseId, fileId), getFileDocumentStatus(courseId, fileId)])
+      .then(([nextCourse, nextFile, nextStatus]) => {
         if (!active) return;
         setCourse(nextCourse);
-        setFile(files.find((entry) => entry.id === fileId) ?? null);
-        setDocumentStatuses(nextStatuses);
+        setFile(nextFile);
+        setDocumentStatuses(nextStatus ? [nextStatus] : []);
       })
       .catch(() => {
         if (!active) return;
@@ -86,16 +91,16 @@ export default function CourseDocumentDetail({ courseId, fileId }: { courseId: s
     [file, statusByFile]
   );
 
-  const canView = file?.status === "ready" && progress?.tone === "ready";
+  const canView = file?.status === "ready";
   const documentStatus = file ? statusByFile.get(file.id) : undefined;
   const retry = file ? retryStage(file.status, documentStatus ?? null) : null;
   const hasUnfinishedDocument = progress?.inProgress ?? false;
   const pollAttemptsRef = useRef(0);
 
   const refreshDocument = useCallback(async () => {
-    const [nextFiles, nextStatuses] = await Promise.all([listCourseFiles(courseId), listCourseDocumentStatuses(courseId)]);
-    setFile(nextFiles.find((entry) => entry.id === fileId) ?? null);
-    setDocumentStatuses(nextStatuses);
+    const [nextFile, nextStatus] = await Promise.all([getCourseFile(courseId, fileId), getFileDocumentStatus(courseId, fileId)]);
+    setFile(nextFile);
+    setDocumentStatuses(nextStatus ? [nextStatus] : []);
   }, [courseId, fileId]);
 
   // Follow the status while the document is unfinished, e.g. after a retry was started.
@@ -118,7 +123,7 @@ export default function CourseDocumentDetail({ courseId, fileId }: { courseId: s
   }, [hasUnfinishedDocument, refreshDocument]);
   // The AI tabs are scoped to this document's material. Without it they must not
   // fall back to the whole course, so they stay unavailable until it is indexed.
-  const materialId = canView && file ? (statusByFile.get(file.id)?.materialId ?? null) : null;
+  const materialId = canView && progress?.tone === "ready" && file ? (statusByFile.get(file.id)?.materialId ?? null) : null;
   const inlineViewable = file ? INLINE_VIEWABLE_TYPES.has(file.type) : false;
 
   useEffect(() => {
@@ -197,6 +202,8 @@ export default function CourseDocumentDetail({ courseId, fileId }: { courseId: s
       <div className={styles.documentWorkspace}>
       <div className={styles.tabs} role="tablist" aria-label="Dokumentwerkzeuge">
         <button type="button" role="tab" aria-selected={tab === "content"} className={styles.tab} data-active={tab === "content"} onClick={() => setTab("content")}>Inhalt</button>
+        <button type="button" role="tab" aria-selected={tab === "pages"} className={styles.tab} data-active={tab === "pages"} onClick={() => setTab("pages")}>Seiten &amp; Notizen</button>
+        <button type="button" role="tab" aria-selected={tab === "detected"} className={styles.tab} data-active={tab === "detected"} onClick={() => setTab("detected")}>Erkannt</button>
         <button type="button" role="tab" aria-selected={tab === "chat"} className={styles.tab} data-active={tab === "chat"} onClick={() => setTab("chat")}>Chat</button>
         <button type="button" role="tab" aria-selected={tab === "actions"} className={styles.tab} data-active={tab === "actions"} onClick={() => setTab("actions")}>KI-Aktionen</button>
         <button type="button" role="tab" aria-selected={tab === "flashcards"} className={styles.tab} data-active={tab === "flashcards"} onClick={() => setTab("flashcards")}>Karteikarten</button>
@@ -237,7 +244,7 @@ export default function CourseDocumentDetail({ courseId, fileId }: { courseId: s
             ) : viewUrlError ? (
               <div className={styles.viewerEmpty}><p>{viewUrlError}</p></div>
             ) : viewUrl ? (
-              <iframe title={file.name} src={viewUrl} className={styles.viewerFrame} />
+              <iframe title={file.name} src={file.type === "application/pdf" && pdfPage ? `${viewUrl}#page=${pdfPage}` : viewUrl} className={styles.viewerFrame} />
             ) : (
               <div className={styles.viewerSkeleton} aria-hidden="true" />
             )}
@@ -253,12 +260,24 @@ export default function CourseDocumentDetail({ courseId, fileId }: { courseId: s
         <button type="button" className={styles.toolLink} onClick={() => setTab("chat")}>Frage zum Dokument stellen →</button>
       </aside>}
 
-      {(tab === "chat" || tab === "actions" || tab === "quizzes") && !materialId && (
+      {(tab === "pages" || tab === "detected" || tab === "chat" || tab === "actions" || tab === "quizzes") && !materialId && (
         <section className={styles.viewerCard}>
           <div className={styles.viewerEmpty}>
             <p><strong>Noch nicht für dieses Dokument verfügbar.</strong></p>
             <p>Die KI arbeitet nur mit diesem Dokument und braucht dafür den fertig indexierten Text. Aktueller Stand: {progress!.label}</p>
           </div>
+        </section>
+      )}
+
+      {tab === "pages" && materialId && (
+        <section className={styles.viewerCard}>
+          <DocumentReader courseId={courseId} materialId={materialId} fileId={file.id} fileName={file.name} />
+        </section>
+      )}
+
+      {tab === "detected" && materialId && (
+        <section className={styles.viewerCard}>
+          <DocumentSuggestions courseId={courseId} materialId={materialId} />
         </section>
       )}
 
@@ -270,7 +289,7 @@ export default function CourseDocumentDetail({ courseId, fileId }: { courseId: s
 
       {tab === "actions" && materialId && (
         <section className={styles.viewerCard}>
-          <DocumentAiActions courseId={courseId} courseTitle={course.title} fileName={file.name} materialId={materialId} />
+          <DocumentAiActions courseId={courseId} fileName={file.name} materialId={materialId} />
         </section>
       )}
 

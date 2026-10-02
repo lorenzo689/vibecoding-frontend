@@ -34,7 +34,9 @@ type MaterialWithSourceRow = {
 export async function listCourseDocumentStatuses(
   courseId: string
 ): Promise<CourseDocumentStatus[]> {
-  const { data, error } = await createClient()
+  const all: MaterialWithSourceRow[] = [];
+  for (let offset = 0; ; offset += 100) {
+    const { data, error } = await createClient()
     .from("materials")
     .select(
       "id, file_id, source_documents!source_documents_material_id_fkey(id, processing_status, error_code, indexing_status, indexing_error, updated_at)"
@@ -42,11 +44,14 @@ export async function listCourseDocumentStatuses(
     .eq("course_id", courseId)
     .eq("type", "source_document")
     .order("created_at", { ascending: false })
-    .range(0, 49);
+    .range(offset, offset + 99);
 
-  if (error) throw error;
+    if (error) throw error;
+    all.push(...(data as MaterialWithSourceRow[]));
+    if (data.length < 100) break;
+  }
 
-  return (data as MaterialWithSourceRow[])
+  return all
     .filter((row) => row.source_documents !== null)
     .map((row) => ({
       documentId: row.source_documents!.id,
@@ -58,6 +63,30 @@ export async function listCourseDocumentStatuses(
       indexingError: row.source_documents!.indexing_error,
       updatedAt: row.source_documents!.updated_at,
     }));
+}
+
+/** A single document's status, without the 50-row list limit. */
+export async function getFileDocumentStatus(courseId: string, fileId: string): Promise<CourseDocumentStatus | null> {
+  const { data, error } = await createClient()
+    .from("materials")
+    .select("id, file_id, source_documents!source_documents_material_id_fkey(id, processing_status, error_code, indexing_status, indexing_error, updated_at)")
+    .eq("course_id", courseId)
+    .eq("file_id", fileId)
+    .eq("type", "source_document")
+    .maybeSingle();
+  if (error) throw error;
+  const source = data?.source_documents;
+  if (!data || !source) return null;
+  return {
+    documentId: source.id,
+    materialId: data.id,
+    fileId: data.file_id,
+    processingStatus: source.processing_status as ProcessingStatus,
+    errorCode: source.error_code,
+    indexingStatus: source.indexing_status as IndexingStatus,
+    indexingError: source.indexing_error,
+    updatedAt: source.updated_at,
+  };
 }
 
 /** Status by file id, so a file row can look up its own document. */

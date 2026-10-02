@@ -51,11 +51,14 @@ export default function DocumentLibrary() {
   const [state, setState] = useState<LibraryState>({ status: "loading" });
   const [attempt, setAttempt] = useState(0);
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [moreError, setMoreError] = useState(false);
 
   useEffect(() => {
     let active = true;
     listLibraryDocuments(createClient())
-      .then((documents) => { if (active) setState({ status: "ready", documents }); })
+      .then((documents) => { if (active) { setState({ status: "ready", documents }); setHasMore(documents.length === LIBRARY_LIMIT); } })
       .catch(() => { if (active) setState({ status: "error" }); });
     return () => { active = false; };
   }, [attempt]);
@@ -67,9 +70,21 @@ export default function DocumentLibrary() {
 
   // Reloads the real status without the loading skeleton (after a retry and while polling).
   const refresh = useCallback(async () => {
-    const documents = await listLibraryDocuments(createClient());
+    const documents = await listLibraryDocuments(createClient(), 0, state.status === "ready" ? Math.max(LIBRARY_LIMIT, state.documents.length) : LIBRARY_LIMIT);
     setState({ status: "ready", documents });
-  }, []);
+  }, [state]);
+
+  async function loadMore() {
+    if (state.status !== "ready" || loadingMore) return;
+    setLoadingMore(true);
+    setMoreError(false);
+    try {
+      const next = await listLibraryDocuments(createClient(), state.documents.length);
+      setState({ status: "ready", documents: [...state.documents, ...next] });
+      setHasMore(next.length === LIBRARY_LIMIT);
+    } catch { setMoreError(true); }
+    finally { setLoadingMore(false); }
+  }
 
   const documents = state.status === "ready" ? state.documents : null;
   const entries = useMemo(() => (documents ? toEntries(documents) : []), [documents]);
@@ -179,7 +194,7 @@ export default function DocumentLibrary() {
 
           <p className={s.summary} aria-live="polite">
             {filtersActive ? `${visible.length} von ${total} Unterlagen` : `${total} ${total === 1 ? "Unterlage" : "Unterlagen"}`}
-            {total >= LIBRARY_LIMIT && ` · Es werden die neuesten ${LIBRARY_LIMIT} angezeigt.`}
+            {hasMore && " · Weitere Unterlagen verfügbar"}
           </p>
 
           {visible.length === 0 ? (
@@ -228,6 +243,10 @@ export default function DocumentLibrary() {
             </ul>
             </div>
           )}
+          {hasMore && <button type="button" className={s.ctaButton} onClick={() => void loadMore()} disabled={loadingMore}>
+            {loadingMore ? "Weitere Unterlagen werden geladen …" : "Weitere Unterlagen laden"}
+          </button>}
+          {moreError && <p role="alert">Weitere Unterlagen konnten nicht geladen werden. Bitte erneut versuchen.</p>}
         </>
       )}
     </div>

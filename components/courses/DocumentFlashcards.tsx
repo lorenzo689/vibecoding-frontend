@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { deleteDeck, getDeck, listCourseDecks, type Flashcard, type FlashcardDeck, type FlashcardDeckSummary } from "@/lib/supabase/queries/flashcards";
-import { getDeckProgress, markCardReviewed, toggleCardStarred } from "@/lib/flashcardProgress";
+import { DECKS_PAGE_SIZE, deleteDeck, getDeck, listCourseDecks, type Flashcard, type FlashcardDeck, type FlashcardDeckSummary } from "@/lib/supabase/queries/flashcards";
+import { getDeckProgress, loadDeckProgress, markCardKnown, toggleCardStarred } from "@/lib/flashcardProgress";
 import DocumentFlashcardGenerator from "./DocumentFlashcardGenerator";
 import styles from "@/components/documents/documents.module.css";
 
@@ -25,11 +25,14 @@ function DeckStudy({ deck, onBack }: { deck: FlashcardDeck; onBack: () => void }
   const [index, setIndex] = useState(0);
   const [revealed, setRevealed] = useState(false);
   const [, forceUpdate] = useState(0);
+  const [error, setError] = useState<string | null>(null);
   const card: Flashcard | undefined = deck.cards[index];
 
   useEffect(() => {
-    if (card) markCardReviewed(deck.materialId, card.id);
-  }, [deck.materialId, card]);
+    loadDeckProgress(deck.materialId, deck.cards.map((entry) => entry.id))
+      .then(() => forceUpdate((value) => value + 1))
+      .catch(() => setError("Lernfortschritt konnte nicht geladen werden."));
+  }, [deck.materialId, deck.cards]);
 
   if (!card) return null;
   const progress = getDeckProgress(deck.materialId);
@@ -39,10 +42,16 @@ function DeckStudy({ deck, onBack }: { deck: FlashcardDeck; onBack: () => void }
     setIndex((current) => Math.min(deck.cards.length - 1, Math.max(0, current + delta)));
   }
 
-  function toggleStar() {
+  async function toggleStar() {
     if (!card) return;
-    toggleCardStarred(deck.materialId, card.id);
-    forceUpdate((current) => current + 1);
+    try { await toggleCardStarred(deck.materialId, card.id); forceUpdate((current) => current + 1); }
+    catch { setError("Favorit konnte nicht gespeichert werden."); }
+  }
+
+  async function rate(known: boolean) {
+    if (!card) return;
+    try { await markCardKnown(deck.materialId, card.id, known); forceUpdate((value) => value + 1); if (index < deck.cards.length - 1) go(1); }
+    catch { setError("Lernfortschritt konnte nicht gespeichert werden."); }
   }
 
   return (
@@ -60,7 +69,7 @@ function DeckStudy({ deck, onBack }: { deck: FlashcardDeck; onBack: () => void }
           </span>
           <button type="button" className={styles.studyStarButton} data-active={progress.starred.has(card.id)}
             aria-label={progress.starred.has(card.id) ? "Aus Favoriten entfernen" : "Als Favorit markieren"}
-            onClick={(event) => { event.stopPropagation(); toggleStar(); }}>
+            onClick={(event) => { event.stopPropagation(); void toggleStar(); }}>
             <svg viewBox="0 0 24 24" fill={progress.starred.has(card.id) ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="m12 3 2.6 5.6 6.1.7-4.5 4.2 1.2 6-5.4-3-5.4 3 1.2-6-4.5-4.2 6.1-.7Z" /></svg>
           </button>
         </div>
@@ -71,6 +80,11 @@ function DeckStudy({ deck, onBack }: { deck: FlashcardDeck; onBack: () => void }
         </span>
       </div>
 
+      {error && <p className={styles.errorHint} role="alert">{error}</p>}
+      <div className={styles.rateRow}>
+        <button type="button" className={styles.rateAgain} onClick={() => void rate(false)}>Nochmal üben</button>
+        <button type="button" className={styles.rateKnown} onClick={() => void rate(true)}>Ich wusste es</button>
+      </div>
       <div className={styles.studyNav}>
         <button type="button" onClick={() => go(-1)} disabled={index === 0}>
           <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m15 5-7 7 7 7" /></svg>
@@ -86,22 +100,36 @@ function DeckStudy({ deck, onBack }: { deck: FlashcardDeck; onBack: () => void }
   );
 }
 
-// Existing decks are course content and always stay visible. Only generating new cards
-// needs the open document's material for its AI scope; without it (document not indexed
-// yet) generation is unavailable rather than falling back to the whole course.
+// A document tab shows only decks generated from this document.
 export default function DocumentFlashcards({ courseId, materialId, fileName }: { courseId: string; materialId: string | null; fileName: string }) {
   const [decks, setDecks] = useState<FlashcardDeckSummary[] | undefined>(undefined);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [openDeck, setOpenDeck] = useState<FlashcardDeck | null>(null);
   const [openError, setOpenError] = useState<string | null>(null);
   const [removingId, setRemovingId] = useState<string | null>(null);
 
   function refreshDecks() {
-    listCourseDecks(courseId).then(setDecks).catch(() => setDecks([]));
+    if (!materialId) { setDecks([]); return; }
+    listCourseDecks(courseId, materialId).then((next) => { setDecks(next); setHasMore(next.length === DECKS_PAGE_SIZE); }).catch(() => setOpenError("Sets konnten nicht geladen werden."));
   }
 
   useEffect(() => {
-    listCourseDecks(courseId).then(setDecks).catch(() => setDecks([]));
-  }, [courseId]);
+    if (!materialId) { Promise.resolve().then(() => setDecks([])); return; }
+    listCourseDecks(courseId, materialId).then((next) => { setDecks(next); setHasMore(next.length === DECKS_PAGE_SIZE); }).catch(() => setOpenError("Sets konnten nicht geladen werden."));
+  }, [courseId, materialId]);
+
+  async function loadMore() {
+    if (!materialId || !decks) return;
+    setLoadingMore(true);
+    setOpenError(null);
+    try {
+      const next = await listCourseDecks(courseId, materialId, decks.length);
+      setDecks((current) => [...(current ?? []), ...next.filter((deck) => !current?.some((known) => known.materialId === deck.materialId))]);
+      setHasMore(next.length === DECKS_PAGE_SIZE);
+    } catch { setOpenError("Weitere Sets konnten nicht geladen werden."); }
+    finally { setLoadingMore(false); }
+  }
 
   async function openStudy(materialId: string) {
     setOpenError(null);
@@ -131,6 +159,7 @@ export default function DocumentFlashcards({ courseId, materialId, fileName }: {
   }
 
   if (decks === undefined) {
+    if (openError) return <p className={styles.errorHint} role="alert">{openError} <button type="button" onClick={refreshDecks}>Erneut versuchen</button></p>;
     return <p className={styles.loading}>Karteikarten werden geladen …</p>;
   }
 
@@ -176,6 +205,9 @@ export default function DocumentFlashcards({ courseId, materialId, fileName }: {
           </li>
         ))}
       </ul>
+      {hasMore && <button type="button" className={styles.runButton} onClick={() => void loadMore()} disabled={loadingMore}>
+        {loadingMore ? "Weitere Sets werden geladen …" : "Weitere Sets laden"}
+      </button>}
     </div>
   );
 }

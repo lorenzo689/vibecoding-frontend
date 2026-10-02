@@ -12,6 +12,7 @@ import {
   type CalendarEvent,
   type CalendarEventInput,
 } from "@/lib/supabase/queries/calendar";
+import { buildIcs } from "@/lib/ics";
 import { deriveCourseBadge } from "@/lib/courseBadge";
 import EventDialog, { KIND_LABELS } from "./EventDialog";
 import EventCard from "./EventCard";
@@ -83,7 +84,11 @@ export default function CalendarWorkspace() {
   const [selected, setSelected] = useState<DateKey>(todayKey());
 
   function fetchData() {
-    return Promise.all([listEvents(), listCourses()])
+    const start = new Date(`${month}-01T00:00:00`);
+    start.setMonth(start.getMonth() - 1);
+    const end = new Date(`${month}-01T00:00:00`);
+    end.setMonth(end.getMonth() + 13);
+    return Promise.all([listEvents(start.toISOString(), end.toISOString()), listCourses()])
       .then(([nextEvents, nextCourses]) => {
         setEvents(nextEvents);
         setCourses(nextCourses);
@@ -104,7 +109,9 @@ export default function CalendarWorkspace() {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  // Month navigation requests only a bounded time window.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [month]);
 
   const courseById = new Map(courses.map((course) => [course.id, course]));
   const visibleEvents = filterEvents(events, filters);
@@ -120,6 +127,25 @@ export default function CalendarWorkspace() {
     .slice(0, 6);
   const monthLabel = formatMonthLabel(month);
   const today = todayKey();
+
+  async function handleExport() {
+    setActionError(null);
+    try {
+      const from = new Date(); from.setFullYear(from.getFullYear() - 1);
+      const to = new Date(); to.setFullYear(to.getFullYear() + 2);
+      const all = await listEvents(from.toISOString(), to.toISOString());
+      const blob = new Blob([buildIcs(all)], { type: "text/calendar;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "universe-kalender.ics";
+      link.click();
+      URL.revokeObjectURL(url);
+      setStatusMessage(`${all.length} Termine exportiert.`);
+    } catch {
+      setActionError("Der Kalender konnte nicht exportiert werden.");
+    }
+  }
 
   function changeMonth(delta: number) {
     const next = addMonths(month, delta);
@@ -203,6 +229,7 @@ export default function CalendarWorkspace() {
       <PageHeading title="Kalender" description={`Alle wichtigen Termine und Deadlines auf einen Blick. ${upcoming.length} anstehend.`}>
         <div className={s.mastheadActions}>
           <div className={s.todayBadge}><span>HEUTE</span><strong>{Number(today.slice(-2))}</strong><small>{formatDateKey(today, { month: "long", year: "numeric" })}</small></div>
+          <button type="button" className={s.resetFilters} onClick={() => void handleExport()}>Als .ics exportieren</button>
           <button type="button" className={s.createButton} onClick={() => setDialogOpen(true)}>+ Termin hinzufügen</button>
         </div>
       </PageHeading>

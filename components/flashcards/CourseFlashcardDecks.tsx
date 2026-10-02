@@ -1,14 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
   createDeck,
   deleteDeck,
   listCourseDecks,
+  DECKS_PAGE_SIZE,
   type FlashcardDeckSummary,
 } from "@/lib/supabase/queries/flashcards";
-import { getDeckProgress } from "@/lib/flashcardProgress";
+import { loadDeckProgressCounts, type DeckProgressCounts } from "@/lib/flashcardProgress";
 import CreateDeckDialog from "./CreateDeckDialog";
 import styles from "@/components/documents/documents.module.css";
 
@@ -27,24 +28,50 @@ function formatShortDate(iso: string): string {
 export default function CourseFlashcardDecks({ courseId }: { courseId: string }) {
   const [loading, setLoading] = useState(true);
   const [decks, setDecks] = useState<FlashcardDeckSummary[]>([]);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [progressCounts, setProgressCounts] = useState<Map<string, DeckProgressCounts>>(new Map());
   const [loadError, setLoadError] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [removingId, setRemovingId] = useState<string | null>(null);
+  const creationKey = useRef(crypto.randomUUID());
 
   useEffect(() => {
     let active = true;
     listCourseDecks(courseId)
-      .then((nextDecks) => { if (active) setDecks(nextDecks); })
+      .then(async (nextDecks) => {
+        if (!active) return;
+        setDecks(nextDecks); setHasMore(nextDecks.length === DECKS_PAGE_SIZE);
+        try {
+          const counts = await loadDeckProgressCounts(nextDecks.map((deck) => deck.materialId));
+          if (active) setProgressCounts(counts);
+        } catch { if (active) setError("Lernfortschritt konnte nicht geladen werden."); }
+      })
       .catch(() => { if (active) setLoadError("Die Karteikarten-Decks konnten nicht geladen werden."); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, [courseId]);
 
   async function handleCreate(title: string) {
-    const deck = await createDeck(courseId, title);
+    const deck = await createDeck(courseId, title, creationKey.current);
+    creationKey.current = crypto.randomUUID();
     setDecks((current) => [...current, { ...deck, cardCount: 0, createdAt: new Date().toISOString() }]);
     setDialogOpen(false);
+  }
+
+  async function loadMore() {
+    setLoadingMore(true);
+    try {
+      const next = await listCourseDecks(courseId, undefined, decks.length);
+      setDecks((current) => [...current, ...next.filter((deck) => !current.some((known) => known.materialId === deck.materialId))]);
+      try {
+        const counts = await loadDeckProgressCounts(next.map((deck) => deck.materialId));
+        setProgressCounts((current) => new Map([...current, ...counts]));
+      } catch { setError("Lernfortschritt weiterer Decks konnte nicht geladen werden."); }
+      setHasMore(next.length === DECKS_PAGE_SIZE);
+    } catch { setError("Weitere Decks konnten nicht geladen werden."); }
+    finally { setLoadingMore(false); }
   }
 
   async function handleRemove(materialId: string) {
@@ -100,9 +127,9 @@ export default function CourseFlashcardDecks({ courseId }: { courseId: string })
         ) : (
           <ul className={styles.deckGrid}>
             {decks.map((deck) => {
-              const progress = getDeckProgress(deck.materialId);
-              const reviewedCount = Math.min(progress.reviewed.size, deck.cardCount);
-              const score = progress.reviewed.size > 0 ? Math.round((progress.known.size / progress.reviewed.size) * 100) : null;
+              const progress = progressCounts.get(deck.materialId);
+              const reviewedCount = Math.min(progress?.reviewed ?? 0, deck.cardCount);
+              const score = progress?.reviewed ? Math.round((progress.known / progress.reviewed) * 100) : null;
               const percent = deck.cardCount > 0 ? Math.round((reviewedCount / deck.cardCount) * 100) : 0;
               return (
                 <li key={deck.materialId}>
@@ -122,6 +149,7 @@ export default function CourseFlashcardDecks({ courseId }: { courseId: string })
                           {score}%
                         </span>
                       )}
+                      {!!progress?.due && <span className={styles.deckCardScore}>{progress.due} fällig</span>}
                     </div>
                     <div className={styles.deckCardProgressRow}>
                       <span>Fortschritt</span>
@@ -141,6 +169,10 @@ export default function CourseFlashcardDecks({ courseId }: { courseId: string })
           </ul>
         )
       )}
+
+      {hasMore && !loadError && <button type="button" className={styles.uploadButton} onClick={() => void loadMore()} disabled={loadingMore}>
+        {loadingMore ? "Weitere Decks werden geladen …" : "Weitere Decks laden"}
+      </button>}
 
       {dialogOpen && (
         <CreateDeckDialog onClose={() => setDialogOpen(false)} onCreate={handleCreate} />

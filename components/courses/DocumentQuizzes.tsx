@@ -1,31 +1,20 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { createClient } from "@/lib/supabase/browser";
 import { runTemporaryChat } from "@/lib/chat";
 import { ChatError } from "@/lib/chatProtocol";
 import { discardedNotice, parseQuiz } from "@/lib/aiOutput";
+import { listDocumentQuizzes, saveDocumentQuiz, saveQuizAnswers, startQuizAttempt, type SavedQuiz } from "@/lib/supabase/queries/quizzes";
 import styles from "@/components/documents/documents.module.css";
 
 function asChatError(error: unknown): ChatError {
   return error instanceof ChatError ? error : new ChatError("LOAD_FAILED");
 }
 
-type QuizQuestion = { question: string; options: string[]; correctIndex: number; explanation: string };
-type Quiz = {
-  id: string;
-  title: string;
-  questions: QuizQuestion[];
-  createdAt: string;
-  answers: (number | null)[];
-  submitted: boolean;
-};
+type Quiz = SavedQuiz;
 
-// There is no quiz/question/score table in the backend yet, so a generated
-// quiz only lives in this component's state — real AI content from the
-// existing course chat (parsed by lib/aiOutput.ts), but nothing is written to the database.
-
-function QuizTaking({ quiz, onAnswer, onFinish }: { quiz: Quiz; onAnswer: (questionIndex: number, optionIndex: number) => void; onFinish: () => void }) {
+function QuizTaking({ quiz, onAnswer, onFinish, saving, error }: { quiz: Quiz; onAnswer: (questionIndex: number, optionIndex: number) => void; onFinish: () => void; saving: boolean; error: string | null }) {
   const [index, setIndex] = useState(0);
   const question = quiz.questions[index];
   const answered = quiz.answers.filter((answer) => answer !== null).length;
@@ -47,6 +36,7 @@ function QuizTaking({ quiz, onAnswer, onFinish }: { quiz: Quiz; onAnswer: (quest
         <div className={styles.quizOptions} role="radiogroup" aria-label={question.question}>
           {question.options.map((option, optionIndex) => (
             <button type="button" key={optionIndex} role="radio" aria-checked={quiz.answers[index] === optionIndex}
+              disabled={saving}
               className={styles.quizOption} data-selected={quiz.answers[index] === optionIndex}
               onClick={() => onAnswer(index, optionIndex)}>
               <span className={styles.quizOptionDot} aria-hidden="true" />
@@ -70,7 +60,7 @@ function QuizTaking({ quiz, onAnswer, onFinish }: { quiz: Quiz; onAnswer: (quest
           ))}
         </div>
         {isLast ? (
-          <button type="button" className={styles.quizNavPrimary} onClick={onFinish} disabled={answered < quiz.questions.length}>
+          <button type="button" className={styles.quizNavPrimary} onClick={onFinish} disabled={saving || answered < quiz.questions.length}>
             Auswerten
           </button>
         ) : (
@@ -80,6 +70,7 @@ function QuizTaking({ quiz, onAnswer, onFinish }: { quiz: Quiz; onAnswer: (quest
           </button>
         )}
       </div>
+      {error && <p className={styles.errorHint} role="alert">{error}</p>}
     </div>
   );
 }
@@ -159,9 +150,20 @@ export default function DocumentQuizzes({ courseId, materialId, fileName }: { co
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [answerSaving, setAnswerSaving] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    listDocumentQuizzes(materialId).then((rows) => { if (active) setQuizzes(rows); })
+      .catch(() => { if (active) setError("Tests konnten nicht geladen werden."); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [materialId]);
 
   const openQuiz = quizzes.find((quiz) => quiz.id === openId) ?? null;
-  const resultsQuiz = quizzes.find((quiz) => quiz.id === showResultsId) ?? null;
+  const resultsQuiz = quizzes.flatMap((quiz) => quiz.history.map((attempt) => ({ ...quiz, answers: attempt.answers, attemptId: attempt.id })))
+    .find((quiz) => quiz.attemptId === showResultsId) ?? null;
 
   async function handleGenerate(event: FormEvent) {
     event.preventDefault();
@@ -178,13 +180,17 @@ export default function DocumentQuizzes({ courseId, materialId, fileName }: { co
         return;
       }
       const questions = parsed.questions;
+      const title = `${fileName.replace(/\.[^.]+$/, "")} – Test`;
+      const id = await saveDocumentQuiz(courseId, materialId, title, questions, exchange.sources);
       const quiz: Quiz = {
-        id: crypto.randomUUID(),
-        title: `${fileName.replace(/\.[^.]+$/, "")} – Test`,
+        id,
+        title,
         questions,
         createdAt: new Date().toISOString(),
         answers: questions.map(() => null),
         submitted: false,
+        attemptId: null,
+        history: [],
       };
       setQuizzes((current) => [quiz, ...current]);
       setNotice(discardedNotice(parsed.discarded));
@@ -197,21 +203,56 @@ export default function DocumentQuizzes({ courseId, materialId, fileName }: { co
     }
   }
 
-  function handleAnswer(quizId: string, questionIndex: number, optionIndex: number) {
-    setQuizzes((current) => current.map((quiz) => quiz.id !== quizId ? quiz : {
-      ...quiz,
-      answers: quiz.answers.map((answer, index) => index === questionIndex ? optionIndex : answer),
-    }));
+  async function handleAnswer(quizId: string, questionIndex: number, optionIndex: number) {
+    if (answerSaving) return;
+    const current = quizzes.find((quiz) => quiz.id === quizId);
+    if (!current) return;
+    const answers = current.answers.map((answer, index) => index === questionIndex ? optionIndex : answer);
+    setAnswerSaving(true);
+    try {
+      const attemptId = current.attemptId ?? await startQuizAttempt(quizId);
+      await saveQuizAnswers(attemptId, answers, false);
+      setQuizzes((rows) => rows.map((quiz) => quiz.id === quizId ? {
+        ...quiz, answers, attemptId,
+        history: quiz.history.some((attempt) => attempt.id === attemptId)
+          ? quiz.history.map((attempt) => attempt.id === attemptId ? { ...attempt, answers } : attempt)
+          : [{ id: attemptId, createdAt: new Date().toISOString(), answers, submitted: false }, ...quiz.history],
+      } : quiz));
+    } catch { setError("Deine Antwort konnte nicht gespeichert werden."); }
+    finally { setAnswerSaving(false); }
   }
 
-  function handleFinish(quizId: string) {
-    setQuizzes((current) => current.map((quiz) => quiz.id !== quizId ? quiz : { ...quiz, submitted: true }));
+  async function handleFinish(quizId: string) {
+    const quiz = quizzes.find((item) => item.id === quizId);
+    if (answerSaving || !quiz?.attemptId || quiz.answers.some((answer) => answer === null)) return;
+    try {
+      await saveQuizAnswers(quiz.attemptId, quiz.answers, true);
+    } catch { setError("Der Test konnte nicht abgeschlossen werden."); return; }
+    setQuizzes((current) => current.map((quiz) => quiz.id !== quizId ? quiz : {
+      ...quiz,
+      submitted: true,
+      history: quiz.history.map((attempt) => attempt.id === quiz.attemptId ? { ...attempt, submitted: true } : attempt),
+    }));
     setOpenId(null);
-    setShowResultsId(quizId);
+    setShowResultsId(quiz.attemptId);
+  }
+
+  async function handleRetry(quizId: string) {
+    const quiz = quizzes.find((item) => item.id === quizId);
+    if (!quiz) return;
+    try {
+      const attemptId = await startQuizAttempt(quizId);
+      const answers = quiz.questions.map(() => null);
+      setQuizzes((current) => current.map((item) => item.id === quizId ? {
+        ...item, answers, attemptId, submitted: false,
+        history: [{ id: attemptId, createdAt: new Date().toISOString(), answers, submitted: false }, ...item.history],
+      } : item));
+      setOpenId(quizId);
+    } catch { setError("Ein neuer Versuch konnte nicht gestartet werden."); }
   }
 
   if (openQuiz) {
-    return <QuizTaking quiz={openQuiz} onAnswer={(q, o) => handleAnswer(openQuiz.id, q, o)} onFinish={() => handleFinish(openQuiz.id)} />;
+    return <QuizTaking quiz={openQuiz} saving={answerSaving} error={error} onAnswer={(q, o) => void handleAnswer(openQuiz.id, q, o)} onFinish={() => void handleFinish(openQuiz.id)} />;
   }
   if (resultsQuiz) {
     return <QuizResults quiz={resultsQuiz} onBack={() => setShowResultsId(null)} />;
@@ -219,10 +260,7 @@ export default function DocumentQuizzes({ courseId, materialId, fileName }: { co
 
   return (
     <div className={styles.deckPanel}>
-      <div className={styles.preview}>
-        VORSCHAU
-        <span>Tests werden mit dem echten Kurs-Chat generiert, sind aber noch nicht mit einer Datenbank verbunden. Ergebnisse gehen beim Neuladen der Seite verloren.</span>
-      </div>
+      {loading && <p role="status">Tests werden geladen …</p>}
 
       <div className={styles.deckToolbar}>
         <div>
@@ -244,7 +282,7 @@ export default function DocumentQuizzes({ courseId, materialId, fileName }: { co
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="8.5" /><path d="M9.5 9.5a2.5 2.5 0 1 1 3.4 2.3c-.7.3-1.4.9-1.4 1.7" /><path d="M12 17h.01" /></svg>
           </span>
           <h3>Noch keine Tests</h3>
-          <p>Erstelle einen Test aus den Kursunterlagen, um dein Wissen zu prüfen.</p>
+          <p>Erstelle einen Test aus relevanten Passagen dieses Dokuments, um dein Wissen zu prüfen.</p>
         </div>
       ) : (
         <ul className={styles.deckGrid}>
@@ -262,7 +300,7 @@ export default function DocumentQuizzes({ courseId, materialId, fileName }: { co
                   <span className={styles.deckCardDate}>ERSTELLT {formatShortDate(quiz.createdAt)}</span>
                   <span className={styles.deckCardCount}>{quiz.questions.length} Fragen</span>
                   {quiz.submitted ? (
-                    <button type="button" className={styles.deckCardAction} onClick={() => setShowResultsId(quiz.id)}>
+                    <button type="button" className={styles.deckCardAction} onClick={() => setShowResultsId(quiz.attemptId)}>
                       <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19V10M12 19V4M20 19v-7" /></svg>
                       Ergebnisse ansehen
                     </button>
@@ -272,6 +310,15 @@ export default function DocumentQuizzes({ courseId, materialId, fileName }: { co
                       Test starten
                     </button>
                   )}
+                  {quiz.submitted && <button type="button" className={styles.deckCardAction} onClick={() => void handleRetry(quiz.id)}>Erneut versuchen</button>}
+                  {quiz.history.filter((attempt) => attempt.submitted).length > 1 && <div>
+                    <p>Frühere Versuche</p>
+                    {quiz.history.filter((attempt) => attempt.submitted && attempt.id !== quiz.attemptId).map((attempt) => (
+                      <button key={attempt.id} type="button" className={styles.deckCardAction} onClick={() => setShowResultsId(attempt.id)}>
+                        {formatShortDate(attempt.createdAt)} · {Math.round(attempt.answers.filter((answer, index) => answer === quiz.questions[index]?.correctIndex).length / quiz.questions.length * 100)} %
+                      </button>
+                    ))}
+                  </div>}
                 </article>
               </li>
             );

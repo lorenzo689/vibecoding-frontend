@@ -1,11 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/browser";
 import { runTemporaryChat } from "@/lib/chat";
-import { ChatError } from "@/lib/chatProtocol";
+import { ChatError, type ChatSource } from "@/lib/chatProtocol";
 import { discardedNotice, parseFlashcards } from "@/lib/aiOutput";
-import { addFlashcard, createDeck } from "@/lib/supabase/queries/flashcards";
+import { createGeneratedDeck } from "@/lib/supabase/queries/flashcards";
+import { deleteLearningDraft, getLearningDraft, saveLearningDraft } from "@/lib/supabase/queries/learning-drafts";
+import type { Json } from "@/lib/supabase/database.types";
 import styles from "@/components/documents/documents.module.css";
 
 function asChatError(error: unknown): ChatError {
@@ -37,6 +39,35 @@ export default function DocumentFlashcardGenerator({
   const [notice, setNotice] = useState<string | null>(null);
   const [deckTitle, setDeckTitle] = useState(`Karten: ${fileName}`);
   const [saving, setSaving] = useState(false);
+  const [sources, setSources] = useState<ChatSource[]>([]);
+  const creationKey = useRef(crypto.randomUUID());
+  const [draftReady, setDraftReady] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    getLearningDraft<{ candidates: Candidate[]; deckTitle: string; sources: ChatSource[]; creationKey: string }>(materialId, "flashcards")
+      .then((draft) => {
+        if (!active) return;
+        if (draft && Array.isArray(draft.candidates) && typeof draft.creationKey === "string") {
+          setCandidates(draft.candidates);
+          setDeckTitle(draft.deckTitle);
+          setSources(draft.sources);
+          creationKey.current = draft.creationKey;
+        }
+      })
+      .catch(() => { if (active) setError("Gespeicherter Entwurf konnte nicht geladen werden."); })
+      .finally(() => { if (active) setDraftReady(true); });
+    return () => { active = false; };
+  }, [materialId]);
+
+  useEffect(() => {
+    if (!draftReady || !candidates || saving) return;
+    const timer = window.setTimeout(() => {
+      void saveLearningDraft(materialId, "flashcards", { candidates, deckTitle, sources, creationKey: creationKey.current } as unknown as Json)
+        .catch(() => setError("Der Entwurf konnte nicht gespeichert werden."));
+    }, 400);
+    return () => window.clearTimeout(timer);
+  }, [candidates, deckTitle, sources, materialId, draftReady, saving]);
 
   const keptCount = candidates?.filter((card) => card.keep).length ?? 0;
 
@@ -44,6 +75,7 @@ export default function DocumentFlashcardGenerator({
     setGenerating(true);
     setError(null);
     setCandidates(null);
+    creationKey.current = crypto.randomUUID();
     setNotice(null);
     try {
       const client = createClient();
@@ -53,7 +85,10 @@ export default function DocumentFlashcardGenerator({
       if (!parsed.ok) {
         setError(new ChatError("UNUSABLE_AI_OUTPUT").message);
       } else {
-        setCandidates(parsed.cards.map((card) => ({ ...card, keep: true })));
+        const nextCandidates = parsed.cards.map((card) => ({ ...card, keep: true }));
+        await saveLearningDraft(materialId, "flashcards", { candidates: nextCandidates, deckTitle, sources: exchange.sources, creationKey: creationKey.current } as unknown as Json);
+        setCandidates(nextCandidates);
+        setSources(exchange.sources);
         setNotice(discardedNotice(parsed.discarded));
       }
     } catch (failure) {
@@ -74,11 +109,9 @@ export default function DocumentFlashcardGenerator({
     setSaving(true);
     setError(null);
     try {
-      const deck = await createDeck(courseId, deckTitle.trim() || fileName);
-      for (const card of selected) {
-        await addFlashcard(deck.deckId, { question: card.question, answer: card.answer });
-      }
+      await createGeneratedDeck(courseId, materialId, deckTitle.trim() || fileName, selected, sources, creationKey.current);
       setCandidates(null);
+      await deleteLearningDraft(materialId, "flashcards").catch(() => setError("Das Set ist gespeichert; der Entwurf konnte nicht entfernt werden."));
       onSaved();
     } catch {
       setError("Die Karten konnten nicht gespeichert werden. Bitte versuche es erneut.");
@@ -110,7 +143,7 @@ export default function DocumentFlashcardGenerator({
         {notice && <p className={styles.noticeHint} role="status">{notice}</p>}
         {error && <p className={styles.errorHint} role="alert">{error}</p>}
         <div className={styles.dialogFooter}>
-          <button type="button" className={styles.cancelButton} onClick={() => setCandidates(null)} disabled={saving}>Verwerfen</button>
+          <button type="button" className={styles.cancelButton} onClick={() => { void deleteLearningDraft(materialId, "flashcards"); setCandidates(null); }} disabled={saving}>Verwerfen</button>
           <button type="button" className={styles.submitButton} onClick={() => void handleSave()} disabled={saving || keptCount === 0}>
             {saving ? "Wird gespeichert …" : `${keptCount} Karte${keptCount === 1 ? "" : "n"} speichern`}
           </button>
@@ -123,7 +156,7 @@ export default function DocumentFlashcardGenerator({
     return (
       <div className={styles.generatorCompact}>
         {error && <p className={styles.errorHint} role="alert">{error}</p>}
-        <button type="button" className={styles.runButton} onClick={() => void handleGenerate()} disabled={generating}>
+        <button type="button" className={styles.runButton} onClick={() => void handleGenerate()} disabled={generating || !draftReady}>
           <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14" /></svg>
           {generating ? "Wird generiert …" : "Neues Set generieren"}
         </button>
@@ -137,9 +170,9 @@ export default function DocumentFlashcardGenerator({
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18h6M10 21h4" /><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.4.9 1 .9 1.6v.5h5.2v-.5c0-.6.3-1.2.9-1.6A6 6 0 0 0 12 3Z" /></svg>
       </span>
       <h3>Noch keine Karteikarten</h3>
-      <p>Erstelle Karteikarten aus den Kursunterlagen, um dein Wissen zu festigen und zu wiederholen.</p>
+      <p>Erstelle Karteikarten aus relevanten Passagen dieses Dokuments. Der Entwurf bleibt nach einem Tabwechsel erhalten.</p>
       {error && <p className={styles.errorHint} role="alert">{error}</p>}
-      <button type="button" className={styles.runButton} onClick={() => void handleGenerate()} disabled={generating}>
+      <button type="button" className={styles.runButton} onClick={() => void handleGenerate()} disabled={generating || !draftReady}>
         <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3v3M12 18v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M3 12h3M18 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1" /><circle cx="12" cy="12" r="3.2" /></svg>
         {generating ? "Wird generiert …" : "Karteikarten generieren"}
       </button>

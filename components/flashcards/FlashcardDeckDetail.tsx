@@ -8,9 +8,11 @@ import {
   deleteDeck,
   deleteFlashcard,
   getDeck,
+  updateDeck,
+  updateFlashcard,
   type FlashcardDeck,
 } from "@/lib/supabase/queries/flashcards";
-import { getDeckProgress, markCardKnown, markCardReviewed, toggleCardStarred } from "@/lib/flashcardProgress";
+import { getDeckProgress, loadDeckProgress, markCardKnown, toggleCardStarred } from "@/lib/flashcardProgress";
 import styles from "@/components/documents/documents.module.css";
 
 export default function FlashcardDeckDetail({
@@ -23,6 +25,12 @@ export default function FlashcardDeckDetail({
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [deck, setDeck] = useState<FlashcardDeck | null | undefined>(undefined);
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [titleDraft, setTitleDraft] = useState("");
+  const [descriptionDraft, setDescriptionDraft] = useState("");
+  const [editingCardId, setEditingCardId] = useState<string | null>(null);
+  const [cardQuestionDraft, setCardQuestionDraft] = useState("");
+  const [cardAnswerDraft, setCardAnswerDraft] = useState("");
   const [loadError, setLoadError] = useState<string | null>(null);
   const [index, setIndex] = useState(0);
   const [revealed, setRevealed] = useState(false);
@@ -41,7 +49,10 @@ export default function FlashcardDeckDetail({
   useEffect(() => {
     let active = true;
     getDeck(materialId)
-      .then((nextDeck) => { if (active) setDeck(nextDeck); })
+      .then(async (nextDeck) => {
+        if (nextDeck) await loadDeckProgress(materialId, nextDeck.cards.map((entry) => entry.id));
+        if (active) setDeck(nextDeck);
+      })
       .catch(() => { if (active) setLoadError("Das Deck konnte nicht geladen werden."); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
@@ -49,24 +60,21 @@ export default function FlashcardDeckDetail({
 
   const card = deck?.cards[index];
 
-  useEffect(() => {
-    if (card) markCardReviewed(materialId, card.id);
-  }, [materialId, card]);
-
   function go(delta: number) {
     setRevealed(false);
     setIndex((current) => Math.min((deck?.cards.length ?? 1) - 1, Math.max(0, current + delta)));
   }
 
-  function toggleStar() {
+  async function toggleStar() {
     if (!card) return;
-    toggleCardStarred(materialId, card.id);
-    forceUpdate((current) => current + 1);
+    try { await toggleCardStarred(materialId, card.id); forceUpdate((current) => current + 1); }
+    catch { setError("Favorit konnte nicht gespeichert werden."); }
   }
 
-  function rate(known: boolean) {
+  async function rate(known: boolean) {
     if (!card) return;
-    markCardKnown(materialId, card.id, known);
+    try { await markCardKnown(materialId, card.id, known); forceUpdate((current) => current + 1); }
+    catch { setError("Lernfortschritt konnte nicht gespeichert werden."); return; }
     if (index === (deck?.cards.length ?? 1) - 1) return;
     go(1);
   }
@@ -113,6 +121,30 @@ export default function FlashcardDeckDetail({
     }
   }
 
+  async function saveTitle(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!titleDraft.trim()) return;
+    setSaving(true);
+    try {
+      await updateDeck(materialId, titleDraft, descriptionDraft);
+      setDeck((current) => current && { ...current, title: titleDraft.trim(), description: descriptionDraft.trim() });
+      setEditingTitle(false);
+    } catch { setError("Der Setname konnte nicht gespeichert werden."); }
+    finally { setSaving(false); }
+  }
+
+  async function saveCard(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!editingCardId || !cardQuestionDraft.trim() || !cardAnswerDraft.trim()) return;
+    setSaving(true);
+    try {
+      const updated = await updateFlashcard(editingCardId, { question: cardQuestionDraft.trim(), answer: cardAnswerDraft.trim() });
+      setDeck((current) => current && { ...current, cards: current.cards.map((entry) => entry.id === updated.id ? updated : entry) });
+      setEditingCardId(null);
+    } catch { setError("Die Karte konnte nicht gespeichert werden."); }
+    finally { setSaving(false); }
+  }
+
   if (loading) return <div className={styles.page}><p className={styles.loading} aria-live="polite">Deck wird geladen …</p></div>;
 
   if (loadError || !deck) {
@@ -140,12 +172,21 @@ export default function FlashcardDeckDetail({
         <div>
           <h1>{deck.title}</h1>
           <p className={styles.subhead}>{deck.cards.length} {deck.cards.length === 1 ? "Karte" : "Karten"}</p>
+          {deck.description && <p className={styles.subhead}>{deck.description}</p>}
+          <button type="button" className={styles.manageToggle} onClick={() => { setTitleDraft(deck.title); setDescriptionDraft(deck.description); setEditingTitle((open) => !open); }}>Set bearbeiten</button>
         </div>
         <button type="button" className={styles.deleteSetButton} onClick={() => setConfirmingDelete(true)}>
           <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M5 7h14M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2m2 0-.9 12.1a2 2 0 0 1-2 1.9H8.9a2 2 0 0 1-2-1.9L6 7Z" /></svg>
           Set löschen
         </button>
       </header>
+      {editingTitle && <form className={styles.manageForm} onSubmit={saveTitle}>
+        <label htmlFor="deck-title">Setname</label>
+        <input id="deck-title" value={titleDraft} maxLength={200} onChange={(event) => setTitleDraft(event.target.value)} required />
+        <label htmlFor="deck-description">Beschreibung</label>
+        <textarea id="deck-description" value={descriptionDraft} maxLength={2000} onChange={(event) => setDescriptionDraft(event.target.value)} />
+        <button type="submit" className={styles.uploadButton} disabled={saving || !titleDraft.trim()}>Speichern</button>
+      </form>}
 
       {error && <p className={styles.errorHint} role="alert">{error}</p>}
 
@@ -171,7 +212,7 @@ export default function FlashcardDeckDetail({
                 </span>
                 <button type="button" className={styles.studyStarButton} data-active={progress.starred.has(card.id)}
                   aria-label={progress.starred.has(card.id) ? "Aus Favoriten entfernen" : "Als Favorit markieren"}
-                  onClick={(event) => { event.stopPropagation(); toggleStar(); }}>
+                  onClick={(event) => { event.stopPropagation(); void toggleStar(); }}>
                   <svg viewBox="0 0 24 24" fill={progress.starred.has(card.id) ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="m12 3 2.6 5.6 6.1.7-4.5 4.2 1.2 6-5.4-3-5.4 3 1.2-6-4.5-4.2 6.1-.7Z" /></svg>
                 </button>
               </div>
@@ -183,8 +224,8 @@ export default function FlashcardDeckDetail({
             </div>
 
             <div className={styles.rateRow}>
-              <button type="button" className={styles.rateAgain} onClick={() => rate(false)}>Nochmal üben</button>
-              <button type="button" className={styles.rateKnown} onClick={() => rate(true)}>Ich wusste es</button>
+              <button type="button" className={styles.rateAgain} onClick={() => void rate(false)}>Nochmal üben</button>
+              <button type="button" className={styles.rateKnown} onClick={() => void rate(true)}>Ich wusste es</button>
             </div>
 
             <div className={styles.studyNav}>
@@ -199,6 +240,7 @@ export default function FlashcardDeckDetail({
               </button>
             </div>
             <p className={styles.uploadHint}>{progress.known.size} von {progress.reviewed.size} gesehenen Karten als gewusst markiert.</p>
+            <p className={styles.uploadHint}>{progress.due.size} Karten sind zur Wiederholung fällig.</p>
 
             <div className={styles.manageSection}>
               <button type="button" className={styles.manageToggle} data-open={manageOpen} onClick={() => setManageOpen((current) => !current)}>
@@ -213,7 +255,7 @@ export default function FlashcardDeckDetail({
                     </span>
                     <div>
                       <h3>Karten in diesem Set</h3>
-                      <p>Neue Karte hinzufügen oder bestehende entfernen.</p>
+                      <p>Karten hinzufügen, bearbeiten oder entfernen.</p>
                     </div>
                   </div>
                   <form className={styles.manageForm} onSubmit={handleAdd}>
@@ -236,6 +278,9 @@ export default function FlashcardDeckDetail({
                       <li key={entry.id} className={styles.cardListRow}>
                         <span className={styles.cardListIndex} aria-hidden="true">{entryIndex + 1}</span>
                         <span>{entry.question}</span>
+                        <button type="button" className={styles.manageToggle} onClick={() => {
+                          setEditingCardId(entry.id); setCardQuestionDraft(entry.question); setCardAnswerDraft(entry.answer);
+                        }}>Bearbeiten</button>
                         <button type="button" className={styles.cardListRemove} aria-label={`„${entry.question}“ löschen`}
                           onClick={() => void handleRemoveCard(entry.id)} disabled={removingId === entry.id}>
                           <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M5 7h14M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2m2 0-.9 12.1a2 2 0 0 1-2 1.9H8.9a2 2 0 0 1-2-1.9L6 7Z" /></svg>
@@ -243,6 +288,14 @@ export default function FlashcardDeckDetail({
                       </li>
                     ))}
                   </ul>
+                  {editingCardId && <form className={styles.manageForm} onSubmit={saveCard}>
+                    <label htmlFor="edit-card-question">Frage</label>
+                    <input id="edit-card-question" value={cardQuestionDraft} onChange={(event) => setCardQuestionDraft(event.target.value)} required />
+                    <label htmlFor="edit-card-answer">Antwort</label>
+                    <input id="edit-card-answer" value={cardAnswerDraft} onChange={(event) => setCardAnswerDraft(event.target.value)} required />
+                    <button type="submit" className={styles.uploadButton} disabled={saving || !cardQuestionDraft.trim() || !cardAnswerDraft.trim()}>Karte speichern</button>
+                    <button type="button" className={styles.manageToggle} onClick={() => setEditingCardId(null)}>Abbrechen</button>
+                  </form>}
                 </div>
               )}
             </div>

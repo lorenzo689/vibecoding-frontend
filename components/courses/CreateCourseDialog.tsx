@@ -8,10 +8,12 @@ export default function CreateCourseDialog({
   onCreate,
 }: {
   onClose: () => void;
-  onCreate: (input: { title: string; description: string }) => Promise<void>;
+  onCreate: (input: { title: string; description: string; semester: string; lecturer: string }) => Promise<void>;
 }) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [semester, setSemester] = useState("");
+  const [lecturer, setLecturer] = useState("");
   const titleInputRef = useRef<HTMLInputElement>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -31,7 +33,7 @@ export default function CreateCourseDialog({
     setSaving(true);
     setError(null);
     try {
-      await onCreate({ title: title.trim(), description: description.trim() });
+      await onCreate({ title: title.trim(), description: description.trim(), semester: semester.trim(), lecturer: lecturer.trim() });
     } catch {
       setError("Der Kurs konnte nicht erstellt werden. Bitte versuche es erneut.");
       setSaving(false);
@@ -74,6 +76,14 @@ export default function CreateCourseDialog({
               required
               disabled={saving}
             />
+          </div>
+          <div className={styles.field}>
+            <label htmlFor="course-semester">Semester (optional)</label>
+            <input id="course-semester" value={semester} onChange={(event) => setSemester(event.target.value)} maxLength={100} placeholder="z. B. WS 26/27" disabled={saving} />
+          </div>
+          <div className={styles.field}>
+            <label htmlFor="course-lecturer">Dozent:in (optional)</label>
+            <input id="course-lecturer" value={lecturer} onChange={(event) => setLecturer(event.target.value)} maxLength={200} disabled={saving} />
           </div>
           <div className={styles.field}>
             <label htmlFor="course-description">Beschreibung</label>

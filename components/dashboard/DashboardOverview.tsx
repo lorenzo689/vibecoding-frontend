@@ -11,6 +11,9 @@ import {
   listUnfinishedDocuments,
 } from "@/lib/supabase/queries/dashboard";
 import { deriveCourseBadge } from "@/lib/courseBadge";
+import { listPlanCards, listUpcomingExams } from "@/lib/supabase/queries/study-plan";
+import { listOpenNotes } from "@/lib/supabase/queries/document-notes";
+import { buildStudyPlan } from "@/lib/studyPlan";
 import { KIND_LABELS } from "@/components/calendar/EventDialog";
 import { formatDateKey, formatEventWhen, localDateKey } from "@/components/calendar/dateUtils";
 import { describeIndexingProgress, type IndexingTone } from "@/components/courses/documentIndexing";
@@ -51,10 +54,18 @@ function useLoadable<T>(load: () => Promise<T>) {
 }
 
 const loadCourses = () => listCourses();
-const loadEvents = () => listEvents();
+const loadEvents = () => {
+  const from = new Date();
+  from.setMonth(from.getMonth() - 1);
+  const to = new Date();
+  to.setFullYear(to.getFullYear() + 1);
+  return listEvents(from.toISOString(), to.toISOString());
+};
 const loadRecentDocuments = () => listRecentDocuments(createClient(), 5);
 const loadUnfinishedDocuments = () => listUnfinishedDocuments(createClient());
 const loadProfileName = () => getProfileName(createClient());
+const loadPlanInputs = () => Promise.all([listPlanCards(), listUpcomingExams()]);
+const loadOpenNotes = () => listOpenNotes(5);
 
 const MAX_EVENTS = 5;
 
@@ -180,6 +191,8 @@ export default function DashboardOverview() {
   const [events, reloadEvents] = useLoadable(loadEvents);
   const [recent, reloadRecent] = useLoadable(loadRecentDocuments);
   const [unfinished] = useLoadable(loadUnfinishedDocuments);
+  const [planInputs, reloadPlan] = useLoadable(loadPlanInputs);
+  const [openNotes, reloadNotes] = useLoadable(loadOpenNotes);
 
   const courseTitles = useMemo(
     () => new Map(courses.status === "ready" ? courses.data.map((course) => [course.id, course.title]) : []),
@@ -192,6 +205,12 @@ export default function DashboardOverview() {
   const attention = useMemo(
     () => (unfinished.status === "ready" ? attentionDocuments(unfinished.data) : { items: [], total: 0 }),
     [unfinished]
+  );
+  const studyPlan = useMemo(
+    () => (planInputs.status === "ready" && courses.status === "ready"
+      ? buildStudyPlan(courses.data, planInputs.data[0], planInputs.data[1], new Date(now)).slice(0, 4)
+      : []),
+    [planInputs, courses, now]
   );
   const upcoming = events.status === "ready" ? upcomingEvents(events.data, now, MAX_EVENTS) : [];
   const nextEvent = upcoming[0];
@@ -338,6 +357,56 @@ export default function DashboardOverview() {
           {attention.total > attention.items.length && <p className={s.more}>Weitere Dokumente findest du in den jeweiligen Kursen.</p>}
         </section>
       )}
+
+      <div className={s.summaryRow}>
+        <section className={s.card} aria-labelledby="plan-heading">
+          <CardHead id="plan-heading" icon="flashcard" title="Lernplan" action={<HeadLink href="/flashcards">Karteikarten</HeadLink>} />
+          {(planInputs.status === "loading" || courses.status === "loading") && <div className={s.skeletonRow} aria-hidden="true" />}
+          {planInputs.status === "error" && <BlockError message="Dein Lernplan konnte nicht berechnet werden." onRetry={reloadPlan} />}
+          {planInputs.status === "ready" && courses.status === "ready" && (studyPlan.length === 0 ? (
+            <Empty icon="flashcard" title="Noch nichts fällig" text="Sobald du Karteikarten wiederholst oder eine Prüfung einträgst, erscheint hier dein Plan." href="/flashcards" cta="Karten üben" />
+          ) : (
+            <ul className={s.docGrid}>
+              {studyPlan.map((plan) => (
+                <li key={plan.courseId}>
+                  <Link href={`/courses/${plan.courseId}/flashcards`} className={s.docRow}>
+                    <span className={s.rowBody}>
+                      <strong className={s.docName}>{plan.courseTitle}</strong>
+                      <span className={s.rowSub}>
+                        {plan.nextExam ? `${plan.nextExam.title} in ${plan.nextExam.daysLeft} ${plan.nextExam.daysLeft === 1 ? "Tag" : "Tagen"}` : "Keine Prüfung eingetragen"}
+                      </span>
+                      <span className={s.rowDetail}>{plan.focus}</span>
+                    </span>
+                    {plan.dueCards > 0 && <span className={s.chip} data-tone="active">{plan.dueCards} fällig</span>}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          ))}
+        </section>
+
+        <section className={s.card} aria-labelledby="notes-heading">
+          <CardHead id="notes-heading" icon="summary" title="Offene Notizen" />
+          {openNotes.status === "loading" && <div className={s.skeletonRow} aria-hidden="true" />}
+          {openNotes.status === "error" && <BlockError message="Deine Notizen konnten nicht geladen werden." onRetry={reloadNotes} />}
+          {openNotes.status === "ready" && (openNotes.data.length === 0 ? (
+            <Empty icon="summary" title="Keine offenen Notizen" text="Notizen, die du in Unterlagen als offen lässt, erscheinen hier zur Nachbereitung." href="/documents" cta="Zu den Unterlagen" />
+          ) : (
+            <ul className={s.docGrid}>
+              {openNotes.data.map((note) => (
+                <li key={note.id}>
+                  <Link href={note.fileId ? `/courses/${note.courseId}/documents/${note.fileId}?page=${note.pageNumber}` : `/courses/${note.courseId}`} className={s.docRow}>
+                    <span className={s.rowBody}>
+                      <strong className={s.docName}>{note.body.length > 90 ? `${note.body.slice(0, 90)} …` : note.body}</strong>
+                      <span className={s.rowSub}>{note.materialTitle} · Seite {note.pageNumber}</span>
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          ))}
+        </section>
+      </div>
 
       <section className={`${s.card} ${s.toolsCard}`} aria-labelledby="tools-heading">
         <CardHead id="tools-heading" icon="bolt" title="Lern-Tools" />

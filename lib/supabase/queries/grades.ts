@@ -75,3 +75,17 @@ export async function deleteAssessment(id: string): Promise<void> {
   if (error) throw error;
   if (!data || data.length === 0) throw new Error("Kein Datensatz gelöscht.");
 }
+
+/** Ids of the course's assessments that currently have a linked calendar event. */
+export async function listAssessmentCalendarLinks(courseId: string): Promise<Set<string>> {
+  const { data, error } = await createClient()
+    .from("calendar_events").select("assessment_id").eq("course_id", courseId).not("assessment_id", "is", null);
+  if (error) throw error;
+  return new Set(data.flatMap((row) => (row.assessment_id ? [row.assessment_id] : [])));
+}
+
+/** Links or unlinks the assessment's date with the calendar. Linking requires an assessment date. */
+export async function syncAssessmentCalendar(assessmentId: string, enabled: boolean): Promise<void> {
+  const { error } = await createClient().rpc("sync_assessment_calendar", { p_assessment: assessmentId, p_enabled: enabled });
+  if (error) throw error;
+}

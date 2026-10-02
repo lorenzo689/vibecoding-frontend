@@ -6,6 +6,7 @@ import { getCourse, type Course } from "@/lib/supabase/queries/courses";
 import {
   deleteCourseFile,
   listCourseFiles,
+  COURSE_FILES_PAGE_SIZE,
   uploadCourseFile,
   type CourseFile,
 } from "@/lib/supabase/queries/files";
@@ -97,6 +98,8 @@ function renameFile(file: File, title: string): File {
 export default function CourseDocuments({ courseId }: { courseId: string }) {
   const [course, setCourse] = useState<Course | null | undefined>(undefined);
   const [files, setFiles] = useState<CourseFile[]>([]);
+  const [hasMoreFiles, setHasMoreFiles] = useState(false);
+  const [loadingMoreFiles, setLoadingMoreFiles] = useState(false);
   const [documentStatuses, setDocumentStatuses] = useState<CourseDocumentStatus[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -131,6 +134,7 @@ export default function CourseDocuments({ courseId }: { courseId: string }) {
         if (!active) return;
         setCourse(nextCourse);
         setFiles(nextFiles);
+        setHasMoreFiles(nextFiles.length === COURSE_FILES_PAGE_SIZE);
         setDocumentStatuses(nextStatuses);
       })
       .catch(() => {
@@ -151,9 +155,20 @@ export default function CourseDocuments({ courseId }: { courseId: string }) {
   const hasUnfinishedDocuments = fileProgress.some((entry) => entry.progress.inProgress);
 
   const refreshStatuses = useCallback(async () => {
-    const [nextFiles, nextStatuses] = await Promise.all([listCourseFiles(courseId), listCourseDocumentStatuses(courseId)]);
+    const [nextFiles, nextStatuses] = await Promise.all([listCourseFiles(courseId, 0, Math.max(COURSE_FILES_PAGE_SIZE, files.length)), listCourseDocumentStatuses(courseId)]);
     return { nextFiles, nextStatuses };
-  }, [courseId]);
+  }, [courseId, files.length]);
+
+  async function loadMoreFiles() {
+    setLoadingMoreFiles(true);
+    setActionError(null);
+    try {
+      const next = await listCourseFiles(courseId, files.length);
+      setFiles((current) => [...current, ...next.filter((file) => !current.some((known) => known.id === file.id))]);
+      setHasMoreFiles(next.length === COURSE_FILES_PAGE_SIZE);
+    } catch { setActionError("Weitere Dateien konnten nicht geladen werden."); }
+    finally { setLoadingMoreFiles(false); }
+  }
 
   // Reloads the real status after a retry was started; the unfinished document then
   // keeps the polling below running until it is ready or failed again.
@@ -374,6 +389,10 @@ export default function CourseDocuments({ courseId }: { courseId: string }) {
           })}
         </div>
       )}
+
+      {hasMoreFiles && <button type="button" className={styles.uploadButton} onClick={() => void loadMoreFiles()} disabled={loadingMoreFiles}>
+        {loadingMoreFiles ? "Dateien werden geladen …" : "Weitere Dateien laden"}
+      </button>}
 
       {dialogOpen && (
         <div className={styles.backdrop} onClick={(event) => { if (event.target === event.currentTarget) closeDialog(); }}>

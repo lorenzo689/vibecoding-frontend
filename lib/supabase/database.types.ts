@@ -1,7 +1,6 @@
-// Synchronized verbatim from ../backend/types/database.types.ts at backend dev 71d0389
-// (branch dev, before the pending dev -> main release merge). Do not edit by hand:
-// regenerate in the backend repo, then copy the file and update this header.
-// Keep this copy local so the standalone frontend CI does not depend on a sibling checkout.
+// Generated from backend local migrations. Keep in sync with backend/types/database.types.ts.
+// Includes learning artifacts, atomic course/deck RPCs and the learning workflow (lectures, notes, suggestions).
+
 export type Json =
   | string
   | number
@@ -41,6 +40,7 @@ export type Database = {
       calendar_events: {
         Row: {
           all_day: boolean
+          assessment_id: string | null
           course_id: string | null
           created_at: string
           description: string | null
@@ -48,12 +48,14 @@ export type Database = {
           id: string
           kind: string
           owner_id: string
+          source_suggestion_id: string | null
           starts_at: string
           title: string
           updated_at: string
         }
         Insert: {
           all_day?: boolean
+          assessment_id?: string | null
           course_id?: string | null
           created_at?: string
           description?: string | null
@@ -61,12 +63,14 @@ export type Database = {
           id?: string
           kind: string
           owner_id: string
+          source_suggestion_id?: string | null
           starts_at: string
           title: string
           updated_at?: string
         }
         Update: {
           all_day?: boolean
+          assessment_id?: string | null
           course_id?: string | null
           created_at?: string
           description?: string | null
@@ -74,11 +78,19 @@ export type Database = {
           id?: string
           kind?: string
           owner_id?: string
+          source_suggestion_id?: string | null
           starts_at?: string
           title?: string
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "calendar_events_assessment_id_fkey"
+            columns: ["assessment_id"]
+            isOneToOne: true
+            referencedRelation: "grade_assessments"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "calendar_events_course_id_fkey"
             columns: ["course_id"]
@@ -91,6 +103,13 @@ export type Database = {
             columns: ["owner_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calendar_events_source_suggestion_id_fkey"
+            columns: ["source_suggestion_id"]
+            isOneToOne: true
+            referencedRelation: "document_suggestions"
             referencedColumns: ["id"]
           },
         ]
@@ -123,6 +142,7 @@ export type Database = {
           course_id: string
           created_at: string
           id: string
+          source_material_id: string | null
           title: string
           updated_at: string
         }
@@ -130,6 +150,7 @@ export type Database = {
           course_id: string
           created_at?: string
           id?: string
+          source_material_id?: string | null
           title?: string
           updated_at?: string
         }
@@ -137,6 +158,7 @@ export type Database = {
           course_id?: string
           created_at?: string
           id?: string
+          source_material_id?: string | null
           title?: string
           updated_at?: string
         }
@@ -146,6 +168,13 @@ export type Database = {
             columns: ["course_id"]
             isOneToOne: false
             referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_conversations_source_material_id_fkey"
+            columns: ["source_material_id"]
+            isOneToOne: false
+            referencedRelation: "materials"
             referencedColumns: ["id"]
           },
         ]
@@ -528,7 +557,10 @@ export type Database = {
           created_at: string
           description: string | null
           id: string
+          lecturer: string | null
           owner_id: string
+          semester: string | null
+          target_grade: number | null
           title: string
           updated_at: string
         }
@@ -536,7 +568,10 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          lecturer?: string | null
           owner_id: string
+          semester?: string | null
+          target_grade?: number | null
           title: string
           updated_at?: string
         }
@@ -544,7 +579,10 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          lecturer?: string | null
           owner_id?: string
+          semester?: string | null
+          target_grade?: number | null
           title?: string
           updated_at?: string
         }
@@ -643,6 +681,60 @@ export type Database = {
           },
         ]
       }
+      document_notes: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          kind: string
+          material_id: string
+          page_number: number
+          quote: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          body?: string
+          created_at?: string
+          id?: string
+          kind: string
+          material_id: string
+          page_number: number
+          quote?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          kind?: string
+          material_id?: string
+          page_number?: number
+          quote?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_notes_material_id_fkey"
+            columns: ["material_id"]
+            isOneToOne: false
+            referencedRelation: "materials"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_notes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       document_processing_jobs: {
         Row: {
           attempts: number
@@ -681,6 +773,107 @@ export type Database = {
             columns: ["file_id"]
             isOneToOne: true
             referencedRelation: "files"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      document_suggestions: {
+        Row: {
+          all_day: boolean
+          created_at: string
+          detail: string | null
+          fingerprint: string
+          id: string
+          kind: string
+          material_id: string
+          page_number: number | null
+          quote: string | null
+          starts_at: string | null
+          status: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          all_day?: boolean
+          created_at?: string
+          detail?: string | null
+          fingerprint: string
+          id?: string
+          kind: string
+          material_id: string
+          page_number?: number | null
+          quote?: string | null
+          starts_at?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          all_day?: boolean
+          created_at?: string
+          detail?: string | null
+          fingerprint?: string
+          id?: string
+          kind?: string
+          material_id?: string
+          page_number?: number | null
+          quote?: string | null
+          starts_at?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_suggestions_material_id_fkey"
+            columns: ["material_id"]
+            isOneToOne: false
+            referencedRelation: "materials"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_suggestions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      document_summaries: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          source_material_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          source_material_id: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          source_material_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_summaries_source_material_id_fkey"
+            columns: ["source_material_id"]
+            isOneToOne: true
+            referencedRelation: "materials"
             referencedColumns: ["id"]
           },
         ]
@@ -842,28 +1035,34 @@ export type Database = {
       flashcard_decks: {
         Row: {
           created_at: string
+          creation_key: string | null
           description: string | null
           id: string
           material_id: string
           material_type: string | null
+          source_material_id: string | null
           title: string
           updated_at: string
         }
         Insert: {
           created_at?: string
+          creation_key?: string | null
           description?: string | null
           id?: string
           material_id: string
           material_type?: string | null
+          source_material_id?: string | null
           title: string
           updated_at?: string
         }
         Update: {
           created_at?: string
+          creation_key?: string | null
           description?: string | null
           id?: string
           material_id?: string
           material_type?: string | null
+          source_material_id?: string | null
           title?: string
           updated_at?: string
         }
@@ -881,6 +1080,100 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "materials"
             referencedColumns: ["id", "type"]
+          },
+          {
+            foreignKeyName: "flashcard_decks_source_material_id_fkey"
+            columns: ["source_material_id"]
+            isOneToOne: false
+            referencedRelation: "materials"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      flashcard_progress: {
+        Row: {
+          card_id: string
+          due_at: string | null
+          interval_days: number
+          known: boolean | null
+          repetition_count: number
+          reviewed_at: string | null
+          starred: boolean
+          user_id: string
+        }
+        Insert: {
+          card_id: string
+          due_at?: string | null
+          interval_days?: number
+          known?: boolean | null
+          repetition_count?: number
+          reviewed_at?: string | null
+          starred?: boolean
+          user_id: string
+        }
+        Update: {
+          card_id?: string
+          due_at?: string | null
+          interval_days?: number
+          known?: boolean | null
+          repetition_count?: number
+          reviewed_at?: string | null
+          starred?: boolean
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flashcard_progress_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "flashcards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flashcard_progress_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      flashcard_review_events: {
+        Row: {
+          card_id: string
+          id: string
+          known: boolean
+          reviewed_at: string
+          user_id: string
+        }
+        Insert: {
+          card_id: string
+          id?: string
+          known: boolean
+          reviewed_at?: string
+          user_id: string
+        }
+        Update: {
+          card_id?: string
+          id?: string
+          known?: boolean
+          reviewed_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flashcard_review_events_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "flashcards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flashcard_review_events_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -978,6 +1271,239 @@ export type Database = {
           },
         ]
       }
+      learning_artifact_sources: {
+        Row: {
+          chunk_id: string | null
+          deck_id: string | null
+          excerpt: string
+          id: string
+          material_title: string
+          page_number: number | null
+          quiz_id: string | null
+          source_document_id: string | null
+          summary_id: string | null
+        }
+        Insert: {
+          chunk_id?: string | null
+          deck_id?: string | null
+          excerpt: string
+          id?: string
+          material_title: string
+          page_number?: number | null
+          quiz_id?: string | null
+          source_document_id?: string | null
+          summary_id?: string | null
+        }
+        Update: {
+          chunk_id?: string | null
+          deck_id?: string | null
+          excerpt?: string
+          id?: string
+          material_title?: string
+          page_number?: number | null
+          quiz_id?: string | null
+          source_document_id?: string | null
+          summary_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "learning_artifact_sources_chunk_id_fkey"
+            columns: ["chunk_id"]
+            isOneToOne: false
+            referencedRelation: "document_chunks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "learning_artifact_sources_deck_id_fkey"
+            columns: ["deck_id"]
+            isOneToOne: false
+            referencedRelation: "flashcard_decks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "learning_artifact_sources_quiz_id_fkey"
+            columns: ["quiz_id"]
+            isOneToOne: false
+            referencedRelation: "learning_quizzes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "learning_artifact_sources_source_document_id_fkey"
+            columns: ["source_document_id"]
+            isOneToOne: false
+            referencedRelation: "source_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "learning_artifact_sources_summary_id_fkey"
+            columns: ["summary_id"]
+            isOneToOne: false
+            referencedRelation: "document_summaries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      learning_drafts: {
+        Row: {
+          kind: string
+          payload: Json
+          source_material_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          kind: string
+          payload: Json
+          source_material_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          kind?: string
+          payload?: Json
+          source_material_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "learning_drafts_source_material_id_fkey"
+            columns: ["source_material_id"]
+            isOneToOne: false
+            referencedRelation: "materials"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "learning_drafts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      learning_quiz_attempts: {
+        Row: {
+          answers: Json
+          created_at: string
+          id: string
+          quiz_id: string
+          submitted_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          answers?: Json
+          created_at?: string
+          id?: string
+          quiz_id: string
+          submitted_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          answers?: Json
+          created_at?: string
+          id?: string
+          quiz_id?: string
+          submitted_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "learning_quiz_attempts_quiz_id_fkey"
+            columns: ["quiz_id"]
+            isOneToOne: false
+            referencedRelation: "learning_quizzes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "learning_quiz_attempts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      learning_quizzes: {
+        Row: {
+          course_id: string
+          created_at: string
+          id: string
+          questions: Json
+          source_material_id: string
+          title: string
+        }
+        Insert: {
+          course_id: string
+          created_at?: string
+          id?: string
+          questions: Json
+          source_material_id: string
+          title: string
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          id?: string
+          questions?: Json
+          source_material_id?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "learning_quizzes_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "learning_quizzes_source_material_id_fkey"
+            columns: ["source_material_id"]
+            isOneToOne: false
+            referencedRelation: "materials"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lectures: {
+        Row: {
+          course_id: string
+          created_at: string
+          held_on: string | null
+          id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          course_id: string
+          created_at?: string
+          held_on?: string | null
+          id?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          held_on?: string | null
+          id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lectures_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       materials: {
         Row: {
           course_id: string
@@ -986,6 +1512,7 @@ export type Database = {
           description: string | null
           file_id: string | null
           id: string
+          lecture_id: string | null
           title: string
           type: string
           updated_at: string
@@ -997,6 +1524,7 @@ export type Database = {
           description?: string | null
           file_id?: string | null
           id?: string
+          lecture_id?: string | null
           title: string
           type: string
           updated_at?: string
@@ -1008,6 +1536,7 @@ export type Database = {
           description?: string | null
           file_id?: string | null
           id?: string
+          lecture_id?: string | null
           title?: string
           type?: string
           updated_at?: string
@@ -1032,6 +1561,13 @@ export type Database = {
             columns: ["file_id"]
             isOneToOne: false
             referencedRelation: "files"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "materials_lecture_id_fkey"
+            columns: ["lecture_id"]
+            isOneToOne: false
+            referencedRelation: "lectures"
             referencedColumns: ["id"]
           },
         ]
@@ -1279,6 +1815,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_document_suggestion: {
+        Args: {
+          p_all_day?: boolean
+          p_event_kind?: string
+          p_id: string
+          p_starts_at?: string
+          p_title?: string
+        }
+        Returns: Json
+      }
       append_chat_exchange: {
         Args: {
           p_answer: string
@@ -1290,6 +1836,7 @@ export type Database = {
         }
         Returns: Json
       }
+      assessment_event_kind: { Args: { p_kind: string }; Returns: string }
       can_upload_learning_file: { Args: { p_path: string }; Returns: boolean }
       chat_exchange: {
         Args: {
@@ -1344,6 +1891,21 @@ export type Database = {
         Args: { p_api_url: string; p_service_key: string }
         Returns: undefined
       }
+      create_learning_deck: {
+        Args: {
+          p_cards: Json
+          p_course: string
+          p_creation_key: string
+          p_source_material: string
+          p_sources?: Json
+          p_title: string
+        }
+        Returns: Json
+      }
+      create_manual_deck: {
+        Args: { p_course: string; p_creation_key: string; p_title: string }
+        Returns: Json
+      }
       expire_file_uploads: { Args: never; Returns: undefined }
       fail_chat_request: {
         Args: {
@@ -1382,6 +1944,24 @@ export type Database = {
         }
         Returns: boolean
       }
+      insert_learning_sources: {
+        Args: {
+          p_kind: string
+          p_material: string
+          p_sources: Json
+          p_target: string
+        }
+        Returns: undefined
+      }
+      learning_deck_progress_counts: {
+        Args: { p_material_ids: string[] }
+        Returns: {
+          due: number
+          known: number
+          material_id: string
+          reviewed: number
+        }[]
+      }
       normalize_chat_material_ids: {
         Args: { p_material_ids: string[] }
         Returns: string[]
@@ -1415,6 +1995,14 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      record_flashcard_review: {
+        Args: { p_card: string; p_known: boolean }
+        Returns: undefined
+      }
+      rename_learning_deck: {
+        Args: { p_material: string; p_title: string }
+        Returns: undefined
       }
       reserve_chat_request: {
         Args: {
@@ -1480,6 +2068,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      review_document_suggestion: {
+        Args: { p_id: string; p_status: string }
+        Returns: undefined
+      }
       save_chat_history_summary: {
         Args: {
           p_content: string
@@ -1491,6 +2083,33 @@ export type Database = {
           p_user_id: string
         }
         Returns: boolean
+      }
+      save_course_summary: {
+        Args: { p_course: string; p_text: string; p_title: string }
+        Returns: Json
+      }
+      save_document_suggestions: {
+        Args: { p_items: Json; p_material: string }
+        Returns: number
+      }
+      save_document_summary: {
+        Args: {
+          p_content: string
+          p_source_material: string
+          p_sources?: Json
+          p_title: string
+        }
+        Returns: string
+      }
+      save_learning_quiz: {
+        Args: {
+          p_course: string
+          p_questions: Json
+          p_source_material: string
+          p_sources?: Json
+          p_title: string
+        }
+        Returns: string
       }
       search_document_chunks:
         | {
@@ -1581,6 +2200,14 @@ export type Database = {
               similarity: number
             }[]
           }
+      sync_assessment_calendar: {
+        Args: { p_assessment: string; p_enabled: boolean }
+        Returns: string
+      }
+      update_learning_deck: {
+        Args: { p_description: string; p_material: string; p_title: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

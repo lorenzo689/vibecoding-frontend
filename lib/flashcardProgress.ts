@@ -1,51 +1,64 @@
-// Per-card review progress for a study session, kept in sessionStorage.
-// There is no backend table for this yet, so nothing here is durable beyond
-// the current browser tab/session — it resets on a fresh session by design.
-const prefix = "lernapp.flashcards.progress:";
+import { createClient } from "@/lib/supabase/browser";
 
-type StoredProgress = { reviewed: string[]; known: string[]; starred: string[] };
-export type DeckProgress = { reviewed: Set<string>; known: Set<string>; starred: Set<string> };
+export type DeckProgress = { reviewed: Set<string>; known: Set<string>; starred: Set<string>; due: Set<string> };
+const cache = new Map<string, DeckProgress>();
+const empty = (): DeckProgress => ({ reviewed: new Set(), known: new Set(), starred: new Set(), due: new Set() });
 
-function read(deckId: string): StoredProgress {
-  try {
-    const raw = sessionStorage.getItem(`${prefix}${deckId}`);
-    const parsed = raw ? JSON.parse(raw) : null;
-    if (parsed && Array.isArray(parsed.reviewed) && Array.isArray(parsed.known)) {
-      return { reviewed: parsed.reviewed, known: parsed.known, starred: Array.isArray(parsed.starred) ? parsed.starred : [] };
-    }
-  } catch { /* Session storage may be unavailable; progress simply won't persist. */ }
-  return { reviewed: [], known: [], starred: [] };
-}
+export type DeckProgressCounts = { reviewed: number; known: number; due: number };
 
-function write(deckId: string, progress: StoredProgress) {
-  try {
-    sessionStorage.setItem(`${prefix}${deckId}`, JSON.stringify(progress));
-  } catch { /* Optional, best-effort persistence. */ }
+export async function loadDeckProgressCounts(materialIds: string[]): Promise<Map<string, DeckProgressCounts>> {
+  if (!materialIds.length) return new Map();
+  const { data, error } = await createClient().rpc("learning_deck_progress_counts", { p_material_ids: materialIds });
+  if (error) throw error;
+  return new Map(data.map((row) => [row.material_id, { reviewed: row.reviewed, known: row.known, due: row.due }]));
 }
 
 export function getDeckProgress(deckId: string): DeckProgress {
-  const stored = read(deckId);
-  return { reviewed: new Set(stored.reviewed), known: new Set(stored.known), starred: new Set(stored.starred) };
+  return cache.get(deckId) ?? empty();
 }
 
-export function markCardReviewed(deckId: string, cardId: string) {
-  const stored = read(deckId);
-  if (!stored.reviewed.includes(cardId)) stored.reviewed.push(cardId);
-  write(deckId, stored);
+export async function loadDeckProgress(deckId: string, cardIds: string[]): Promise<DeckProgress> {
+  if (!cardIds.length) { cache.set(deckId, empty()); return getDeckProgress(deckId); }
+  const { data, error } = await createClient().from("flashcard_progress")
+    .select("card_id,reviewed_at,known,starred,due_at").in("card_id", cardIds);
+  if (error) throw error;
+  const progress = empty();
+  for (const row of data) {
+    if (row.reviewed_at) progress.reviewed.add(row.card_id);
+    if (row.known) progress.known.add(row.card_id);
+    if (row.starred) progress.starred.add(row.card_id);
+    if (row.due_at && new Date(row.due_at).getTime() <= Date.now()) progress.due.add(row.card_id);
+  }
+  cache.set(deckId, progress);
+  return progress;
 }
 
-export function markCardKnown(deckId: string, cardId: string, known: boolean) {
-  const stored = read(deckId);
-  if (!stored.reviewed.includes(cardId)) stored.reviewed.push(cardId);
-  stored.known = stored.known.filter((id) => id !== cardId);
-  if (known) stored.known.push(cardId);
-  write(deckId, stored);
+export async function markCardKnown(deckId: string, cardId: string, known: boolean): Promise<void> {
+  const { error } = await createClient().rpc("record_flashcard_review", { p_card: cardId, p_known: known });
+  if (error) throw error;
+  const progress = getDeckProgress(deckId);
+  progress.reviewed.add(cardId);
+  if (known) progress.known.add(cardId); else progress.known.delete(cardId);
+  progress.due.delete(cardId);
+  cache.set(deckId, progress);
 }
 
-export function toggleCardStarred(deckId: string, cardId: string): boolean {
-  const stored = read(deckId);
-  const isStarred = stored.starred.includes(cardId);
-  stored.starred = isStarred ? stored.starred.filter((id) => id !== cardId) : [...stored.starred, cardId];
-  write(deckId, stored);
-  return !isStarred;
+export async function toggleCardStarred(deckId: string, cardId: string): Promise<boolean> {
+  const client = createClient();
+  const { data: user, error: authError } = await client.auth.getUser();
+  if (authError || !user.user) throw authError ?? new Error("Nicht angemeldet");
+  const progress = getDeckProgress(deckId);
+  const next = !progress.starred.has(cardId);
+  const { data: updated, error: updateError } = await client.from("flashcard_progress")
+    .update({ starred: next }).eq("user_id", user.user.id).eq("card_id", cardId)
+    .select("card_id");
+  if (updateError) throw updateError;
+  if (!updated.length) {
+    const { error: insertError } = await client.from("flashcard_progress")
+      .insert({ user_id: user.user.id, card_id: cardId, starred: next });
+    if (insertError) throw insertError;
+  }
+  if (next) progress.starred.add(cardId); else progress.starred.delete(cardId);
+  cache.set(deckId, progress);
+  return next;
 }

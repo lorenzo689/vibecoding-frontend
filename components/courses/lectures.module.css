@@ -1,0 +1,24 @@
+.section { margin-top: var(--space-10); padding: var(--space-6); background: var(--app-surface); border: 1px solid var(--app-line); border-radius: 12px; }
+.section h2 { font-size: 18px; font-weight: 700; letter-spacing: -.01em; }
+.count { margin-left: var(--space-2); color: var(--app-muted); font-size: 13px; font-weight: 500; }
+.form { display: flex; flex-wrap: wrap; gap: var(--space-3); margin-top: var(--space-5); }
+.form input { min-height: 42px; padding: 0 var(--space-4); color: var(--app-ink); background: var(--app-bg); border: 1.5px solid var(--app-line); border-radius: 12px; }
+.form input:first-of-type { flex: 1 1 220px; }
+.form input:focus-visible, .docs select:focus-visible { outline: 2px solid var(--app-purple); outline-offset: 2px; }
+.form button { min-height: 42px; padding-inline: var(--space-5); color: var(--app-on-accent); background: var(--app-purple); border: 0; border-radius: 12px; font-size: 13px; font-weight: 650; cursor: pointer; }
+.form button:disabled { opacity: .6; cursor: not-allowed; }
+.form .ghost { color: var(--app-ink); background: transparent; border: 1.5px solid var(--app-line); }
+.list { display: grid; gap: var(--space-4); margin: var(--space-5) 0 0; padding: 0; list-style: none; }
+.lecture { padding: var(--space-4) var(--space-5); background: var(--app-bg); border-radius: 14px; }
+.lecture header { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-3); }
+.lecture h3 { font-size: 15px; font-weight: 650; }
+.lecture time { color: var(--app-muted); font-size: 12.5px; }
+.actions { display: inline-flex; gap: var(--space-3); margin-left: auto; }
+.actions button { color: var(--app-muted); background: none; border: 0; font-size: 12.5px; text-decoration: underline; cursor: pointer; }
+.docs { display: grid; gap: var(--space-2); margin: var(--space-3) 0 0; padding: 0; list-style: none; }
+.docs li { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-3); }
+.docs a { min-width: 0; overflow-wrap: anywhere; color: var(--app-ink); font-size: 14px; }
+.docs select { min-height: 36px; max-width: 100%; padding-inline: var(--space-3); color: var(--app-ink); background: var(--app-surface); border: 1.5px solid var(--app-line); border-radius: 10px; font-size: 13px; }
+.muted { margin-top: var(--space-3); color: var(--app-muted); font-size: 13px; line-height: 1.6; }
+.error { margin-top: var(--space-3); color: var(--app-danger); font-size: 13px; }
+.srOnly { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }

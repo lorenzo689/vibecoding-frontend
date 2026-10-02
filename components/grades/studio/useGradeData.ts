@@ -7,6 +7,8 @@ import {
   createAssessment,
   updateAssessment,
   deleteAssessment,
+  listAssessmentCalendarLinks,
+  syncAssessmentCalendar,
   type Assessment,
   type AssessmentInput,
 } from "@/lib/supabase/queries/grades";
@@ -60,10 +62,11 @@ export function useCourseGrades(courseId: string) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingAssessment, setEditingAssessment] = useState<Assessment | undefined>(undefined);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [calendarLinks, setCalendarLinks] = useState<Set<string>>(new Set());
 
   function fetchAssessments() {
-    return listCourseAssessments(courseId)
-      .then(setAssessments)
+    return Promise.all([listCourseAssessments(courseId), listAssessmentCalendarLinks(courseId).catch(() => new Set<string>())])
+      .then(([items, links]) => { setAssessments(items); setCalendarLinks(links); })
       .catch(() => {
         setError("Die Prüfungsleistungen konnten nicht geladen werden. Bitte versuche es erneut.");
       })
@@ -85,11 +88,18 @@ export function useCourseGrades(courseId: string) {
   const summary = courseGradeSummary(assessments);
   const sorted = [...assessments].sort((a, b) => sortKey(a).localeCompare(sortKey(b)));
 
-  async function handleCreate(input: AssessmentInput) {
+  async function applyCalendar(id: string, wanted: boolean) {
+    if (!wanted && !calendarLinks.has(id)) return;
+    await syncAssessmentCalendar(id, wanted);
+    setCalendarLinks((prev) => { const next = new Set(prev); if (wanted) next.add(id); else next.delete(id); return next; });
+  }
+
+  async function handleCreate(input: AssessmentInput, inCalendar: boolean) {
     setActionError(null);
     try {
       const created = await createAssessment(courseId, input);
       setAssessments((prev) => [...prev, created]);
+      if (inCalendar) await applyCalendar(created.id, true);
       setDialogOpen(false);
       setStatusMessage(`„${created.title}“ wurde angelegt.`);
     } catch {
@@ -98,12 +108,15 @@ export function useCourseGrades(courseId: string) {
     }
   }
 
-  async function handleUpdate(input: AssessmentInput) {
+  async function handleUpdate(input: AssessmentInput, inCalendar: boolean) {
     if (!editingAssessment) return;
     setActionError(null);
     try {
       const updated = await updateAssessment(editingAssessment.id, input);
       setAssessments((prev) => prev.map((item) => item.id === updated.id ? updated : item));
+      // Clearing the date already removed the event server-side.
+      if (!updated.assessmentDate) setCalendarLinks((prev) => { const next = new Set(prev); next.delete(updated.id); return next; });
+      else await applyCalendar(updated.id, inCalendar);
       setEditingAssessment(undefined);
       setStatusMessage(`„${updated.title}“ wurde aktualisiert.`);
     } catch {
@@ -129,7 +142,7 @@ export function useCourseGrades(courseId: string) {
 
   return {
     assessments, sorted, summary, loading, error, actionError, statusMessage,
-    dialogOpen, editingAssessment, deletingId, loadAssessments,
+    dialogOpen, editingAssessment, deletingId, calendarLinks, loadAssessments,
     setDialogOpen, setEditingAssessment, handleCreate, handleUpdate, handleDelete,
   };
 }

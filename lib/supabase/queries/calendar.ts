@@ -4,16 +4,22 @@ import { mapEvent, type CalendarEvent, type CalendarEventInput } from "./calenda
 export type { CalendarEvent, CalendarEventInput, CalendarEventKind } from "./calendar-map";
 
 const COLUMNS =
-  "id, owner_id, course_id, title, description, kind, starts_at, ends_at, all_day, created_at, updated_at";
+  "id, owner_id, course_id, title, description, kind, starts_at, ends_at, all_day, source_suggestion_id, assessment_id, created_at, updated_at";
 
-export async function listEvents(): Promise<CalendarEvent[]> {
-  const { data, error } = await createClient()
-    .from("calendar_events")
-    .select(COLUMNS)
-    .order("starts_at", { ascending: true });
-
-  if (error) throw error;
-  return data.map(mapEvent);
+export async function listEvents(from: string, to: string): Promise<CalendarEvent[]> {
+  const result: CalendarEvent[] = [];
+  for (let offset = 0; ; offset += 100) {
+    const { data, error } = await createClient()
+      .from("calendar_events")
+      .select(COLUMNS)
+      .lt("starts_at", to)
+      .or(`starts_at.gte.${from},ends_at.gte.${from}`)
+      .order("starts_at", { ascending: true })
+      .range(offset, offset + 99);
+    if (error) throw error;
+    result.push(...data.map(mapEvent));
+    if (data.length < 100) return result;
+  }
 }
 
 export async function createEvent(input: CalendarEventInput): Promise<CalendarEvent> {
