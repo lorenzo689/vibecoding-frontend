@@ -68,3 +68,9 @@
 @media (max-width: 800px) { .grid { grid-template-columns: 1fr; } .profileCard { padding: 24px; } .membership { padding-top: 20px; } }
 .page { min-height: calc(100svh - 102px); padding: 26px; background: var(--app-veil); border: 1px solid var(--app-line-soft); border-radius: 14px; box-shadow: 0 5px 24px rgba(104,133,190,.035); }
 @media (max-width: 640px) { .page { padding: 18px 14px; min-height: calc(100svh - 100px); } }
+
+/* UniVerse-Pro-Karte: nutzt die vorhandene Karte, nur Status und Link sind ergänzt. */
+.proStatus { margin-top: 8px; color: var(--app-muted); font-size: 13px; font-weight: 650; }
+.proStatus[data-pro="true"] { color: var(--app-purple); }
+.proLink { display: inline-flex; align-items: center; margin-top: 14px; padding: 10px 20px; border-radius: 10px; background: var(--app-blue-tint); color: var(--app-fg-blue); font-size: 12px; font-weight: 600; text-decoration: none; }
+.proLink:focus-visible { outline: 2px solid var(--app-purple); outline-offset: 2px; }

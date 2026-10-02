@@ -20,5 +20,6 @@ export const config = {
     "/summaries/:path*",
     "/grades/:path*",
     "/profile/:path*",
+    "/billing/:path*",
   ],
 };

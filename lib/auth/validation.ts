@@ -10,6 +10,7 @@ const protectedPrefixes = [
   "/summaries",
   "/grades",
   "/profile",
+  "/billing",
 ];
 
 export function isProtectedPath(pathname: string): boolean {
