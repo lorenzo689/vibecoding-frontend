@@ -9,7 +9,9 @@ import {
   type ProfileRecord,
 } from "@/lib/auth/profile";
 import { validateDisplayName } from "@/lib/auth/validation";
+import type { OwnSubscription } from "@/lib/billing";
 import { createClient } from "@/lib/supabase/browser";
+import ProfileProCard from "./ProfileProCard";
 import s from "./profile.module.css";
 
 type LoadState =
@@ -38,10 +40,14 @@ export default function ProfilePage({
   email,
   initialProfile,
   initialError,
+  proSubscription,
+  proUnavailable,
 }: {
   email: string;
   initialProfile: ProfileRecord | null;
   initialError: string | null;
+  proSubscription: OwnSubscription | null;
+  proUnavailable: boolean;
 }) {
   const router = useRouter();
   const [loadState, setLoadState] = useState<LoadState>(
@@ -229,6 +235,8 @@ export default function ProfilePage({
             Deine E-Mail-Adresse gehört zu deiner Anmeldung und kann hier nicht geändert werden.
           </p>
         </aside>
+
+        <ProfileProCard subscription={proSubscription} unavailable={proUnavailable} />
         </div>
       </div>
     </div>

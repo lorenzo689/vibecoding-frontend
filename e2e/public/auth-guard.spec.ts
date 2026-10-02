@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-const PROTECTED = ["/dashboard", "/assistant", "/courses", "/calendar", "/documents", "/grades", "/profile"];
+const PROTECTED = ["/dashboard", "/assistant", "/courses", "/calendar", "/documents", "/grades", "/profile", "/billing", "/billing/success", "/billing/cancel"];
 
 for (const path of PROTECTED) {
   test(`${path} without a session redirects to login and keeps the target`, async ({ page }) => {

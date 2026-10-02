@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import ProfilePage from "@/components/profile/ProfilePage";
+import { loadOwnSubscription, type OwnSubscription } from "@/lib/billing";
 import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -24,8 +25,19 @@ export default async function Page() {
     .eq("user_id", userData.user.id)
     .maybeSingle();
 
+  // Der Abo-Status ist ergänzend: Schlägt er fehl, bleibt das Profil nutzbar und die Karte zeigt einen Hinweis.
+  let proSubscription: OwnSubscription | null = null;
+  let proUnavailable = false;
+  try {
+    proSubscription = await loadOwnSubscription(supabase);
+  } catch {
+    proUnavailable = true;
+  }
+
   return (
     <ProfilePage
+      proSubscription={proSubscription}
+      proUnavailable={proUnavailable}
       email={userData.user.email ?? "Keine E-Mail-Adresse verfügbar"}
       initialProfile={data ?? null}
       initialError={
