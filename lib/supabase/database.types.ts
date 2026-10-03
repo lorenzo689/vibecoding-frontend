@@ -1,4 +1,4 @@
-// Synchronized verbatim from ../backend/types/database.types.ts at backend dev 71d0389
+// Synchronized verbatim from ../backend/types/database.types.ts at backend dev be872e5
 // (branch dev, before the pending dev -> main release merge). Do not edit by hand:
 // regenerate in the backend repo, then copy the file and update this header.
 // Keep this copy local so the standalone frontend CI does not depend on a sibling checkout.
@@ -269,6 +269,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "chat_messages"
             referencedColumns: ["id", "role"]
+          },
+          {
+            foreignKeyName: "chat_message_sources_source_document_id_fkey"
+            columns: ["source_document_id"]
+            isOneToOne: false
+            referencedRelation: "document_pipeline_timings"
+            referencedColumns: ["document_id"]
+          },
+          {
+            foreignKeyName: "chat_message_sources_source_document_id_fkey"
+            columns: ["source_document_id"]
+            isOneToOne: false
+            referencedRelation: "document_worker_metrics"
+            referencedColumns: ["document_id"]
           },
           {
             foreignKeyName: "chat_message_sources_source_document_id_fkey"
@@ -600,6 +614,20 @@ export type Database = {
             foreignKeyName: "document_chunks_document_id_fkey"
             columns: ["document_id"]
             isOneToOne: false
+            referencedRelation: "document_pipeline_timings"
+            referencedColumns: ["document_id"]
+          },
+          {
+            foreignKeyName: "document_chunks_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "document_worker_metrics"
+            referencedColumns: ["document_id"]
+          },
+          {
+            foreignKeyName: "document_chunks_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
             referencedRelation: "source_documents"
             referencedColumns: ["id"]
           },
@@ -638,6 +666,66 @@ export type Database = {
             foreignKeyName: "document_indexing_jobs_document_id_fkey"
             columns: ["document_id"]
             isOneToOne: true
+            referencedRelation: "document_pipeline_timings"
+            referencedColumns: ["document_id"]
+          },
+          {
+            foreignKeyName: "document_indexing_jobs_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: true
+            referencedRelation: "document_worker_metrics"
+            referencedColumns: ["document_id"]
+          },
+          {
+            foreignKeyName: "document_indexing_jobs_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: true
+            referencedRelation: "source_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      document_pipeline_events: {
+        Row: {
+          detail: Json
+          document_id: string
+          event: string
+          id: number
+          occurred_at: string
+        }
+        Insert: {
+          detail?: Json
+          document_id: string
+          event: string
+          id?: never
+          occurred_at?: string
+        }
+        Update: {
+          detail?: Json
+          document_id?: string
+          event?: string
+          id?: never
+          occurred_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_pipeline_events_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "document_pipeline_timings"
+            referencedColumns: ["document_id"]
+          },
+          {
+            foreignKeyName: "document_pipeline_events_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "document_worker_metrics"
+            referencedColumns: ["document_id"]
+          },
+          {
+            foreignKeyName: "document_pipeline_events_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
             referencedRelation: "source_documents"
             referencedColumns: ["id"]
           },
@@ -647,6 +735,7 @@ export type Database = {
         Row: {
           attempts: number
           available_at: string
+          checkpoint: Json | null
           document_id: string
           file_id: string
           lease_token: string | null
@@ -655,6 +744,7 @@ export type Database = {
         Insert: {
           attempts?: number
           available_at?: string
+          checkpoint?: Json | null
           document_id: string
           file_id: string
           lease_token?: string | null
@@ -663,12 +753,27 @@ export type Database = {
         Update: {
           attempts?: number
           available_at?: string
+          checkpoint?: Json | null
           document_id?: string
           file_id?: string
           lease_token?: string | null
           lease_until?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "document_processing_jobs_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: true
+            referencedRelation: "document_pipeline_timings"
+            referencedColumns: ["document_id"]
+          },
+          {
+            foreignKeyName: "document_processing_jobs_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: true
+            referencedRelation: "document_worker_metrics"
+            referencedColumns: ["document_id"]
+          },
           {
             foreignKeyName: "document_processing_jobs_document_id_fkey"
             columns: ["document_id"]
@@ -681,6 +786,193 @@ export type Database = {
             columns: ["file_id"]
             isOneToOne: true
             referencedRelation: "files"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      document_processing_runs: {
+        Row: {
+          batch_start: number | null
+          completed_at: string | null
+          document_id: string
+          duration_ms: number | null
+          id: string
+          phases: Json
+          started_at: string
+          status: string
+          worker: string
+        }
+        Insert: {
+          batch_start?: number | null
+          completed_at?: string | null
+          document_id: string
+          duration_ms?: number | null
+          id: string
+          phases?: Json
+          started_at: string
+          status?: string
+          worker: string
+        }
+        Update: {
+          batch_start?: number | null
+          completed_at?: string | null
+          document_id?: string
+          duration_ms?: number | null
+          id?: string
+          phases?: Json
+          started_at?: string
+          status?: string
+          worker?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_processing_runs_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "document_pipeline_timings"
+            referencedColumns: ["document_id"]
+          },
+          {
+            foreignKeyName: "document_processing_runs_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "document_worker_metrics"
+            referencedColumns: ["document_id"]
+          },
+          {
+            foreignKeyName: "document_processing_runs_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "source_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      document_provider_limits: {
+        Row: {
+          blocked_until: string
+          concurrency: number
+          provider: string
+          starts: number
+          starts_per_minute: number
+          window_start: string
+        }
+        Insert: {
+          blocked_until?: string
+          concurrency: number
+          provider: string
+          starts?: number
+          starts_per_minute: number
+          window_start?: string
+        }
+        Update: {
+          blocked_until?: string
+          concurrency?: number
+          provider?: string
+          starts?: number
+          starts_per_minute?: number
+          window_start?: string
+        }
+        Relationships: []
+      }
+      document_provider_slots: {
+        Row: {
+          document_id: string | null
+          expires_at: string
+          provider: string
+          token: string
+        }
+        Insert: {
+          document_id?: string | null
+          expires_at: string
+          provider: string
+          token?: string
+        }
+        Update: {
+          document_id?: string | null
+          expires_at?: string
+          provider?: string
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_provider_slots_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "document_pipeline_timings"
+            referencedColumns: ["document_id"]
+          },
+          {
+            foreignKeyName: "document_provider_slots_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "document_worker_metrics"
+            referencedColumns: ["document_id"]
+          },
+          {
+            foreignKeyName: "document_provider_slots_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "source_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_provider_slots_provider_fkey"
+            columns: ["provider"]
+            isOneToOne: false
+            referencedRelation: "document_provider_limits"
+            referencedColumns: ["provider"]
+          },
+        ]
+      }
+      document_worker_events: {
+        Row: {
+          detail: Json
+          document_id: string
+          event: string
+          id: number
+          occurred_at: string
+          run_id: string
+          worker: string
+        }
+        Insert: {
+          detail: Json
+          document_id: string
+          event: string
+          id?: never
+          occurred_at?: string
+          run_id: string
+          worker: string
+        }
+        Update: {
+          detail?: Json
+          document_id?: string
+          event?: string
+          id?: never
+          occurred_at?: string
+          run_id?: string
+          worker?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_worker_events_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "document_pipeline_timings"
+            referencedColumns: ["document_id"]
+          },
+          {
+            foreignKeyName: "document_worker_events_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "document_worker_metrics"
+            referencedColumns: ["document_id"]
+          },
+          {
+            foreignKeyName: "document_worker_events_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "source_documents"
             referencedColumns: ["id"]
           },
         ]
@@ -884,6 +1176,103 @@ export type Database = {
           },
         ]
       }
+      flashcard_jobs: {
+        Row: {
+          attempts: number
+          checkpoint: Json | null
+          configuration: Json
+          course_id: string
+          created_at: string
+          document_ids: string[]
+          error_code: string | null
+          fingerprint: string
+          id: string
+          lease_token: string | null
+          lease_until: string | null
+          material_id: string | null
+          owner_id: string
+          paid_calls: number
+          phase: string
+          request_id: string
+          requested_count: number | null
+          reserved_tokens: number
+          retries: number
+          sources: Json
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          attempts?: number
+          checkpoint?: Json | null
+          configuration: Json
+          course_id: string
+          created_at?: string
+          document_ids: string[]
+          error_code?: string | null
+          fingerprint: string
+          id?: string
+          lease_token?: string | null
+          lease_until?: string | null
+          material_id?: string | null
+          owner_id: string
+          paid_calls?: number
+          phase?: string
+          request_id: string
+          requested_count?: number | null
+          reserved_tokens?: number
+          retries?: number
+          sources: Json
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          attempts?: number
+          checkpoint?: Json | null
+          configuration?: Json
+          course_id?: string
+          created_at?: string
+          document_ids?: string[]
+          error_code?: string | null
+          fingerprint?: string
+          id?: string
+          lease_token?: string | null
+          lease_until?: string | null
+          material_id?: string | null
+          owner_id?: string
+          paid_calls?: number
+          phase?: string
+          request_id?: string
+          requested_count?: number | null
+          reserved_tokens?: number
+          retries?: number
+          sources?: Json
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flashcard_jobs_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flashcard_jobs_material_id_fkey"
+            columns: ["material_id"]
+            isOneToOne: false
+            referencedRelation: "materials"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flashcard_jobs_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       flashcards: {
         Row: {
           additional_content: Json | null
@@ -974,6 +1363,111 @@ export type Database = {
             columns: ["course_id"]
             isOneToOne: false
             referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      material_analyses: {
+        Row: {
+          context: Json
+          created_at: string
+          error_code: string | null
+          id: string
+          items: Json
+          lease_token: string
+          lease_until: string
+          material_id: string
+          owner_id: string
+          request_id: string
+          source_hash: string
+          status: string
+          warnings: Json
+        }
+        Insert: {
+          context: Json
+          created_at?: string
+          error_code?: string | null
+          id?: string
+          items?: Json
+          lease_token?: string
+          lease_until?: string
+          material_id: string
+          owner_id: string
+          request_id: string
+          source_hash: string
+          status?: string
+          warnings?: Json
+        }
+        Update: {
+          context?: Json
+          created_at?: string
+          error_code?: string | null
+          id?: string
+          items?: Json
+          lease_token?: string
+          lease_until?: string
+          material_id?: string
+          owner_id?: string
+          request_id?: string
+          source_hash?: string
+          status?: string
+          warnings?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "material_analyses_material_id_fkey"
+            columns: ["material_id"]
+            isOneToOne: false
+            referencedRelation: "materials"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "material_analyses_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      material_analysis_decisions: {
+        Row: {
+          calendar_event_id: string | null
+          created_at: string
+          item_id: string
+          material_id: string
+          owner_id: string
+          status: string
+        }
+        Insert: {
+          calendar_event_id?: string | null
+          created_at?: string
+          item_id: string
+          material_id: string
+          owner_id: string
+          status: string
+        }
+        Update: {
+          calendar_event_id?: string | null
+          created_at?: string
+          item_id?: string
+          material_id?: string
+          owner_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "material_analysis_decisions_material_id_fkey"
+            columns: ["material_id"]
+            isOneToOne: false
+            referencedRelation: "materials"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "material_analysis_decisions_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -1222,10 +1716,65 @@ export type Database = {
           },
         ]
       }
+      stripe_events: {
+        Row: {
+          event_id: string
+          event_type: string
+          processed_at: string
+        }
+        Insert: {
+          event_id: string
+          event_type: string
+          processed_at?: string
+        }
+        Update: {
+          event_id?: string
+          event_type?: string
+          processed_at?: string
+        }
+        Relationships: []
+      }
+      subscriptions: {
+        Row: {
+          cancel_at_period_end: boolean
+          created_at: string
+          current_period_end: string | null
+          price_id: string | null
+          status: string
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          cancel_at_period_end?: boolean
+          created_at?: string
+          current_period_end?: string | null
+          price_id?: string | null
+          status: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          cancel_at_period_end?: boolean
+          created_at?: string
+          current_period_end?: string | null
+          price_id?: string | null
+          status?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       summaries: {
         Row: {
           content: Json
           created_at: string
+          generation_kind: string
           id: string
           material_id: string
           material_type: string | null
@@ -1235,6 +1784,7 @@ export type Database = {
         Insert: {
           content?: Json
           created_at?: string
+          generation_kind?: string
           id?: string
           material_id: string
           material_type?: string | null
@@ -1244,6 +1794,7 @@ export type Database = {
         Update: {
           content?: Json
           created_at?: string
+          generation_kind?: string
           id?: string
           material_id?: string
           material_type?: string | null
@@ -1274,11 +1825,256 @@ export type Database = {
           },
         ]
       }
+      summary_generations: {
+        Row: {
+          configuration: Json
+          course_id: string
+          created_at: string
+          document_id: string | null
+          fingerprint: string
+          kind: string
+          sources: Json
+          summary_id: string
+        }
+        Insert: {
+          configuration: Json
+          course_id: string
+          created_at?: string
+          document_id?: string | null
+          fingerprint: string
+          kind: string
+          sources: Json
+          summary_id: string
+        }
+        Update: {
+          configuration?: Json
+          course_id?: string
+          created_at?: string
+          document_id?: string | null
+          fingerprint?: string
+          kind?: string
+          sources?: Json
+          summary_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "summary_generations_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "summary_generations_summary_id_fkey"
+            columns: ["summary_id"]
+            isOneToOne: true
+            referencedRelation: "summaries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      summary_jobs: {
+        Row: {
+          attempts: number
+          available_at: string
+          checkpoint: Json | null
+          completed_steps: number
+          configuration: Json
+          course_id: string
+          created_at: string
+          document_id: string | null
+          error_code: string | null
+          fingerprint: string
+          id: string
+          kind: string
+          lease_token: string | null
+          lease_until: string | null
+          owner_id: string
+          paid_calls: number
+          phase: string
+          reserved_tokens: number
+          retries: number
+          sources: Json
+          status: string
+          summary_id: string | null
+          total_steps: number
+          updated_at: string
+        }
+        Insert: {
+          attempts?: number
+          available_at?: string
+          checkpoint?: Json | null
+          completed_steps?: number
+          configuration: Json
+          course_id: string
+          created_at?: string
+          document_id?: string | null
+          error_code?: string | null
+          fingerprint: string
+          id?: string
+          kind: string
+          lease_token?: string | null
+          lease_until?: string | null
+          owner_id: string
+          paid_calls?: number
+          phase?: string
+          reserved_tokens?: number
+          retries?: number
+          sources: Json
+          status?: string
+          summary_id?: string | null
+          total_steps?: number
+          updated_at?: string
+        }
+        Update: {
+          attempts?: number
+          available_at?: string
+          checkpoint?: Json | null
+          completed_steps?: number
+          configuration?: Json
+          course_id?: string
+          created_at?: string
+          document_id?: string | null
+          error_code?: string | null
+          fingerprint?: string
+          id?: string
+          kind?: string
+          lease_token?: string | null
+          lease_until?: string | null
+          owner_id?: string
+          paid_calls?: number
+          phase?: string
+          reserved_tokens?: number
+          retries?: number
+          sources?: Json
+          status?: string
+          summary_id?: string | null
+          total_steps?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "summary_jobs_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "summary_jobs_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "summary_jobs_summary_id_fkey"
+            columns: ["summary_id"]
+            isOneToOne: false
+            referencedRelation: "summaries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      summary_requests: {
+        Row: {
+          job_id: string
+          owner_id: string
+          request_id: string
+          target: Json
+        }
+        Insert: {
+          job_id: string
+          owner_id: string
+          request_id: string
+          target: Json
+        }
+        Update: {
+          job_id?: string
+          owner_id?: string
+          request_id?: string
+          target?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "summary_requests_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "summary_jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "summary_requests_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
-      [_ in never]: never
+      document_pipeline_timings: {
+        Row: {
+          chunk_count: number | null
+          document_id: string | null
+          error_code: string | null
+          extraction_duration: string | null
+          indexing_claims: number | null
+          indexing_completed_at: string | null
+          indexing_duration: string | null
+          indexing_error: string | null
+          indexing_queued_at: string | null
+          indexing_started_at: string | null
+          indexing_status: string | null
+          indexing_wait: string | null
+          mime_type: string | null
+          ocr_duration: string | null
+          ocr_started_at: string | null
+          original_filename: string | null
+          page_count: number | null
+          processing_claims: number | null
+          processing_completed_at: string | null
+          processing_queued_at: string | null
+          processing_started_at: string | null
+          processing_status: string | null
+          processing_wait: string | null
+          size_bytes: number | null
+          text_chars: number | null
+          total_duration: string | null
+          upload_completed_at: string | null
+          upload_duration: string | null
+          upload_started_at: string | null
+        }
+        Relationships: []
+      }
+      document_worker_metrics: {
+        Row: {
+          between_steps_ms: number | null
+          document_id: string | null
+          embedding_batches: number | null
+          embedding_request_ms: number | null
+          failed_requests: number | null
+          gemini_request_ms: number | null
+          indexing_wait: string | null
+          inline_retries: number | null
+          interrupted_or_running: number | null
+          processing_wait: string | null
+          total_duration: string | null
+          worker_active_ms: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
+      acquire_document_provider_slot: {
+        Args: {
+          p_document_id: string
+          p_lease_token: string
+          p_provider: string
+        }
+        Returns: string
+      }
       append_chat_exchange: {
         Args: {
           p_answer: string
@@ -1287,6 +2083,15 @@ export type Database = {
           p_question: string
           p_request_id: string
           p_sources?: Json
+        }
+        Returns: Json
+      }
+      begin_material_analysis: {
+        Args: {
+          p_context: Json
+          p_material_id: string
+          p_owner_id: string
+          p_request_id: string
         }
         Returns: Json
       }
@@ -1317,6 +2122,8 @@ export type Database = {
         Args: { p_document_id: string }
         Returns: Json
       }
+      claim_flashcard_job: { Args: never; Returns: Json }
+      claim_summary: { Args: never; Returns: Json }
       complete_chat_request: {
         Args: {
           p_answer: string
@@ -1343,6 +2150,29 @@ export type Database = {
       configure_file_cleanup: {
         Args: { p_api_url: string; p_service_key: string }
         Returns: undefined
+      }
+      decide_material_analysis: {
+        Args: {
+          p_action: string
+          p_analysis_id: string
+          p_event?: Json
+          p_item_id: string
+          p_owner_id: string
+        }
+        Returns: Json
+      }
+      dispatch_document_work: { Args: never; Returns: undefined }
+      dispatch_flashcard_work: { Args: never; Returns: undefined }
+      dispatch_summary_work: { Args: never; Returns: undefined }
+      enqueue_summary: {
+        Args: {
+          p_configuration: Json
+          p_kind: string
+          p_owner_id: string
+          p_request_id: string
+          p_target_id: string
+        }
+        Returns: Json
       }
       expire_file_uploads: { Args: never; Returns: undefined }
       fail_chat_request: {
@@ -1382,6 +2212,33 @@ export type Database = {
         }
         Returns: boolean
       }
+      finish_material_analysis: {
+        Args: {
+          p_analysis_id: string
+          p_error?: string
+          p_items: Json
+          p_lease_token: string
+          p_owner_id: string
+          p_warnings: Json
+        }
+        Returns: Json
+      }
+      flashcard_action: {
+        Args: { p_body: Json; p_configuration?: Json; p_owner: string }
+        Returns: Json
+      }
+      flashcard_job_view: {
+        Args: { p_job: Database["public"]["Tables"]["flashcard_jobs"]["Row"] }
+        Returns: Json
+      }
+      flashcard_snapshot: {
+        Args: { p_course: string; p_documents: string[] }
+        Returns: Json
+      }
+      log_document_pipeline_event: {
+        Args: { p_detail?: Json; p_document_id: string; p_event: string }
+        Returns: undefined
+      }
       normalize_chat_material_ids: {
         Args: { p_material_ids: string[] }
         Returns: string[]
@@ -1416,6 +2273,18 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      read_material_analysis: {
+        Args: { p_analysis_id: string; p_owner_id: string }
+        Returns: Json
+      }
+      read_summary: {
+        Args: { p_job_id?: string; p_owner_id: string; p_summary_id?: string }
+        Returns: Json
+      }
+      release_document_provider_slot: {
+        Args: { p_retry_ms?: number; p_token: string }
+        Returns: undefined
+      }
       reserve_chat_request: {
         Args: {
           p_concurrent_responses: number
@@ -1429,6 +2298,14 @@ export type Database = {
           p_user_id: string
         }
         Returns: Json
+      }
+      reserve_flashcard_call: {
+        Args: { p_job: string; p_lease: string; p_tokens: number }
+        Returns: boolean
+      }
+      reserve_summary_call: {
+        Args: { p_job_id: string; p_lease_token: string; p_tokens: number }
+        Returns: boolean
       }
       retry_document_indexing: {
         Args: { p_document_id: string }
@@ -1480,6 +2357,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      retry_summary: {
+        Args: { p_job_id: string; p_owner_id: string }
+        Returns: Json
+      }
       save_chat_history_summary: {
         Args: {
           p_content: string
@@ -1489,6 +2370,42 @@ export type Database = {
           p_request_id: string
           p_through_seq: number
           p_user_id: string
+        }
+        Returns: boolean
+      }
+      save_document_processing_checkpoint: {
+        Args: {
+          p_checkpoint: Json
+          p_document_id: string
+          p_lease_token: string
+          p_release?: boolean
+        }
+        Returns: boolean
+      }
+      save_document_processing_page: {
+        Args: { p_document_id: string; p_lease_token: string; p_page: Json }
+        Returns: boolean
+      }
+      save_flashcard_step: {
+        Args: {
+          p_checkpoint: Json
+          p_error?: string
+          p_job: string
+          p_lease: string
+          p_status: string
+        }
+        Returns: boolean
+      }
+      save_summary_step: {
+        Args: {
+          p_checkpoint: Json
+          p_completed: number
+          p_content?: Json
+          p_error?: string
+          p_job_id: string
+          p_lease_token: string
+          p_phase: string
+          p_total: number
         }
         Returns: boolean
       }
@@ -1581,6 +2498,20 @@ export type Database = {
               similarity: number
             }[]
           }
+      summary_source_snapshot: {
+        Args: { p_course_id: string; p_document_id?: string }
+        Returns: Json
+      }
+      yield_document_work: {
+        Args: {
+          p_delay_ms?: number
+          p_document_id: string
+          p_failed?: boolean
+          p_lease_token: string
+          p_provider: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never

@@ -436,3 +436,97 @@
 @media (max-width: 640px) { .studyCard { min-height: 290px; padding: 65px 20px 35px; } .studyQuestion { font-size: 21px; } }
 .page { min-height: calc(100svh - 102px); padding: 26px; background: var(--app-veil); border: 1px solid var(--app-line-soft); border-radius: 14px; box-shadow: 0 5px 24px rgba(104,133,190,.035); }
 @media (max-width: 640px) { .page { padding: 18px 14px; min-height: calc(100svh - 100px); } }
+
+/* Terminvorschläge aus einer Unterlage. Jeder Vorschlag zeigt das Originalzitat als
+   Fundstelle und wird erst nach ausdrücklicher Bestätigung zum Kalendereintrag. */
+.errorHint[data-tone="info"] { color: var(--doc-muted); }
+
+.suggestionList { display: grid; gap: var(--space-4); margin: 0; padding: 0; list-style: none; }
+.suggestion { padding: var(--space-5); background: var(--app-bg); border: 1px solid var(--doc-line); border-radius: 12px; }
+.suggestionHead { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; }
+.suggestionHead strong { font-size: 14px; font-weight: 700; letter-spacing: -.01em; }
+.suggestionTag { padding: 3px 10px; border-radius: 999px; background: var(--app-purple-tint); color: var(--app-purple); font-size: 11px; font-weight: 650; }
+.suggestionText { margin-top: var(--space-2); color: var(--doc-muted); font-size: 13px; line-height: 1.6; }
+
+.suggestionQuote { margin-top: var(--space-3); padding-left: var(--space-4); border-left: 2px solid var(--doc-line); color: var(--doc-muted); font-size: 12.5px; line-height: 1.65; }
+.suggestionQuote cite { display: block; margin-top: 4px; font-size: 11px; font-style: normal; font-weight: 650; }
+
+.suggestionIssues { margin-top: var(--space-3); padding-left: var(--space-5); color: var(--app-fg-amber); font-size: 12px; line-height: 1.6; }
+
+.suggestionActions { display: flex; align-items: center; gap: var(--space-4); margin-top: var(--space-4); flex-wrap: wrap; }
+.suggestionActions .viewerLink { margin-top: 0; }
+
+.suggestionForm { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); margin-top: var(--space-4); padding-top: var(--space-4); border-top: 1px solid var(--doc-line); }
+.suggestionForm label { display: grid; gap: 5px; font-size: 12px; font-weight: 650; color: var(--doc-muted); }
+.suggestionForm input, .suggestionForm select, .suggestionForm textarea { width: 100%; padding: 9px 12px; color: var(--doc-ink); background: var(--app-surface); border: 1.5px solid var(--doc-line); border-radius: 10px; font-size: 13px; font-weight: 400; }
+.suggestionForm input:focus-visible, .suggestionForm select:focus-visible, .suggestionForm textarea:focus-visible { outline: 2px solid var(--doc-accent-b); outline-offset: 1px; }
+.suggestionForm textarea { resize: vertical; }
+.suggestionWide { grid-column: 1 / -1; }
+.suggestionCheck { grid-column: 1 / -1; display: flex; align-items: center; gap: var(--space-2); }
+.suggestionCheck input { width: auto; }
+.suggestionForm .suggestionActions { grid-column: 1 / -1; margin-top: 0; }
+.suggestionForm .errorHint { grid-column: 1 / -1; margin-top: 0; }
+
+.suggestionDone { margin-top: var(--space-4); padding-top: var(--space-4); border-top: 1px solid var(--doc-line); color: var(--doc-muted); font-size: 12.5px; }
+.suggestionDone a { color: var(--doc-accent-b); font-weight: 650; }
+
+@media (max-width: 640px) { .suggestionForm { grid-template-columns: 1fr; } }
+
+/* Dialog "Karteikarten erzeugen". Mehrstufig, weil das Backend nach der Schätzung auf
+   die Entscheidung des Nutzers wartet und vor dem Review nichts gespeichert wird. */
+.secondaryAction { display: inline-flex; align-items: center; flex-shrink: 0; min-height: 46px; padding-inline: var(--space-5); color: var(--doc-accent-b); background: var(--app-purple-soft-alt); border: 0; border-radius: 12px; font-size: 14px; font-weight: 650; cursor: pointer; transition: background var(--motion); }
+.secondaryAction:hover:not(:disabled) { background: var(--app-purple-tint); }
+.secondaryAction:disabled { opacity: .5; cursor: not-allowed; }
+
+.dialogHint { margin-top: var(--space-4); color: var(--doc-muted); font-size: 13px; line-height: 1.65; }
+.dialogHint strong { color: var(--doc-ink); }
+.dialogActions { display: flex; align-items: center; justify-content: flex-end; gap: var(--space-4); margin-top: var(--space-6); flex-wrap: wrap; }
+.dialogActions .viewerLink { margin-top: 0; }
+
+.dialogField { display: grid; gap: 5px; margin-top: var(--space-4); color: var(--doc-muted); font-size: 12px; font-weight: 650; }
+.dialogField input, .dialogField textarea { width: 100%; padding: 9px 12px; color: var(--doc-ink); background: var(--app-bg); border: 1.5px solid var(--doc-line); border-radius: 10px; font-size: 13px; font-weight: 400; }
+.dialogField textarea { resize: vertical; }
+.dialogField input:focus-visible, .dialogField textarea:focus-visible { outline: 2px solid var(--doc-accent-b); outline-offset: 1px; }
+
+.pickList { display: grid; gap: 2px; max-height: 240px; overflow-y: auto; margin: var(--space-4) 0 0; padding: var(--space-2); list-style: none; border: 1px solid var(--doc-line); border-radius: 10px; }
+.pickList label { display: flex; align-items: center; gap: var(--space-3); padding: 7px 8px; border-radius: 8px; font-size: 13px; cursor: pointer; }
+.pickList label:hover { background: var(--app-bg); }
+.pickList small { margin-left: auto; color: var(--doc-muted); font-size: 11px; }
+.pickDisabled { opacity: .55; cursor: not-allowed; }
+
+.pickFieldset { margin-top: var(--space-5); padding: 0; border: 0; }
+.pickFieldset legend { padding: 0; color: var(--doc-muted); font-size: 12px; font-weight: 650; }
+.pickRadio { display: flex; align-items: center; gap: var(--space-3); margin-top: var(--space-3); font-size: 13px; }
+.pickRadio input[type="number"] { width: 78px; padding: 6px 10px; color: var(--doc-ink); background: var(--app-bg); border: 1.5px solid var(--doc-line); border-radius: 8px; font-size: 13px; }
+
+.dialog .progressTrack { max-width: none; }
+.progressBar { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--doc-accent-a), var(--doc-accent-b)); border-radius: 999px; transition: width var(--motion); }
+/* Solange das Backend keine Gesamtzahl kennt, zeigt der Balken Bewegung statt eines
+   erfundenen Prozentwerts. */
+.progressBar[data-indeterminate] { width: 35%; animation: deck-progress 1.4s ease-in-out infinite; }
+@keyframes deck-progress { 0% { transform: translateX(-100%); } 100% { transform: translateX(340%); } }
+
+.reviewList { display: grid; gap: var(--space-4); max-height: 46svh; overflow-y: auto; margin: var(--space-5) 0 0; padding: 0; list-style: none; }
+.reviewList > li { padding: var(--space-4); background: var(--app-bg); border: 1px solid var(--doc-line); border-radius: 10px; }
+.reviewList > li[data-dropped] { opacity: .55; }
+.reviewList .dialogField { margin-top: var(--space-3); }
+.reviewKeep { display: flex; align-items: center; gap: var(--space-2); color: var(--doc-muted); font-size: 12px; font-weight: 650; }
+
+@media (prefers-reduced-motion: reduce) {
+  .progressBar { transition: none; }
+  .progressBar[data-indeterminate] { animation: none; width: 100%; opacity: .45; }
+}
+
+/* Lerneinheiten ohne Datei. Entsteht, weil das Löschen einer Datei im Backend nur
+   `materials.file_id` auf null setzt — die Einheit bleibt Kursquelle und blockiert sonst
+   unsichtbar jede Kurszusammenfassung. */
+.orphanBox { margin-top: var(--space-5); padding: var(--space-5); background: var(--app-amber-tint); border: 1px solid var(--app-amber-line); border-radius: 12px; }
+.orphanBox h2 { font-size: 15px; font-weight: 700; letter-spacing: -.01em; }
+.orphanBox > p { max-width: 70ch; margin-top: var(--space-2); color: var(--doc-muted); font-size: 12.5px; line-height: 1.6; }
+.orphanBox ul { display: grid; gap: var(--space-2); margin: var(--space-4) 0 0; padding: 0; list-style: none; }
+.orphanBox li { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding: 9px 12px; background: var(--app-surface); border-radius: 8px; font-size: 13px; }
+.orphanBox li span { overflow-wrap: anywhere; }
+.textButton { flex-shrink: 0; color: var(--app-danger-strong); background: none; border: 0; font-size: 12.5px; font-weight: 650; cursor: pointer; }
+.textButton:hover:not(:disabled) { text-decoration: underline; }
+.textButton:disabled { opacity: .5; cursor: not-allowed; }
+.textButton:focus-visible { outline: 2px solid var(--doc-accent-b); outline-offset: 2px; }

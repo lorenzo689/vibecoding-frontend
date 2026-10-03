@@ -50,3 +50,47 @@
 @media (max-width: 640px) {
   .meta { flex-direction: column; align-items: flex-start; }
 }
+
+/* Generierte Zusammenfassung. Sie steht als eigene Karte über der selbst geschriebenen
+   und ist durchgehend als erzeugt gekennzeichnet — Nutzer sollen jederzeit erkennen,
+   woher ein Text stammt. */
+.stack { display: grid; gap: var(--space-5); }
+.panelTitle { font-size: 17px; font-weight: 700; letter-spacing: -.02em; }
+/* Steht die Überschrift über der Metazeile, braucht diese etwas Abstand nach oben. */
+.panelTitle + .meta { margin-top: var(--space-4); }
+.panelHint { max-width: 62ch; margin-top: var(--space-3); color: var(--doc-muted); font-size: 13.5px; line-height: 1.65; }
+
+.aiTag { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; background: var(--app-purple-tint); color: var(--app-purple); font-size: 11px; font-weight: 650; letter-spacing: .03em; }
+.aiTag svg { width: 11px; height: 11px; }
+
+.progress { margin-top: var(--space-5); }
+.progressTrack { overflow: hidden; height: 6px; background: var(--app-bg); border: 1px solid var(--doc-line); border-radius: 999px; }
+.progressBar { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--doc-accent-a), var(--doc-accent-b)); border-radius: 999px; transition: width var(--motion); }
+/* Solange das Backend die Gesamtzahl der Schritte nicht kennt, zeigt der Balken
+   Bewegung statt eines erfundenen Prozentwerts. */
+.progressBar[data-indeterminate] { width: 35%; animation: summary-progress 1.4s ease-in-out infinite; }
+@keyframes summary-progress { 0% { transform: translateX(-100%); } 100% { transform: translateX(340%); } }
+.progress .status { margin-top: var(--space-3); }
+
+.staleNotice { margin-top: var(--space-4); padding: var(--space-3) var(--space-4); background: var(--app-amber-tint); border-left: 2px solid var(--app-fg-amber); border-radius: 0 10px 10px 0; color: var(--doc-ink); font-size: 12.5px; line-height: 1.6; }
+
+.sections { display: grid; gap: var(--space-6); margin-top: var(--space-5); }
+.section h3 { margin-bottom: var(--space-2); font-size: 15px; font-weight: 700; letter-spacing: -.01em; }
+.sourceList { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin-top: var(--space-3); }
+.sourceLabel { color: var(--doc-muted); font-size: 11.5px; font-weight: 650; }
+.sourceChip { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; background: var(--app-bg); border: 1px solid var(--doc-line); border-radius: 999px; color: var(--doc-muted); font-size: 11.5px; }
+.sourcePage { color: var(--doc-ink); font-weight: 650; }
+
+.aiDisclaimer { margin-top: var(--space-6); padding-top: var(--space-4); border-top: 1px solid var(--doc-line); color: var(--doc-muted); font-size: 11.5px; line-height: 1.6; }
+
+@media (prefers-reduced-motion: reduce) {
+  .progressBar { transition: none; }
+  .progressBar[data-indeterminate] { animation: none; width: 100%; opacity: .45; }
+}
+
+/* Hinweis, welche Quellen eine Generierung blockieren. Das Backend nennt sie bei
+   SOURCES_NOT_READY; ohne diesen Hinweis bliebe unklar, wo man nachsehen muss. */
+.blockingHint { margin-top: var(--space-2); color: var(--doc-muted); font-size: 12.5px; line-height: 1.6; }
+.blockingHint a { color: var(--doc-accent-b); font-weight: 650; }
+.blockingHint ul { margin: var(--space-2) 0; padding-left: var(--space-5); list-style: disc; }
+.blockingHint li { line-height: 1.6; }

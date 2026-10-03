@@ -176,7 +176,7 @@ export function describeProCard(subscription: OwnSubscription | null, unavailabl
   if (view.tone === "none" || view.tone === "ended") {
     return {
       pro: false,
-      status: "Kein Pro",
+      status: "Aktuell Kein Pro-Abo",
       text: `Du nutzt UniVerse aktuell ohne Pro. UniVerse Pro kostet ${PRO_PRICE_LABEL}.`,
       linkLabel: "UniVerse Pro ansehen",
     };
@@ -185,25 +185,15 @@ export function describeProCard(subscription: OwnSubscription | null, unavailabl
   return { pro: false, status: view.title, text: view.detail, linkLabel: view.canManage ? view.manageLabel : "Zur Abo-Seite" };
 }
 
-type SubscriptionRow = {
-  status: string;
-  current_period_end: string | null;
-  cancel_at_period_end: boolean;
-  stripe_subscription_id: string | null;
-};
-
 /**
  * Liest die eigene Abo-Zeile. RLS liefert ausschließlich die Zeile des angemeldeten Nutzers; ein
- * Filter im Frontend wäre keine Autorisierung. `subscriptions` gehört zum Backend-Vertrag (dev,
- * Migration 20261003100000), fehlt aber noch in `lib/supabase/database.types.ts`: Diese Datei wird
- * nur als Ganzes aus dem Backend synchronisiert und nicht von Hand ergänzt. Bis zum Re-Sync wird die
- * Zeile über eine bewusst lokal typisierte Abfrage gelesen.
+ * Filter im Frontend wäre keine Autorisierung.
  */
 export async function loadOwnSubscription(client: SupabaseClient<Database>): Promise<OwnSubscription | null> {
-  const { data, error } = await (client as unknown as SupabaseClient)
+  const { data, error } = await client
     .from("subscriptions")
     .select("status, current_period_end, cancel_at_period_end, stripe_subscription_id")
-    .maybeSingle<SubscriptionRow>();
+    .maybeSingle();
   if (error) throw new BillingError("LOAD_FAILED");
   if (!data) return null;
   return {

@@ -19,15 +19,28 @@ type MaterialWithSummaryRow = {
   } | null;
 };
 
+/**
+ * Die vom Nutzer selbst geschriebene Zusammenfassung eines Kurses.
+ *
+ * Seit Backend-Migration `20261003110000_generated_summaries` legen auch die generierten
+ * Zusammenfassungen Material vom Typ `summary` an. Ohne den Filter auf
+ * `generation_kind = 'manual'` könnte hier eine generierte Zusammenfassung landen, die der
+ * Editor fälschlich als bearbeitbar anzeigt — eine restriktive RLS-Policy erlaubt
+ * Clients `update` nur auf manuellen Zeilen, das Speichern würde also ins Leere laufen.
+ */
 export async function getCourseSummary(courseId: string): Promise<CourseSummary | null> {
   // .limit(1) instead of .maybeSingle(): a partial failure between the two
   // inserts below could in theory leave more than one "summary" material for
   // this course. Take the first rather than throwing on that edge case.
   const { data, error } = await createClient()
     .from("materials")
-    .select("id, title, summaries!material_id(id, content, updated_at)")
+    // `!inner`: ohne das würde ein nicht passendes Embed die Eltern-Zeile nicht ausschließen,
+    // sondern nur `summaries: null` liefern — eine generierte Zusammenfassung würde dann eine
+    // vorhandene manuelle verdecken. Nebeneffekt: Material ohne Summary-Zeile fällt ebenfalls raus.
+    .select("id, title, summaries!material_id!inner(id, content, updated_at)")
     .eq("course_id", courseId)
     .eq("type", "summary")
+    .eq("summaries.generation_kind", "manual")
     .order("created_at", { ascending: true })
     .limit(1);
 
@@ -116,4 +129,31 @@ export async function saveCourseSummary(
 export async function deleteCourseSummary(materialId: string): Promise<void> {
   const { error } = await createClient().from("materials").delete().eq("id", materialId);
   if (error) throw error;
+}
+
+/**
+ * Die zuletzt generierte Zusammenfassung eines Kurses oder eines einzelnen Dokuments.
+ *
+ * `summary_generations` ist für Eigentümer lesbar und hält nur Metadaten. Den Inhalt holt
+ * anschließend die `result`-Aktion der Edge Function, weil nur sie zusätzlich ermittelt,
+ * ob das Ergebnis inzwischen veraltet ist (`is_stale`).
+ *
+ * `documentId` ist eine `source_documents.id`, nicht die des Materials oder der Datei.
+ */
+export async function getLatestGeneratedSummaryId(
+  courseId: string,
+  documentId?: string
+): Promise<string | null> {
+  const query = createClient()
+    .from("summary_generations")
+    .select("summary_id, created_at")
+    .eq("course_id", courseId)
+    .eq("kind", documentId ? "document" : "course");
+
+  const { data, error } = await (documentId ? query.eq("document_id", documentId) : query)
+    .order("created_at", { ascending: false })
+    .limit(1);
+
+  if (error) throw error;
+  return data[0]?.summary_id ?? null;
 }

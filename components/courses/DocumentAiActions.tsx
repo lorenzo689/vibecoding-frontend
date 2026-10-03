@@ -5,17 +5,17 @@ import { createClient } from "@/lib/supabase/browser";
 import { runTemporaryChat } from "@/lib/chat";
 import { ChatError } from "@/lib/chatProtocol";
 import { cleanProse } from "@/lib/aiOutput";
-import { saveCourseSummary } from "@/lib/supabase/queries/summaries";
+import GeneratedSummaryPanel from "@/components/summaries/GeneratedSummaryPanel";
+import DocumentDateSuggestions from "./DocumentDateSuggestions";
 import styles from "@/components/documents/documents.module.css";
 
 function asChatError(error: unknown): ChatError {
   return error instanceof ChatError ? error : new ChatError("LOAD_FAILED");
 }
 
-// UniVerse has no dedicated "summarize" or "explain" AI endpoint. Both actions
-// below ask the same real course RAG chat (lib/chat.ts) a crafted one-off
-// question, scoped to the open document via `material_ids`, and show the
-// answer — a real AI action, not a canned response.
+// Für Erklärungen gibt es keinen eigenen Backend-Endpunkt. Die Aktion stellt dem echten
+// Kurs-RAG-Chat (lib/chat.ts) eine einmalige Frage, eingegrenzt auf das geöffnete Dokument,
+// und zeigt die Antwort. Zusammenfassungen laufen dagegen über die Function `summaries`.
 async function askOnce(courseId: string, materialId: string, question: string): Promise<string> {
   const client = createClient();
   const exchange = await runTemporaryChat(client, courseId, materialId, question);
@@ -27,44 +27,20 @@ async function askOnce(courseId: string, materialId: string, question: string): 
   return text;
 }
 
-export default function DocumentAiActions({ courseId, courseTitle, fileName, materialId }: { courseId: string; courseTitle: string; fileName: string; materialId: string }) {
-  const [summaryLoading, setSummaryLoading] = useState(false);
-  const [summaryResult, setSummaryResult] = useState<string | null>(null);
-  const [summaryError, setSummaryError] = useState<string | null>(null);
-  const [savingSummary, setSavingSummary] = useState(false);
-  const [summarySaved, setSummarySaved] = useState(false);
-
+export default function DocumentAiActions({
+  courseId,
+  documentId,
+  materialId,
+}: {
+  courseId: string;
+  /** `source_documents.id` — Ziel der Dokumentzusammenfassung. */
+  documentId: string;
+  materialId: string;
+}) {
   const [topic, setTopic] = useState("");
   const [explainLoading, setExplainLoading] = useState(false);
   const [explainResult, setExplainResult] = useState<string | null>(null);
   const [explainError, setExplainError] = useState<string | null>(null);
-
-  async function handleSummarize() {
-    setSummaryLoading(true);
-    setSummaryError(null);
-    setSummarySaved(false);
-    try {
-      const answer = await askOnce(courseId, materialId, `Fasse den Inhalt der Kursunterlagen kurz und verständlich zusammen. Achte besonders auf "${fileName}", falls dort relevanter Text indexiert ist.`);
-      setSummaryResult(answer);
-    } catch (error) {
-      setSummaryError(asChatError(error).message);
-    } finally {
-      setSummaryLoading(false);
-    }
-  }
-
-  async function handleSaveSummary() {
-    if (!summaryResult) return;
-    setSavingSummary(true);
-    try {
-      await saveCourseSummary(courseId, { title: courseTitle, text: summaryResult });
-      setSummarySaved(true);
-    } catch {
-      setSummaryError("Die Zusammenfassung konnte nicht gespeichert werden.");
-    } finally {
-      setSavingSummary(false);
-    }
-  }
 
   async function handleExplain(event: FormEvent) {
     event.preventDefault();
@@ -90,33 +66,18 @@ export default function DocumentAiActions({ courseId, courseTitle, fileName, mat
         </span>
         <div>
           <h2>KI-Aktionen</h2>
-          <p>Angetrieben von der Dokumentensuche dieses Kurses.</p>
+          <p>Aus dem Text dieser Unterlage.</p>
         </div>
       </div>
 
-      <div className={styles.actionCard}>
-        <div className={styles.actionCardHead}>
-          <span className={styles.actionIconBadge} data-tone="blue" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M6 4h9l3 3v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z" /><path d="M8 9h8M8 13h8M8 17h5" /></svg>
-          </span>
-          <div>
-            <h3>Zusammenfassung erstellen</h3>
-            <p>Lass dir den Inhalt der Kursunterlagen in wenigen Sätzen zusammenfassen.</p>
-          </div>
-          <button type="button" className={styles.runButton} onClick={() => void handleSummarize()} disabled={summaryLoading}>
-            {summaryLoading ? "Wird erstellt …" : "Zusammenfassen"}
-          </button>
-        </div>
-        {summaryError && <p className={styles.errorHint} role="alert">{summaryError}</p>}
-        {summaryResult && (
-          <div className={styles.actionResult}>
-            <p>{summaryResult}</p>
-            <button type="button" className={styles.viewerLink} onClick={() => void handleSaveSummary()} disabled={savingSummary || summarySaved}>
-              {summarySaved ? "Als Kurs-Zusammenfassung gespeichert ✓" : savingSummary ? "Wird gespeichert …" : "Als Kurs-Zusammenfassung übernehmen"}
-            </button>
-          </div>
-        )}
-      </div>
+      {/* Echte Dokumentzusammenfassung über die Function `summaries` statt frei geparstem
+          Chattext: liefert Abschnitte mit Quellenangaben und meldet veraltete Ergebnisse. */}
+      <GeneratedSummaryPanel
+        courseId={courseId}
+        sourceDocumentId={documentId}
+        heading="Zusammenfassung dieser Unterlage"
+        intro="UniVerse liest den extrahierten Text dieser Unterlage und erstellt daraus eine Zusammenfassung mit Quellenangaben. Das läuft im Hintergrund weiter, auch wenn du die Seite verlässt."
+      />
 
       <div className={styles.actionCard}>
         <div className={styles.actionCardHead}>
@@ -137,6 +98,10 @@ export default function DocumentAiActions({ courseId, courseTitle, fileName, mat
         {explainError && <p className={styles.errorHint} role="alert">{explainError}</p>}
         {explainResult && <div className={styles.actionResult}><p>{explainResult}</p></div>}
       </div>
+
+      {/* Eigener Backend-Endpunkt (`material-analysis`), nicht der Chat: er liefert
+          geprüfte Termindaten mit Originalzitat statt freiem Text. */}
+      <DocumentDateSuggestions materialId={materialId} />
     </div>
   );
 }
