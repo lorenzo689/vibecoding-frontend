@@ -176,6 +176,8 @@ export default function ProfilePage({
           <h2>{profile.name}</h2>
           <p>{email}</p>
           <a href="#display-name" className={s.editLink}>Profil bearbeiten</a>
+          {/* Füllt den freien Raum der Profilspalte, statt als dritte Karte unten rechts zu hängen. */}
+          <ProfileProCard subscription={proSubscription} unavailable={proUnavailable} />
           <div className={s.membership}><strong>Mitglied seit</strong><p>{formatDate(profile.created_at)}</p></div>
         </aside>
         <div className={s.detailsColumn}>
@@ -235,8 +237,6 @@ export default function ProfilePage({
             Deine E-Mail-Adresse gehört zu deiner Anmeldung und kann hier nicht geändert werden.
           </p>
         </aside>
-
-        <ProfileProCard subscription={proSubscription} unavailable={proUnavailable} />
         </div>
       </div>
     </div>
