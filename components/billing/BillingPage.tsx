@@ -29,6 +29,12 @@ type ActionState =
 
 const LOGIN_PATH = "/login?next=%2Fbilling";
 
+const BENEFITS = [
+  "Unbegrenzte Nutzung des KI-Assistenten",
+  "Unbegrenzt viele Karteikarten",
+  "Unbegrenzt Vorlesungsfolien hochladen",
+];
+
 export default function BillingPage({
   initialSubscription,
   initialError,
@@ -101,54 +107,73 @@ export default function BillingPage({
   const { subscription } = loadState;
   const view = describeBilling(subscription);
   const busy = actionState.status === "redirecting";
+  const pro = hasProAccess(subscription);
 
   return (
     <div className={s.page}>
       <PageHeading title="UniVerse Pro" description="Dein Abo und deine Zahlungsdaten." />
 
-      <div className={s.grid}>
-        <div className={s.column}>
-          <section className={s.card} aria-labelledby="billing-status-heading">
-            <span className={s.badge} data-tone={view.tone}>{hasProAccess(subscription) ? "Pro" : "Kein Pro"}</span>
-            <h2 id="billing-status-heading">{view.title}</h2>
-            <p>{view.detail}</p>
-
-            {view.canSubscribe && <p className={s.offerLine}>UniVerse Pro · {PRO_PRICE_LABEL}</p>}
-
-            <div className={s.actions}>
-              {view.canSubscribe && (
-                <button type="button" className={s.primary} onClick={() => void open("checkout")} disabled={busy}>
-                  {actionState.status === "redirecting" && actionState.action === "checkout" ? "Weiterleitung zu Stripe …" : "UniVerse Pro abonnieren"}
-                </button>
-              )}
-              {view.canManage && (
-                <button type="button" className={s.secondary} onClick={() => void open("portal")} disabled={busy}>
-                  {actionState.status === "redirecting" && actionState.action === "portal" ? "Weiterleitung zu Stripe …" : view.manageLabel}
-                </button>
-              )}
-              <button type="button" className={s.secondary} onClick={() => void reload()} disabled={busy}>Status aktualisieren</button>
-            </div>
-
-            <div
-              className={actionState.status === "error" ? s.errorMessage : s.statusMessage}
-              role={actionState.status === "error" ? "alert" : "status"}
-              aria-live="polite"
-            >
-              {actionState.status === "error" && actionState.message}
-              {actionState.status === "redirecting" && "Du wirst zur sicheren Seite von Stripe weitergeleitet."}
-            </div>
-          </section>
+      {/* Eine Tarifkarte statt zwei nebeneinander, die denselben Preis wiederholt haben:
+          getönter Kopf (Tarif + Preis), Rumpf (Leistungen), Fuß (Aktion). Der Blick geht
+          so von Preis über Nutzen zum Button. Die Logik darüber ist unverändert. */}
+      <section className={s.plan} data-active={pro || undefined} aria-labelledby="billing-status-heading">
+        <div className={s.planHead}>
+          <div>
+            <h2 id="billing-status-heading" className={s.planName}>{pro ? "UniVerse Pro" : "Kostenlos"}</h2>
+            <span className={s.badge} data-tone={view.tone}>{view.title}</span>
+          </div>
+          {/* PRO_PRICE_LABEL bleibt die einzige Quelle für den Preis. */}
+          {pro ? (
+            <p className={s.period}>{view.detail}</p>
+          ) : (
+            <p className={s.price}>{PRO_PRICE_LABEL}</p>
+          )}
         </div>
 
-        <aside className={s.card} aria-labelledby="billing-info-heading">
-          <h2 id="billing-info-heading">UniVerse Pro</h2>
-          <p className={s.price}>{PRO_PRICE_LABEL}</p>
-          <p>Monatlich abgerechnet über Stripe. Zahlungsdetails siehst du dort noch einmal, bevor du bestätigst.</p>
+        <ul className={s.benefits}>
+          {BENEFITS.map((benefit) => (
+            <li key={benefit}>
+              <span className={s.check} aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="m5 13 4 4L19 7" /></svg>
+              </span>
+              {benefit}
+            </li>
+          ))}
+        </ul>
+
+        <div className={s.planFoot}>
+          {pro && <p className={s.detail}>{view.detail}</p>}
+
+          <div className={s.actions}>
+            {view.canSubscribe && (
+              <button type="button" className={s.primary} onClick={() => void open("checkout")} disabled={busy}>
+                {actionState.status === "redirecting" && actionState.action === "checkout" ? "Weiterleitung zu Stripe …" : "Pro freischalten"}
+              </button>
+            )}
+            {view.canManage && (
+              <button type="button" className={s.secondary} onClick={() => void open("portal")} disabled={busy}>
+                {actionState.status === "redirecting" && actionState.action === "portal" ? "Weiterleitung zu Stripe …" : view.manageLabel}
+              </button>
+            )}
+            <button type="button" className={s.secondary} onClick={() => void reload()} disabled={busy}>Status aktualisieren</button>
+          </div>
+
           <p className={s.note}>
-            Kündigen kannst du jederzeit im Abo-Bereich. Dein Abo läuft dann bis zum Ende des bezahlten Zeitraums weiter.
+            {pro
+              ? "Kündigen jederzeit bei Stripe. Dein Abo läuft bis zum Ende des bezahlten Zeitraums."
+              : "Monatlich kündbar · Bezahlung über Stripe, Kartendaten erreichen UniVerse nie"}
           </p>
-        </aside>
-      </div>
+
+          <div
+            className={actionState.status === "error" ? s.errorMessage : s.statusMessage}
+            role={actionState.status === "error" ? "alert" : "status"}
+            aria-live="polite"
+          >
+            {actionState.status === "error" && actionState.message}
+            {actionState.status === "redirecting" && "Du wirst zur sicheren Seite von Stripe weitergeleitet."}
+          </div>
+        </div>
+      </section>
     </div>
   );
 }
