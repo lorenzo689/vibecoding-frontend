@@ -10,6 +10,7 @@ import {
   type CourseFile,
 } from "@/lib/supabase/queries/files";
 import {
+  deleteOrphanedDocument,
   indexDocumentStatusesByFile,
   listCourseDocumentStatuses,
   type CourseDocumentStatus,
@@ -100,6 +101,7 @@ export default function CourseDocuments({ courseId }: { courseId: string }) {
   const [documentStatuses, setDocumentStatuses] = useState<CourseDocumentStatus[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [removingOrphan, setRemovingOrphan] = useState<string | null>(null);
   const [removingId, setRemovingId] = useState<string | null>(null);
 
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -150,6 +152,16 @@ export default function CourseDocuments({ courseId }: { courseId: string }) {
 
   const hasUnfinishedDocuments = fileProgress.some((entry) => entry.progress.inProgress);
 
+  // Lerneinheiten, deren Datei gelöscht wurde: das Backend setzt dabei nur `file_id` auf
+  // null, die Einheit bleibt Quelle des Kurses und wird nie fertig. Sie blockiert damit
+  // jede Kurszusammenfassung, taucht aber in der Dateiliste oben nicht mehr auf.
+  // Kriterium ist ausdrücklich `fileId === null`, nicht "Datei nicht in der Liste" —
+  // die Dateiliste ist auf 50 Einträge begrenzt.
+  const orphanedDocuments = useMemo(
+    () => documentStatuses.filter((status) => status.fileId === null),
+    [documentStatuses]
+  );
+
   const refreshStatuses = useCallback(async () => {
     const [nextFiles, nextStatuses] = await Promise.all([listCourseFiles(courseId), listCourseDocumentStatuses(courseId)]);
     return { nextFiles, nextStatuses };
@@ -161,6 +173,19 @@ export default function CourseDocuments({ courseId }: { courseId: string }) {
     const { nextFiles, nextStatuses } = await refreshStatuses();
     setFiles(nextFiles);
     setDocumentStatuses(nextStatuses);
+  }
+
+  async function handleRemoveOrphan(materialId: string) {
+    setRemovingOrphan(materialId);
+    setActionError(null);
+    try {
+      await deleteOrphanedDocument(materialId);
+      setDocumentStatuses((current) => current.filter((status) => status.materialId !== materialId));
+    } catch {
+      setActionError("Der Eintrag konnte nicht entfernt werden. Bitte versuche es erneut.");
+    } finally {
+      setRemovingOrphan(null);
+    }
   }
 
   useEffect(() => {
@@ -311,6 +336,31 @@ export default function CourseDocuments({ courseId }: { courseId: string }) {
         </button>
       </header>
       {actionError && <p className={styles.errorHint} role="alert">{actionError}</p>}
+
+      {orphanedDocuments.length > 0 && (
+        <section className={styles.orphanBox} aria-labelledby="orphan-heading">
+          <h2 id="orphan-heading">Übrig gebliebene Einträge</h2>
+          <p>
+            Zu diesen Lerneinheiten gibt es keine Datei mehr. Sie zählen trotzdem als Quelle des
+            Kurses und verhindern, dass eine Kurszusammenfassung erstellt werden kann.
+          </p>
+          <ul>
+            {orphanedDocuments.map((status) => (
+              <li key={status.materialId}>
+                <span>{status.title}</span>
+                <button
+                  type="button"
+                  className={styles.textButton}
+                  onClick={() => void handleRemoveOrphan(status.materialId)}
+                  disabled={removingOrphan === status.materialId}
+                >
+                  {removingOrphan === status.materialId ? "Wird entfernt …" : "Entfernen"}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {files.length === 0 ? (
         <div className={styles.empty}>

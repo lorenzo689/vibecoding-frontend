@@ -119,6 +119,8 @@ export default function CourseDocumentDetail({ courseId, fileId }: { courseId: s
   // The AI tabs are scoped to this document's material. Without it they must not
   // fall back to the whole course, so they stay unavailable until it is indexed.
   const materialId = canView && file ? (statusByFile.get(file.id)?.materialId ?? null) : null;
+  // `source_documents.id`: Ziel der Dokumentzusammenfassung, nicht die Material- oder Datei-ID.
+  const documentId = canView && file ? (statusByFile.get(file.id)?.documentId ?? null) : null;
   const inlineViewable = file ? INLINE_VIEWABLE_TYPES.has(file.type) : false;
 
   useEffect(() => {
@@ -268,15 +270,15 @@ export default function CourseDocumentDetail({ courseId, fileId }: { courseId: s
         </section>
       )}
 
-      {tab === "actions" && materialId && (
+      {tab === "actions" && materialId && documentId && (
         <section className={styles.viewerCard}>
-          <DocumentAiActions courseId={courseId} courseTitle={course.title} fileName={file.name} materialId={materialId} />
+          <DocumentAiActions courseId={courseId} documentId={documentId} materialId={materialId} />
         </section>
       )}
 
       {tab === "flashcards" && (
         <section className={styles.viewerCard}>
-          <DocumentFlashcards courseId={courseId} materialId={materialId} fileName={file.name} />
+          <DocumentFlashcards courseId={courseId} documentId={documentId} />
         </section>
       )}
 

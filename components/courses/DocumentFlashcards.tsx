@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { deleteDeck, getDeck, listCourseDecks, type Flashcard, type FlashcardDeck, type FlashcardDeckSummary } from "@/lib/supabase/queries/flashcards";
 import { getDeckProgress, markCardReviewed, toggleCardStarred } from "@/lib/flashcardProgress";
-import DocumentFlashcardGenerator from "./DocumentFlashcardGenerator";
+import GenerateDeckDialog from "@/components/flashcards/GenerateDeckDialog";
 import styles from "@/components/documents/documents.module.css";
 
 function CardIcon() {
@@ -14,7 +14,7 @@ function CardIcon() {
   );
 }
 
-const GENERATION_UNAVAILABLE = "Neue Karteikarten kann die KI erst erstellen, wenn dieses Dokument fertig indexiert ist.";
+const GENERATION_UNAVAILABLE = "Neue Karteikarten lassen sich erst erzeugen, wenn dieses Dokument fertig verarbeitet ist.";
 
 function formatShortDate(iso: string): string {
   return new Intl.DateTimeFormat("de-DE", { day: "2-digit", month: "short", year: "numeric" }).format(new Date(iso)).toUpperCase();
@@ -86,14 +86,23 @@ function DeckStudy({ deck, onBack }: { deck: FlashcardDeck; onBack: () => void }
   );
 }
 
-// Existing decks are course content and always stay visible. Only generating new cards
-// needs the open document's material for its AI scope; without it (document not indexed
-// yet) generation is unavailable rather than falling back to the whole course.
-export default function DocumentFlashcards({ courseId, materialId, fileName }: { courseId: string; materialId: string | null; fileName: string }) {
+// Vorhandene Decks sind Kursinhalt und bleiben immer sichtbar. Nur das Erzeugen neuer
+// Karten braucht das Quelldokument: die Function `flashcards` nimmt ausschließlich fertig
+// verarbeitete `source_documents`. Fehlt die ID, ist das Erzeugen nicht verfügbar, statt
+// auf den ganzen Kurs auszuweichen.
+export default function DocumentFlashcards({
+  courseId,
+  documentId,
+}: {
+  courseId: string;
+  /** `source_documents.id`; `null`, solange das Dokument nicht verarbeitet ist. */
+  documentId: string | null;
+}) {
   const [decks, setDecks] = useState<FlashcardDeckSummary[] | undefined>(undefined);
   const [openDeck, setOpenDeck] = useState<FlashcardDeck | null>(null);
   const [openError, setOpenError] = useState<string | null>(null);
   const [removingId, setRemovingId] = useState<string | null>(null);
+  const [generateOpen, setGenerateOpen] = useState(false);
 
   function refreshDecks() {
     listCourseDecks(courseId).then(setDecks).catch(() => setDecks([]));
@@ -135,15 +144,29 @@ export default function DocumentFlashcards({ courseId, materialId, fileName }: {
   }
 
   if (decks.length === 0) {
-    if (!materialId) {
-      return (
-        <div className={styles.panelEmpty}>
-          <h3>Karteikarten erstellen</h3>
+    return (
+      <div className={styles.panelEmpty}>
+        <h3>Karteikarten erstellen</h3>
+        {documentId ? (
+          <>
+            <p>Lass aus dieser Unterlage Karteikarten erzeugen. Du prüfst jede Karte, bevor sie gespeichert wird.</p>
+            <button type="button" className={styles.uploadButton} onClick={() => setGenerateOpen(true)}>
+              Karteikarten erzeugen
+            </button>
+          </>
+        ) : (
           <p>{GENERATION_UNAVAILABLE}</p>
-        </div>
-      );
-    }
-    return <DocumentFlashcardGenerator courseId={courseId} materialId={materialId} fileName={fileName} onSaved={refreshDecks} />;
+        )}
+        {generateOpen && documentId && (
+          <GenerateDeckDialog
+            courseId={courseId}
+            preselectDocumentId={documentId}
+            onClose={() => setGenerateOpen(false)}
+            onSaved={() => { setGenerateOpen(false); refreshDecks(); }}
+          />
+        )}
+      </div>
+    );
   }
 
   return (
@@ -153,8 +176,12 @@ export default function DocumentFlashcards({ courseId, materialId, fileName }: {
           <h2>Deine Karteikarten-Sets</h2>
           <p>{decks.length} {decks.length === 1 ? "Set verfügbar" : "Sets verfügbar"}</p>
         </div>
-        {materialId
-          ? <DocumentFlashcardGenerator courseId={courseId} materialId={materialId} fileName={fileName} onSaved={refreshDecks} compact />
+        {documentId
+          ? (
+            <button type="button" className={styles.uploadButton} onClick={() => setGenerateOpen(true)}>
+              Karteikarten erzeugen
+            </button>
+          )
           : <div><p>{GENERATION_UNAVAILABLE}</p></div>}
       </div>
       {openError && <p className={styles.errorHint} role="alert">{openError}</p>}
@@ -176,6 +203,15 @@ export default function DocumentFlashcards({ courseId, materialId, fileName }: {
           </li>
         ))}
       </ul>
+
+      {generateOpen && documentId && (
+        <GenerateDeckDialog
+          courseId={courseId}
+          preselectDocumentId={documentId}
+          onClose={() => setGenerateOpen(false)}
+          onSaved={() => { setGenerateOpen(false); refreshDecks(); }}
+        />
+      )}
     </div>
   );
 }

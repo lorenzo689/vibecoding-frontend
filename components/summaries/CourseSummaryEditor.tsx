@@ -9,6 +9,7 @@ import {
   getCourseSummary,
   saveCourseSummary,
 } from "@/lib/supabase/queries/summaries";
+import GeneratedSummaryPanel from "./GeneratedSummaryPanel";
 import s from "./summaries.module.css";
 
 function formatDate(value: string) {
@@ -107,12 +108,16 @@ export default function CourseSummaryEditor({ courseId }: { courseId: string }) 
         </div>
       </header>
 
+      <div className={s.stack}>
+      <GeneratedSummaryPanel courseId={courseId} />
+
       {loading ? (
         <p className={s.status} aria-live="polite">Zusammenfassung wird geladen …</p>
       ) : error && !updatedAt && !editing ? (
         <div className={s.empty} role="alert"><h2>Nicht verfügbar</h2><p>{error} Bitte lade die Seite erneut.</p></div>
       ) : (
         <div className={s.card}>
+          <h2 className={s.panelTitle}>Deine eigene Zusammenfassung</h2>
           <div className={s.meta}>
             <span className={s.metaInfo}>
               {updatedAt ? (
@@ -169,6 +174,7 @@ export default function CourseSummaryEditor({ courseId }: { courseId: string }) 
           )}
         </div>
       )}
+      </div>
     </div>
   );
 }

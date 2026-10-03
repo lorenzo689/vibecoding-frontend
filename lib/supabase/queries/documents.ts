@@ -14,12 +14,15 @@ import type {
 export type CourseDocumentStatus = DocumentPipelineState & {
   documentId: string;
   materialId: string;
+  /** Titel des Materials — zur Anzeige, welche Unterlage eine Generierung blockiert. */
+  title: string;
   fileId: string | null;
   updatedAt: string;
 };
 
 type MaterialWithSourceRow = {
   id: string;
+  title: string;
   file_id: string | null;
   source_documents: {
     id: string;
@@ -31,13 +34,28 @@ type MaterialWithSourceRow = {
   } | null;
 };
 
+/**
+ * Entfernt eine Lerneinheit, deren Datei nicht mehr existiert.
+ *
+ * Das Löschen einer Datei setzt `materials.file_id` im Backend nur auf `null`; die
+ * Lerneinheit und ihr `source_document` bleiben bestehen und zählen weiter als Quelle
+ * des Kurses — eine nie fertige Quelle blockiert dann jede Kurszusammenfassung. Die
+ * RLS-Policy `materials_delete_owned` erlaubt das Löschen eigener Materialien
+ * ausdrücklich, solange `file_id is null` ist; genau diesen Fall räumt das hier auf.
+ * Die abhängigen Zeilen verschwinden per Fremdschlüssel-Kaskade.
+ */
+export async function deleteOrphanedDocument(materialId: string): Promise<void> {
+  const { error } = await createClient().from("materials").delete().eq("id", materialId);
+  if (error) throw error;
+}
+
 export async function listCourseDocumentStatuses(
   courseId: string
 ): Promise<CourseDocumentStatus[]> {
   const { data, error } = await createClient()
     .from("materials")
     .select(
-      "id, file_id, source_documents!source_documents_material_id_fkey(id, processing_status, error_code, indexing_status, indexing_error, updated_at)"
+      "id, title, file_id, source_documents!source_documents_material_id_fkey(id, processing_status, error_code, indexing_status, indexing_error, updated_at)"
     )
     .eq("course_id", courseId)
     .eq("type", "source_document")
@@ -51,6 +69,7 @@ export async function listCourseDocumentStatuses(
     .map((row) => ({
       documentId: row.source_documents!.id,
       materialId: row.id,
+      title: row.title,
       fileId: row.file_id,
       processingStatus: row.source_documents!.processing_status as ProcessingStatus,
       errorCode: row.source_documents!.error_code,

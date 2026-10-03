@@ -10,6 +10,7 @@ import {
 } from "@/lib/supabase/queries/flashcards";
 import { getDeckProgress } from "@/lib/flashcardProgress";
 import CreateDeckDialog from "./CreateDeckDialog";
+import GenerateDeckDialog from "./GenerateDeckDialog";
 import styles from "@/components/documents/documents.module.css";
 
 function DeckIcon() {
@@ -29,6 +30,7 @@ export default function CourseFlashcardDecks({ courseId }: { courseId: string })
   const [decks, setDecks] = useState<FlashcardDeckSummary[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [generateOpen, setGenerateOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [removingId, setRemovingId] = useState<string | null>(null);
 
@@ -40,6 +42,14 @@ export default function CourseFlashcardDecks({ courseId }: { courseId: string })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, [courseId]);
+
+  async function reloadDecks() {
+    try {
+      setDecks(await listCourseDecks(courseId));
+    } catch {
+      setError("Die Decks konnten nicht neu geladen werden. Lade die Seite neu.");
+    }
+  }
 
   async function handleCreate(title: string) {
     const deck = await createDeck(courseId, title);
@@ -72,9 +82,14 @@ export default function CourseFlashcardDecks({ courseId }: { courseId: string })
           <h1>Karteikarten</h1>
           <p className={styles.subhead}>Alle Decks in diesem Kurs, aus deinem Vorlesungsmaterial.</p>
         </div>
-        <button type="button" className={styles.uploadButton} onClick={() => setDialogOpen(true)}>
-          <span aria-hidden="true">+</span> Neues Deck
-        </button>
+        <div className={styles.headerActions}>
+          <button type="button" className={styles.secondaryAction} onClick={() => setGenerateOpen(true)}>
+            Aus Unterlagen erzeugen
+          </button>
+          <button type="button" className={styles.uploadButton} onClick={() => setDialogOpen(true)}>
+            <span aria-hidden="true">+</span> Neues Deck
+          </button>
+        </div>
       </header>
 
       {error && <p className={styles.errorHint} role="alert">{error}</p>}
@@ -144,6 +159,19 @@ export default function CourseFlashcardDecks({ courseId }: { courseId: string })
 
       {dialogOpen && (
         <CreateDeckDialog onClose={() => setDialogOpen(false)} onCreate={handleCreate} />
+      )}
+
+      {generateOpen && (
+        <GenerateDeckDialog
+          courseId={courseId}
+          onClose={() => setGenerateOpen(false)}
+          onSaved={() => {
+            setGenerateOpen(false);
+            // Das Deck entsteht serverseitig in einer Transaktion; die Liste wird neu geladen,
+            // statt eine Zeile zu erfinden, die vom gespeicherten Stand abweichen könnte.
+            void reloadDecks();
+          }}
+        />
       )}
     </div>
   );

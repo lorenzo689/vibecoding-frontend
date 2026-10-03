@@ -73,23 +73,9 @@ function single(lines: LabelledLine[], kind: string, option: string | null = nul
   return found.length === 1 && found[0].text ? found[0].text : null;
 }
 
-export type ParsedFlashcard = { question: string; answer: string };
-export type FlashcardParseResult =
-  | { ok: true; cards: ParsedFlashcard[]; discarded: number }
-  | { ok: false };
-
-/** Expected: `F<n>: question` and `A<n>: answer`, one line each. A card needs both non-empty. */
-export function parseFlashcards(raw: string): FlashcardParseResult {
-  const cards: ParsedFlashcard[] = [];
-  let discarded = 0;
-  for (const lines of groupByNumber(labelledLines(raw).filter((line) => line.option === null && (line.kind === "F" || line.kind === "A"))).values()) {
-    const question = single(lines, "F");
-    const answer = single(lines, "A");
-    if (question && answer) cards.push({ question, answer });
-    else discarded += 1;
-  }
-  return cards.length > 0 ? { ok: true, cards, discarded } : { ok: false };
-}
+// Für Karteikarten gab es hier einen Parser, der Chatantworten in Karten zerlegt hat.
+// Seit dem Backend-Endpunkt `flashcards` liefert das Backend geprüfte Karten mit
+// Quellenangaben, siehe lib/flashcardGeneration.ts; der Parser ist entfallen.
 
 export type ParsedQuizQuestion = { question: string; options: [string, string, string, string]; correctIndex: number; explanation: string };
 export type QuizParseResult =
