@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -12,25 +12,16 @@ import {
   type FlashcardDeck,
 } from "@/lib/supabase/queries/flashcards";
 import {
+  blankProgress,
+  cardStatusLabel,
   listCardProgress,
+  listDeckProgressCounts,
+  markCardSeen,
   recordFlashcardReview,
   setCardStarred,
   type CardProgress,
 } from "@/lib/supabase/queries/flashcardReview";
 import styles from "@/components/documents/documents.module.css";
-
-/** Ein noch nie beantwortetes, nicht markiertes Kartenblatt. */
-function blankProgress(cardId: string): CardProgress {
-  return {
-    cardId,
-    known: null,
-    starred: false,
-    intervalDays: 0,
-    repetitionCount: 0,
-    reviewedAt: null,
-    dueAt: null,
-  };
-}
 
 export default function FlashcardDeckDetail({
   courseId,
@@ -58,6 +49,14 @@ export default function FlashcardDeckDetail({
   // Serverseitiger Lernfortschritt je Karte. Früher lag er nur in der Browser-Sitzung
   // und war nach dem Schließen des Tabs weg; jetzt gehört er zum Konto.
   const [progress, setProgress] = useState<Map<string, CardProgress>>(new Map());
+  // Fällige Wiederholungen zählt der Server; `null`, solange die Zahl nicht geladen ist.
+  const [due, setDue] = useState<number | null>(null);
+
+  const refreshDue = useCallback(() => {
+    listDeckProgressCounts([materialId])
+      .then((counts) => setDue(counts.get(materialId)?.due ?? 0))
+      .catch(() => { /* Ohne Zählerstand bleibt das Deck lernbar. */ });
+  }, [materialId]);
 
   useEffect(() => {
     let active = true;
@@ -67,12 +66,14 @@ export default function FlashcardDeckDetail({
         setDeck(nextDeck);
         if (!nextDeck || nextDeck.cards.length === 0) return;
         const loaded = await listCardProgress(nextDeck.cards.map((entry) => entry.id));
-        if (active) setProgress(loaded);
+        if (!active) return;
+        setProgress(loaded);
+        refreshDue();
       })
       .catch(() => { if (active) setLoadError("Das Deck konnte nicht geladen werden."); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, [materialId]);
+  }, [materialId, refreshDue]);
 
   const card = deck?.cards[index];
 
@@ -92,6 +93,22 @@ export default function FlashcardDeckDetail({
     } catch {
       setError("Der Kartensatz konnte nicht umbenannt werden.");
     }
+  }
+
+  // Aufdecken zählt als „gesehen“ und wird wie der übrige Fortschritt am Konto gespeichert.
+  function toggleReveal() {
+    setRevealed((current) => !current);
+    if (!card || revealed || progress.has(card.id)) return;
+    const cardId = card.id;
+    setProgress((map) => new Map(map).set(cardId, blankProgress(cardId)));
+    void markCardSeen(cardId).catch(() => {
+      setProgress((map) => {
+        if (map.get(cardId)?.reviewedAt) return map;
+        const next = new Map(map);
+        next.delete(cardId);
+        return next;
+      });
+    });
   }
 
   function toggleStar() {
@@ -114,6 +131,7 @@ export default function FlashcardDeckDetail({
     void recordFlashcardReview(cardId, known, crypto.randomUUID())
       .then((saved) => {
         if (saved) setProgress((map) => new Map(map).set(cardId, saved));
+        refreshDue();
       })
       .catch(() => setError("Die Antwort konnte nicht gespeichert werden."));
     if (!last) go(1);
@@ -176,11 +194,12 @@ export default function FlashcardDeckDetail({
   }
 
   const cardState = (card ? progress.get(card.id) : undefined) ?? blankProgress(card?.id ?? "");
-  // Nur zeitunabhängige Zahlen: „beantwortet“ und „gewusst“ stehen direkt im geladenen
-  // Fortschritt. Die Zahl fälliger Wiederholungen hinge von der aktuellen Uhrzeit ab und
-  // wäre im Render unrein; sie steht serverseitig berechnet in der Deck-Übersicht.
+  const status = cardStatusLabel(card ? progress.get(card.id) : undefined);
+  // „Gesehen“, „beantwortet“ und „gewusst“ stehen direkt im geladenen Fortschritt. Die Zahl
+  // fälliger Wiederholungen hängt von der Uhrzeit ab und kommt deshalb vom Server (`due`).
   const tracked = deck.cards.map((entry) => progress.get(entry.id)).filter((entry) => entry !== undefined);
   const counts = {
+    seen: tracked.length,
     reviewed: tracked.filter((entry) => entry.known !== null).length,
     known: tracked.filter((entry) => entry.known === true).length,
   };
@@ -221,15 +240,13 @@ export default function FlashcardDeckDetail({
             <div
               className={styles.studyCard}
               data-revealed={revealed}
-              onClick={() => setRevealed((current) => !current)}
+              onClick={toggleReveal}
               role="button"
               tabIndex={0}
-              onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setRevealed((current) => !current); } }}
+              onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); toggleReveal(); } }}
             >
               <div className={styles.studyBadgeRow}>
-                <span className={styles.studyStatusTag} data-tone={cardState.known === true ? "known" : undefined}>
-                  {cardState.known === true ? "Gewusst" : cardState.known === false ? "Nochmal" : "Neu"}
-                </span>
+                <span className={styles.studyStatusTag} data-tone={status === "Gewusst" ? "known" : undefined}>{status}</span>
                 <button type="button" className={styles.studyStarButton} data-active={cardState.starred}
                   aria-label={cardState.starred ? "Aus Favoriten entfernen" : "Als Favorit markieren"}
                   onClick={(event) => { event.stopPropagation(); toggleStar(); }}>
@@ -259,7 +276,10 @@ export default function FlashcardDeckDetail({
                 <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m9 5 7 7-7 7" /></svg>
               </button>
             </div>
-            <p className={styles.uploadHint}>{counts.known} von {counts.reviewed} beantworteten Karten gewusst.</p>
+            <p className={styles.uploadHint}>
+              {counts.seen} von {deck.cards.length} Karten gesehen · {counts.known} von {counts.reviewed} beantworteten Karten gewusst.
+              {due !== null && due > 0 && <> <span className={styles.deckCardDue}>{due} fällig</span></>}
+            </p>
 
             <div className={styles.manageSection}>
               <button type="button" className={styles.manageToggle} data-open={manageOpen} onClick={() => setManageOpen((current) => !current)}>

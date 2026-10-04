@@ -256,6 +256,12 @@
 .studyQuestion { max-width: 46ch; font-size: 19px; font-weight: 650; line-height: 1.55; letter-spacing: -.01em; overflow-wrap: anywhere; }
 .studyHint { display: inline-flex; align-items: center; gap: var(--space-2); color: var(--doc-muted); font-size: 12px; font-weight: 600; }
 .studyHint svg { width: 14px; height: 14px; }
+.studyRateRow { display: flex; gap: var(--space-3); }
+.studyRateRow button { flex: 1; min-height: 42px; border: 0; border-radius: 999px; font-size: 13px; font-weight: 650; cursor: pointer; transition: background var(--motion); }
+.studyRateAgain { color: var(--doc-ink); background: var(--app-surface-soft); }
+.studyRateAgain:hover { background: var(--app-neutral-line); }
+.studyRateKnown { color: var(--doc-accent-b); background: var(--app-teal-soft); }
+.studyError { margin: 0; color: var(--app-fg-amber); font-size: 12.5px; }
 .studyNav { display: flex; align-items: center; gap: var(--space-5); }
 .studyNav span { min-width: 4ch; color: var(--doc-muted); font: 600 12.5px/1 var(--font-geist-mono), monospace; text-align: center; }
 .studyNav button { display: inline-flex; align-items: center; gap: var(--space-2); min-height: 42px; padding-inline: var(--space-5); color: var(--doc-ink); background: var(--app-surface-soft); border: 0; border-radius: 999px; font-size: 13px; font-weight: 650; cursor: pointer; transition: background var(--motion); }
