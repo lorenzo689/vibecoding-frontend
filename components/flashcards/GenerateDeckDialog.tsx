@@ -27,6 +27,8 @@ import {
   type GeneratedCard,
   type SelectableDocument,
 } from "@/lib/flashcardGeneration";
+import { applyFlashcardDraft } from "@/lib/supabase/queries/learning-drafts";
+import { useFlashcardDraft } from "./useFlashcardDraft";
 import styles from "@/components/documents/documents.module.css";
 
 type Step =
@@ -387,6 +389,17 @@ function ReviewStep({ job, onSaved, onClose }: { job: FlashcardJob; onSaved: () 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Bearbeitungen laufend als Entwurf sichern, damit ein geschlossener Tab sie nicht verwirft.
+  const draft = useFlashcardDraft(
+    job.id,
+    job.sources,
+    { jobId: job.id, title, cards: cards.map(({ id, question, answer, keep }) => ({ id, question, answer, keep })) },
+    (stored) => {
+      setTitle(stored.title);
+      setCards((current) => applyFlashcardDraft(current, stored));
+    }
+  );
+
   const kept = cards.filter((card) => card.keep);
   const check = validateDeckSave(title, kept);
 
@@ -399,7 +412,10 @@ function ReviewStep({ job, onSaved, onClose }: { job: FlashcardJob; onSaved: () 
     if (!check.ok) { setError(check.message); return; }
     setSaving(true);
     void saveGeneratedDeck(createClient(), job.id, title, kept)
-      .then(() => onSaved())
+      .then(async () => {
+        await draft.discard();
+        onSaved();
+      })
       .catch((caught: unknown) => {
         setError(flashcardErrorMessage(caught));
         setSaving(false);
@@ -457,6 +473,14 @@ function ReviewStep({ job, onSaved, onClose }: { job: FlashcardJob; onSaved: () 
         ))}
       </ul>
 
+      {draft.status === "saved" && <p className={styles.draftNote} role="status">Deine Änderungen sind als Entwurf gesichert.</p>}
+      {draft.status === "conflict" && (
+        <div className={styles.draftConflict} role="alert">
+          <p>Diese Karten wurden inzwischen in einem anderen Tab weiterbearbeitet. Welcher Stand soll gelten?</p>
+          <button type="button" className={styles.viewerLink} onClick={() => void draft.loadOther()}>Stand aus dem anderen Tab laden</button>
+          <button type="button" className={styles.viewerLink} onClick={() => void draft.keepMine()}>Meinen Stand behalten</button>
+        </div>
+      )}
       {error && <p className={styles.errorHint} role="alert">{error}</p>}
 
       <div className={styles.dialogActions}>

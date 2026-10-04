@@ -77,6 +77,8 @@
 .field { display: grid; gap: var(--space-2); margin-top: var(--space-6); }
 .field label { font-size: 12px; font-weight: 650; letter-spacing: .04em; text-transform: uppercase; color: var(--doc-muted); }
 .field input { width: 100%; color: var(--doc-ink); background: var(--app-bg); border: 1.5px solid var(--doc-line); border-radius: 12px; padding: var(--space-3) var(--space-4); transition: border-color var(--motion), box-shadow var(--motion); }
+.field textarea { width: 100%; color: var(--doc-ink); background: var(--app-bg); border: 1.5px solid var(--doc-line); border-radius: 12px; padding: var(--space-3) var(--space-4); font: inherit; resize: vertical; }
+.field textarea:focus-visible { outline: none; background: var(--app-surface); border-color: var(--doc-accent-b); }
 .field input:focus-visible { outline: none; background: var(--app-surface); border-color: var(--doc-accent-b); box-shadow: 0 0 0 4px rgba(14, 136, 80, 0.14); }
 
 .dropzone { display: flex; flex-direction: column; align-items: center; gap: var(--space-2); margin-top: var(--space-2); padding: var(--space-8) var(--space-5); background: var(--app-bg); border: 1.5px dashed var(--doc-line); border-radius: 16px; text-align: center; cursor: pointer; transition: border-color var(--motion), background var(--motion); }
@@ -299,6 +301,15 @@
 .cardListIndex { display: grid; flex-shrink: 0; place-items: center; width: 22px; height: 22px; color: var(--doc-muted); background: var(--app-surface); border: 1px solid var(--doc-line); border-radius: 50%; font: 600 10px/1 var(--font-geist-mono), monospace; }
 .cardListRow span { flex: 1; min-width: 0; overflow: hidden; font-size: 13.5px; color: var(--doc-ink); font-weight: 550; text-overflow: ellipsis; white-space: nowrap; }
 .cardListRemove { display: grid; flex-shrink: 0; place-items: center; width: 30px; height: 30px; color: var(--doc-muted); background: none; border: 0; border-radius: 8px; cursor: pointer; transition: color var(--motion), background var(--motion); }
+.cardListEdit { display: grid; flex-shrink: 0; place-items: center; width: 30px; height: 30px; color: var(--doc-muted); background: none; border: 0; border-radius: 8px; cursor: pointer; }
+.cardListEdit svg { width: 15px; height: 15px; }
+.cardListEdit:hover:not(:disabled) { color: var(--doc-ink); background: var(--app-surface); }
+.cardEditForm { padding: var(--space-4); background: var(--app-bg); border-radius: 12px; }
+.cardEditForm .field:first-child { margin-top: 0; }
+.deckDescription { max-width: 70ch; margin-top: var(--space-2); color: var(--doc-muted); font-size: 13.5px; line-height: 1.6; white-space: pre-line; }
+.draftNote { margin-top: var(--space-3); color: var(--doc-muted); font-size: 12px; }
+.draftConflict { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); margin-top: var(--space-3); padding: var(--space-3) var(--space-4); background: var(--app-amber-tint); border-radius: 10px; color: var(--doc-ink); font-size: 12.5px; line-height: 1.5; }
+.draftConflict p { flex: 1 1 240px; margin: 0; }
 .cardListRemove:hover { color: var(--app-danger); background: var(--app-danger-soft); }
 
 @media (max-width: 560px) {

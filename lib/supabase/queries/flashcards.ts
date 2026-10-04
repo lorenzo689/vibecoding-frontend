@@ -10,8 +10,13 @@ export type FlashcardDeck = {
   materialId: string;
   deckId: string;
   title: string;
+  description: string;
   cards: Flashcard[];
 };
+
+// Grenzen aus `update_learning_deck` (Backend-Migration 20261003140000).
+export const DECK_TITLE_MAX = 200;
+export const DECK_DESCRIPTION_MAX = 2000;
 
 export type FlashcardDeckSummary = {
   materialId: string;
@@ -24,6 +29,7 @@ export type FlashcardDeckSummary = {
 type MaterialWithDeckRow = {
   id: string;
   title: string;
+  description?: string | null;
   created_at: string;
   flashcard_decks: {
     id: string;
@@ -54,7 +60,7 @@ export async function listCourseDecks(courseId: string): Promise<FlashcardDeckSu
 export async function getDeck(materialId: string): Promise<FlashcardDeck | null> {
   const { data, error } = await createClient()
     .from("materials")
-    .select("id, title, flashcard_decks!material_id(id, flashcards(id, question, answer))")
+    .select("id, title, description, flashcard_decks!material_id(id, flashcards(id, question, answer))")
     .eq("id", materialId)
     .eq("type", "flashcard_deck")
     .maybeSingle();
@@ -67,6 +73,7 @@ export async function getDeck(materialId: string): Promise<FlashcardDeck | null>
     materialId: row.id,
     deckId: row.flashcard_decks.id,
     title: row.title,
+    description: row.description ?? "",
     cards: row.flashcard_decks.flashcards,
   };
 }
@@ -76,13 +83,17 @@ export async function getDeck(materialId: string): Promise<FlashcardDeck | null>
  *
  * Seit Backend-Migration 20261003140000 übernimmt das der RPC `create_manual_deck`:
  * Material und Deck entstehen in einer Transaktion, statt wie zuvor in zwei Schritten
- * mit manuellem Aufräumen, wenn der zweite scheitert. `requestId` macht den Aufruf
- * wiederholbar — derselbe Wert liefert dasselbe Deck statt eines zweiten.
+ * mit manuellem Aufräumen, wenn der zweite scheitert.
+ *
+ * `requestId` macht den Aufruf wiederholbar: derselbe Wert mit demselben Titel liefert
+ * dasselbe Deck statt eines zweiten. Der Aufrufer muss sie deshalb über Wiederholungen
+ * desselben Versuchs hinweg festhalten (siehe `CreateDeckDialog`) — mit einem anderen
+ * Titel weist das Backend dieselbe ID als REQUEST_CONFLICT ab.
  */
 export async function createDeck(
   courseId: string,
   title: string,
-  requestId: string = crypto.randomUUID()
+  requestId: string
 ): Promise<{ materialId: string; deckId: string; title: string }> {
   const { data, error } = await createClient().rpc("create_manual_deck", {
     p_course: courseId,
@@ -98,15 +109,21 @@ export async function createDeck(
   return { materialId: row.material_id, deckId: row.deck_id, title: title.trim() };
 }
 
-/** Benennt Deck und zugehöriges Material gemeinsam um; gilt auch für generierte Decks. */
+/**
+ * Ändert Titel und Beschreibung von Deck und zugehörigem Material gemeinsam; gilt auch für
+ * generierte Decks.
+ *
+ * Der RPC setzt immer beide Felder. Die Beschreibung ist deshalb Pflicht: wer nur den Titel
+ * ändern will, gibt die bestehende Beschreibung mit, sonst würde sie geleert.
+ */
 export async function updateDeck(
   materialId: string,
-  input: { title: string; description?: string | null }
+  input: { title: string; description: string }
 ): Promise<void> {
   const { error } = await createClient().rpc("update_learning_deck", {
     p_material: materialId,
     p_title: input.title.trim(),
-    p_description: input.description?.trim() ?? "",
+    p_description: input.description.trim(),
   });
   if (error) throw error;
 }
@@ -123,6 +140,22 @@ export async function addFlashcard(
   const { data, error } = await createClient()
     .from("flashcards")
     .insert({ deck_id: deckId, question: input.question, answer: input.answer })
+    .select("id, question, answer")
+    .single();
+
+  if (error) throw error;
+  return data as Flashcard;
+}
+
+/** Ändert Frage und Antwort einer Karte. Der Lernfortschritt der Karte bleibt erhalten. */
+export async function updateFlashcard(
+  id: string,
+  input: { question: string; answer: string }
+): Promise<Flashcard> {
+  const { data, error } = await createClient()
+    .from("flashcards")
+    .update({ question: input.question, answer: input.answer })
+    .eq("id", id)
     .select("id, question, answer")
     .single();
 
