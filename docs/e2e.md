@@ -36,3 +36,16 @@ Anything that needs the AI provider or the full document pipeline is manual fina
 real upload + processing to "Bereit", document chat, summary/flashcards/quiz, chat feedback,
 processing retry, signed-URL preview/download, password recovery by e-mail, and a visual check of the
 browser console for CSP violations. No fake AI responses exist in the app, and none are added for tests.
+
+## Quiz workflow
+
+`e2e/local/quiz.spec.ts` additionally requires `E2E_SUPABASE_SERVICE_ROLE_KEY` for
+local fixture creation. The key is read only by the test runner; never use a
+remote service key. The test creates and removes its own course, prepares an
+indexed document, and exercises generation status, reload, persisted answers,
+resumption, server scoring, result history, two-tab conflicts and quota errors.
+Only the quiz job HTTP transport is simulated in Playwright; quiz storage and
+attempt RPCs use the real local database. Actual generation handlers and worker
+are covered by backend `npm run test:quizzes` with deterministic AI transport.
+No mock behavior is included in application code. Real model quality remains a
+manual content check.

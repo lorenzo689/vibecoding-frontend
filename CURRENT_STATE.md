@@ -153,3 +153,17 @@ There is currently no committed Playwright configuration in this repository.
 Live email delivery, cross-browser confirmation and authenticated persistence
 still require manual or future E2E verification against the selected Supabase
 environment.
+
+## Document quizzes: dedicated generation and resumable attempts
+
+The Tests tab now uses the backend `quizzes` job API, with persistent status,
+retry/cancel and reload recovery. Existing quiz storage and server scoring are
+retained. Explanations and source snapshots appear in results. Answers autosave
+through serialized writes; failed requests retain their payload/revision for
+retry. Open attempts can resume, completed results can reopen, and concurrent-tab
+conflicts require explicitly loading the saved state. Old quizzes remain readable.
+
+Requires backend migration `20261005100000_quiz_generation.sql` and both
+`quizzes` / `quizzes-process` functions before frontend deployment. The feature
+branch uses the synchronized backend feature contract; production deployment is
+not performed by the implementation. Quiz usage is shown alongside other quotas.

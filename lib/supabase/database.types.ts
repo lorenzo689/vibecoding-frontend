@@ -1,5 +1,5 @@
-// Synchronized verbatim from ../backend/types/database.types.ts at backend dev 01cdb0b
-// (branch dev, before the pending dev -> main release merge). Do not edit by hand:
+// Synchronized verbatim from ../backend/types/database.types.ts at backend feat/ai-quiz-generation d408d94
+// (feature integration; backend release required before deployment). Do not edit by hand:
 // regenerate in the backend repo, then copy the file and update this header.
 // Keep this copy local so the standalone frontend CI does not depend on a sibling checkout.
 export type Json =
@@ -2078,6 +2078,110 @@ export type Database = {
         }
         Relationships: []
       }
+      quiz_generation_jobs: {
+        Row: {
+          attempts: number
+          checkpoint: Json | null
+          configuration: Json
+          course_id: string
+          created_at: string
+          error_code: string | null
+          fingerprint: string
+          id: string
+          lease_token: string | null
+          lease_until: string | null
+          owner_id: string
+          paid_calls: number
+          phase: string
+          quiz_id: string | null
+          request_id: string
+          requested_count: number
+          reserved_tokens: number
+          retries: number
+          source_material_id: string
+          sources: Json
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          attempts?: number
+          checkpoint?: Json | null
+          configuration: Json
+          course_id: string
+          created_at?: string
+          error_code?: string | null
+          fingerprint: string
+          id?: string
+          lease_token?: string | null
+          lease_until?: string | null
+          owner_id: string
+          paid_calls?: number
+          phase?: string
+          quiz_id?: string | null
+          request_id: string
+          requested_count: number
+          reserved_tokens?: number
+          retries?: number
+          source_material_id: string
+          sources: Json
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          attempts?: number
+          checkpoint?: Json | null
+          configuration?: Json
+          course_id?: string
+          created_at?: string
+          error_code?: string | null
+          fingerprint?: string
+          id?: string
+          lease_token?: string | null
+          lease_until?: string | null
+          owner_id?: string
+          paid_calls?: number
+          phase?: string
+          quiz_id?: string | null
+          request_id?: string
+          requested_count?: number
+          reserved_tokens?: number
+          retries?: number
+          source_material_id?: string
+          sources?: Json
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quiz_generation_jobs_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quiz_generation_jobs_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quiz_generation_jobs_quiz_id_fkey"
+            columns: ["quiz_id"]
+            isOneToOne: false
+            referencedRelation: "learning_quizzes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quiz_generation_jobs_source_material_id_fkey"
+            columns: ["source_material_id"]
+            isOneToOne: false
+            referencedRelation: "materials"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       source_documents: {
         Row: {
           completed_at: string | null
@@ -2601,6 +2705,7 @@ export type Database = {
         Returns: Json
       }
       claim_flashcard_job: { Args: never; Returns: Json }
+      claim_quiz_job: { Args: never; Returns: Json }
       claim_summary: { Args: never; Returns: Json }
       complete_chat_request: {
         Args: {
@@ -2651,6 +2756,7 @@ export type Database = {
       }
       dispatch_document_work: { Args: never; Returns: undefined }
       dispatch_flashcard_work: { Args: never; Returns: undefined }
+      dispatch_quiz_work: { Args: never; Returns: undefined }
       dispatch_summary_work: { Args: never; Returns: undefined }
       enqueue_summary: {
         Args: {
@@ -2748,6 +2854,10 @@ export type Database = {
         Args: { p_material_ids: string[] }
         Returns: string[]
       }
+      normalize_quiz_questions: {
+        Args: { p_questions: Json; p_source_material: string }
+        Returns: Json
+      }
       prepare_file_upload: {
         Args: {
           p_course_id: string
@@ -2779,6 +2889,15 @@ export type Database = {
         }
       }
       purge_deleted_account_tombstones: { Args: never; Returns: number }
+      quiz_action: {
+        Args: { p_body: Json; p_configuration?: Json; p_owner: string }
+        Returns: Json
+      }
+      quiz_job_view: {
+        Args: { j: Database["public"]["Tables"]["quiz_generation_jobs"]["Row"] }
+        Returns: Json
+      }
+      quiz_source_snapshot: { Args: { p_material: string }; Returns: Json }
       read_material_analysis: {
         Args: { p_analysis_id: string; p_owner_id: string }
         Returns: Json
@@ -2820,6 +2939,10 @@ export type Database = {
         Returns: Json
       }
       reserve_flashcard_call: {
+        Args: { p_job: string; p_lease: string; p_tokens: number }
+        Returns: boolean
+      }
+      reserve_quiz_call: {
         Args: { p_job: string; p_lease: string; p_tokens: number }
         Returns: boolean
       }
@@ -2947,6 +3070,16 @@ export type Database = {
           p_submit?: boolean
         }
         Returns: Json
+      }
+      save_quiz_step: {
+        Args: {
+          p_checkpoint: Json
+          p_error?: string
+          p_job: string
+          p_lease: string
+          p_status: string
+        }
+        Returns: boolean
       }
       save_summary_step: {
         Args: {
