@@ -42,8 +42,13 @@ export function useGradeCourses() {
     fetchCourses();
   }, []);
 
+  /** Übernimmt einen gespeicherten Kurs, z. B. nach dem Ändern der Zielnote. */
+  function replaceCourse(next: Course) {
+    setCourses((current) => current.map((course) => (course.id === next.id ? next : course)));
+  }
+
   const selectedCourse = courses.find((course) => course.id === selectedCourseId) ?? null;
-  return { courses, loading, error, selectedCourseId, selectedCourse, setSelectedCourseId, loadCourses };
+  return { courses, loading, error, selectedCourseId, selectedCourse, setSelectedCourseId, loadCourses, replaceCourse };
 }
 
 // Undated assessments sort last; the query already orders creation-time ties.

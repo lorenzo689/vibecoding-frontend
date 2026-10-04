@@ -9,9 +9,10 @@ function formatGrade(value: number | null) {
 }
 
 /**
- * Semester, Dozent/in und Zielnote eines Kurses (Backend-Migration 20261004090000).
+ * Bearbeitet einen Kurs: Titel und Beschreibung sowie Semester, Dozent/in und Zielnote
+ * (Backend-Migration 20261004090000).
  *
- * Alle drei sind optional. Leere Eingaben werden zu `null` — das Backend weist leere
+ * Der Titel ist Pflicht, die übrigen Angaben sind optional. Leere Eingaben werden zu `null` — das Backend weist leere
  * oder reine Leerzeichen-Werte ab, deshalb wird hier nicht ein leerer String gespeichert.
  */
 export default function CourseFactsEditor({
@@ -22,6 +23,8 @@ export default function CourseFactsEditor({
   onSaved: (next: Course) => void;
 }) {
   const [editing, setEditing] = useState(false);
+  const [title, setTitle] = useState(course.title);
+  const [description, setDescription] = useState(course.description);
   const [semester, setSemester] = useState(course.semester ?? "");
   const [lecturer, setLecturer] = useState(course.lecturer ?? "");
   const [targetGrade, setTargetGrade] = useState(formatGrade(course.targetGrade));
@@ -32,6 +35,10 @@ export default function CourseFactsEditor({
 
   async function handleSave(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!title.trim()) {
+      setError("Der Kurs braucht einen Titel.");
+      return;
+    }
     const parsed = Number.parseFloat(targetGrade.replace(",", "."));
     if (targetGrade.trim() && (!Number.isFinite(parsed) || parsed < 1 || parsed > 5)) {
       setError("Die Zielnote muss zwischen 1,0 und 5,0 liegen.");
@@ -42,6 +49,8 @@ export default function CourseFactsEditor({
     setError(null);
     try {
       const next = await updateCourse(course.id, {
+        title: title.trim(),
+        description: description.trim(),
         semester: semester.trim() || null,
         lecturer: lecturer.trim() || null,
         targetGrade: targetGrade.trim() ? parsed : null,
@@ -62,7 +71,7 @@ export default function CourseFactsEditor({
         {course.lecturer && <span>{course.lecturer}</span>}
         {course.targetGrade !== null && <span>Zielnote {formatGrade(course.targetGrade)}</span>}
         <button type="button" className={styles.factsEdit} onClick={() => setEditing(true)}>
-          {hasFacts ? "Angaben bearbeiten" : "Semester, Dozent/in, Zielnote ergänzen"}
+          {hasFacts ? "Kurs bearbeiten" : "Kurs bearbeiten · Semester, Dozent/in, Zielnote ergänzen"}
         </button>
       </p>
     );
@@ -70,6 +79,14 @@ export default function CourseFactsEditor({
 
   return (
     <form className={styles.factsForm} onSubmit={handleSave}>
+      <label className={styles.factsWide}>
+        <span>Titel</span>
+        <input value={title} onChange={(event) => setTitle(event.target.value)} maxLength={200} required disabled={saving} />
+      </label>
+      <label className={styles.factsWide}>
+        <span>Beschreibung</span>
+        <input value={description} onChange={(event) => setDescription(event.target.value)} maxLength={1000} placeholder="Worum geht es in diesem Kurs?" disabled={saving} />
+      </label>
       <label>
         <span>Semester</span>
         <input value={semester} onChange={(event) => setSemester(event.target.value)} maxLength={100} placeholder="WS 2026/27" disabled={saving} />
