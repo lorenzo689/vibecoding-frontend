@@ -12,6 +12,7 @@ import { validateDisplayName } from "@/lib/auth/validation";
 import type { OwnSubscription } from "@/lib/billing";
 import { createClient } from "@/lib/supabase/browser";
 import AccountDataCard from "./AccountDataCard";
+import EmailChangeForm from "./EmailChangeForm";
 import ProfileProCard from "./ProfileProCard";
 import s from "./profile.module.css";
 
@@ -38,19 +39,24 @@ function formatDate(value: string) {
 }
 
 export default function ProfilePage({
-  email,
+  email: accountEmail,
+  emailChanged = false,
   initialProfile,
   initialError,
   proSubscription,
   proUnavailable,
 }: {
-  email: string;
+  /** `null`, wenn das Konto keine E-Mail-Adresse hat; dann gibt es nichts zu ändern. */
+  email: string | null;
+  /** Der zweite Bestätigungslink einer E-Mail-Änderung hat gerade hierher geführt. */
+  emailChanged?: boolean;
   initialProfile: ProfileRecord | null;
   initialError: string | null;
   proSubscription: OwnSubscription | null;
   proUnavailable: boolean;
 }) {
   const router = useRouter();
+  const email = accountEmail ?? "Keine E-Mail-Adresse verfügbar";
   const [loadState, setLoadState] = useState<LoadState>(
     initialProfile
       ? { status: "ready", profile: initialProfile }
@@ -222,8 +228,10 @@ export default function ProfilePage({
         </section>
 
         <aside className={s.card} aria-labelledby="account-details-heading">
-          <p className={s.sectionLabel}>NUR LESEN</p>
           <h2 id="account-details-heading">Kontoinformationen</h2>
+          {emailChanged && (
+            <p className={s.statusMessage} role="status">Deine E-Mail-Adresse wurde geändert.</p>
+          )}
           <dl className={s.accountDetails}>
             <div>
               <dt>E-Mail-Adresse</dt>
@@ -234,9 +242,11 @@ export default function ProfilePage({
               <dd>{formatDate(profile.created_at)}</dd>
             </div>
           </dl>
-          <p className={s.securityNote}>
-            Deine E-Mail-Adresse gehört zu deiner Anmeldung und kann hier nicht geändert werden.
-          </p>
+          {accountEmail ? (
+            <EmailChangeForm currentEmail={accountEmail} />
+          ) : (
+            <p className={s.securityNote}>Für dieses Konto ist keine E-Mail-Adresse hinterlegt.</p>
+          )}
         </aside>
 
         <AccountDataCard />
