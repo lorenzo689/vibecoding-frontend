@@ -39,6 +39,9 @@ type View =
  */
 export default function DocumentDateSuggestions({ materialId }: { materialId: string }) {
   const [view, setView] = useState<View>({ kind: "idle" });
+  // Optional, nur vom Nutzer gesetzt (z. B. Semesterbeginn): daraus ergänzt die Analyse fehlende
+  // Jahre. Bewusst nie automatisch mit Upload- oder heutigem Datum vorbelegt.
+  const [referenceDate, setReferenceDate] = useState("");
   const requestId = useRef<string | null>(null);
 
   const pollId = view.kind === "running" && view.analysisId ? view.analysisId : null;
@@ -67,7 +70,9 @@ export default function DocumentDateSuggestions({ materialId }: { materialId: st
   function handleAnalyze() {
     requestId.current = crypto.randomUUID();
     setView({ kind: "running", analysisId: null });
-    void analyzeMaterial(createClient(), requestId.current, materialId)
+    void analyzeMaterial(createClient(), requestId.current, materialId, {
+      referenceDate: referenceDate || null,
+    })
       .then((analysis) => {
         if (analysis.status === "processing") {
           setView({ kind: "running", analysisId: analysis.analysisId });
@@ -98,6 +103,14 @@ export default function DocumentDateSuggestions({ materialId }: { materialId: st
           </button>
         )}
       </div>
+
+      {view.kind !== "running" && (
+        <label className={styles.referenceField}>
+          <span>Bezugsdatum (optional, z. B. Semesterbeginn)</span>
+          <input type="date" value={referenceDate} onChange={(event) => setReferenceDate(event.target.value)} />
+          <small>Stehen Termine ohne Jahr in der Unterlage, wird das Jahr ab diesem Datum ergänzt.</small>
+        </label>
+      )}
 
       {view.kind === "running" && (
         <p className={styles.errorHint} data-tone="info" aria-live="polite">Die Unterlage wird analysiert …</p>

@@ -340,6 +340,11 @@ export type CalendarConfirmation = {
   allDay: boolean;
 };
 
+/** Das Backend verlangt Sekundengenauigkeit ohne Bruchteile; `toISOString()` liefert `.000Z`. */
+function withoutFraction(iso: string): string {
+  return iso.replace(/\.\d+(?=Z|[+-]\d{2}:\d{2}$)/, "");
+}
+
 export async function acceptSuggestion(
   client: SupabaseClient<Database>,
   analysisId: string,
@@ -355,8 +360,8 @@ export async function acceptSuggestion(
         title: event.title,
         description: event.description,
         kind: event.kind,
-        starts_at: event.startsAt,
-        ends_at: event.endsAt,
+        starts_at: withoutFraction(event.startsAt),
+        ends_at: event.endsAt === null ? null : withoutFraction(event.endsAt),
         all_day: event.allDay,
       },
     },
