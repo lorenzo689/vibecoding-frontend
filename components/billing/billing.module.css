@@ -81,3 +81,25 @@
 .planFoot { padding: 0 var(--space-6) var(--space-6); }
 .planFoot .actions { margin-top: 0; }
 .detail { color: var(--doc-muted); font-size: 13.5px; line-height: 1.55; }
+
+/* Verbrauchsübersicht. Reine Anzeige — die Grenzen setzt die Datenbank durch. */
+.usage { max-width: 640px; margin-top: var(--space-5); padding: var(--space-6); background: var(--app-surface); border: 1px solid var(--app-line); border-radius: 16px; box-shadow: var(--uv-shadow-card); }
+.usageHead h2 { font-size: 16px; font-weight: 700; letter-spacing: -.02em; }
+.usageHead p { margin-top: var(--space-2); color: var(--doc-muted); font-size: 12.5px; }
+.usageGrace { margin-top: var(--space-4); padding: var(--space-3) var(--space-4); background: var(--app-amber-tint); border-left: 2px solid var(--app-fg-amber); border-radius: 0 10px 10px 0; color: var(--doc-ink); font-size: 12.5px; line-height: 1.6; }
+
+.usageList { display: grid; gap: var(--space-5); margin: var(--space-5) 0 0; padding: 0; list-style: none; }
+.usageRow { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4); font-size: 13px; }
+.usageCount { color: var(--doc-muted); font-size: 12px; font-weight: 650; white-space: nowrap; }
+.usageCount[data-tone="warn"] { color: var(--app-fg-amber); }
+.usageCount[data-tone="full"] { color: var(--app-danger); }
+.usageTrack { overflow: hidden; height: 6px; margin-top: var(--space-2); background: var(--app-bg); border: 1px solid var(--app-line); border-radius: 999px; }
+.usageBar { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--app-purple-light), var(--app-purple)); transition: width var(--motion); }
+.usageBar[data-tone="warn"] { background: var(--app-fg-amber); }
+.usageBar[data-tone="full"] { background: var(--app-danger); }
+.usageHint { margin-top: var(--space-2); color: var(--doc-muted); font-size: 11.5px; }
+.usageFoot { margin-top: var(--space-5); padding-top: var(--space-4); border-top: 1px solid var(--app-line); color: var(--doc-muted); font-size: 11.5px; line-height: 1.6; }
+
+@media (prefers-reduced-motion: reduce) { .usageBar { transition: none; } }
+.waiver { display: flex; align-items: flex-start; gap: var(--space-3); margin-bottom: var(--space-5); color: var(--doc-muted); font-size: 12.5px; line-height: 1.6; cursor: pointer; }
+.waiver input { margin-top: 2px; flex-shrink: 0; }

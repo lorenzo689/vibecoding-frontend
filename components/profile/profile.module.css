@@ -129,3 +129,22 @@
 .proLink:hover { box-shadow: 0 12px 22px -14px rgba(14, 136, 80, .55); transform: translateY(-1px); }
 .proLink:focus-visible { outline: 2px solid var(--app-purple); outline-offset: 2px; }
 @media (prefers-reduced-motion: reduce) { .proLink { transition: none; } .proLink:hover { transform: none; } }
+
+/* Datenexport und Kontolöschung. Die Löschung ist endgültig, deshalb farblich
+   abgesetzt und hinter Passwort plus Bestätigungswort. */
+.dataActions { display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap; margin-top: var(--space-5); }
+.dataActions button { margin-top: 0; }
+.dataHint { color: var(--app-muted); font-size: 11.5px; }
+
+.dangerZone { margin-top: var(--space-6); padding-top: var(--space-5); border-top: 1px solid var(--doc-line); }
+.dangerZone h3 { font-size: 14px; font-weight: 700; color: var(--app-danger-strong); }
+.dangerZone > p { max-width: 62ch; margin-top: var(--space-2); color: var(--app-muted); font-size: 12.5px; line-height: 1.6; }
+.dangerZone form { margin-top: var(--space-4); }
+.dangerZone label { display: block; margin-top: var(--space-4); margin-bottom: 5px; color: var(--app-muted); font-size: 12px; font-weight: 650; }
+.dangerZone input { width: 100%; padding: 9px 12px; color: var(--doc-ink); background: var(--app-bg); border: 1.5px solid var(--doc-line); border-radius: 10px; font-size: 13px; }
+.dangerZone input:focus-visible { outline: 2px solid var(--app-danger); outline-offset: 1px; }
+.dangerActions { display: flex; justify-content: flex-end; gap: var(--space-3); margin-top: var(--space-5); }
+.dangerButton { display: inline-flex; align-items: center; min-height: 40px; margin-top: var(--space-4); padding-inline: 18px; color: var(--app-on-accent); background: var(--app-danger); border: 0; border-radius: 10px; font-size: 12.5px; font-weight: 650; cursor: pointer; }
+.dangerActions .dangerButton { margin-top: 0; }
+.dangerButton:disabled { opacity: .5; cursor: not-allowed; }
+.cancelDelete { min-height: 40px; padding-inline: 16px; color: var(--app-muted); background: none; border: 0; font-size: 12.5px; font-weight: 650; cursor: pointer; }

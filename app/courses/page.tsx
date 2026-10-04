@@ -44,7 +44,13 @@ export default function CoursesPage() {
     fetchCourses();
   }, []);
 
-  async function handleCreate(input: { title: string; description: string }) {
+  async function handleCreate(input: {
+    title: string;
+    description: string;
+    semester: string | null;
+    lecturer: string | null;
+    targetGrade: number | null;
+  }) {
     setError(null);
     try {
       const course = await createCourse(input);

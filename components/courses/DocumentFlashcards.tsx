@@ -2,7 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { deleteDeck, getDeck, listCourseDecks, type Flashcard, type FlashcardDeck, type FlashcardDeckSummary } from "@/lib/supabase/queries/flashcards";
-import { getDeckProgress, markCardReviewed, toggleCardStarred } from "@/lib/flashcardProgress";
+import {
+  listCardProgress,
+  setCardStarred,
+  type CardProgress,
+} from "@/lib/supabase/queries/flashcardReview";
 import GenerateDeckDialog from "@/components/flashcards/GenerateDeckDialog";
 import styles from "@/components/documents/documents.module.css";
 
@@ -20,19 +24,26 @@ function formatShortDate(iso: string): string {
   return new Intl.DateTimeFormat("de-DE", { day: "2-digit", month: "short", year: "numeric" }).format(new Date(iso)).toUpperCase();
 }
 
+/** Eine noch nie beantwortete, nicht markierte Karte. */
+function emptyProgress(cardId: string): CardProgress {
+  return { cardId, known: null, starred: false, intervalDays: 0, repetitionCount: 0, reviewedAt: null, dueAt: null };
+}
+
 // Studying a set happens in place; there is no separate route for it.
 function DeckStudy({ deck, onBack }: { deck: FlashcardDeck; onBack: () => void }) {
   const [index, setIndex] = useState(0);
   const [revealed, setRevealed] = useState(false);
-  const [, forceUpdate] = useState(0);
+  // Serverseitiger Fortschritt statt Browser-Ablage: er überlebt Tab und Gerät.
+  const [progress, setProgress] = useState<Map<string, CardProgress>>(new Map());
   const card: Flashcard | undefined = deck.cards[index];
 
   useEffect(() => {
-    if (card) markCardReviewed(deck.materialId, card.id);
-  }, [deck.materialId, card]);
-
-  if (!card) return null;
-  const progress = getDeckProgress(deck.materialId);
+    let active = true;
+    listCardProgress(deck.cards.map((entry) => entry.id))
+      .then((loaded) => { if (active) setProgress(loaded); })
+      .catch(() => { /* Ohne Fortschritt bleibt die Lernansicht nutzbar. */ });
+    return () => { active = false; };
+  }, [deck]);
 
   function go(delta: number) {
     setRevealed(false);
@@ -41,9 +52,17 @@ function DeckStudy({ deck, onBack }: { deck: FlashcardDeck; onBack: () => void }
 
   function toggleStar() {
     if (!card) return;
-    toggleCardStarred(deck.materialId, card.id);
-    forceUpdate((current) => current + 1);
+    const cardId = card.id;
+    const current = progress.get(cardId);
+    const next = !(current?.starred ?? false);
+    setProgress((map) => new Map(map).set(cardId, { ...emptyProgress(cardId), ...current, starred: next }));
+    void setCardStarred(cardId, next).catch(() => {
+      setProgress((map) => new Map(map).set(cardId, { ...emptyProgress(cardId), ...current, starred: !next }));
+    });
   }
+
+  if (!card) return null;
+  const cardState = progress.get(card.id) ?? emptyProgress(card.id);
 
   return (
     <div className={styles.studyPanel}>
@@ -55,13 +74,13 @@ function DeckStudy({ deck, onBack }: { deck: FlashcardDeck; onBack: () => void }
       <div className={styles.studyCard} data-revealed={revealed} onClick={() => setRevealed((current) => !current)} role="button" tabIndex={0}
         onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setRevealed((current) => !current); } }}>
         <div className={styles.studyBadgeRow}>
-          <span className={styles.studyStatusTag} data-tone={progress.known.has(card.id) ? "known" : undefined}>
-            {progress.known.has(card.id) ? "Gewusst" : progress.reviewed.has(card.id) ? "Gesehen" : "Neu"}
+          <span className={styles.studyStatusTag} data-tone={cardState.known === true ? "known" : undefined}>
+            {cardState.known === true ? "Gewusst" : cardState.known === false ? "Nochmal" : "Neu"}
           </span>
-          <button type="button" className={styles.studyStarButton} data-active={progress.starred.has(card.id)}
-            aria-label={progress.starred.has(card.id) ? "Aus Favoriten entfernen" : "Als Favorit markieren"}
+          <button type="button" className={styles.studyStarButton} data-active={cardState.starred}
+            aria-label={cardState.starred ? "Aus Favoriten entfernen" : "Als Favorit markieren"}
             onClick={(event) => { event.stopPropagation(); toggleStar(); }}>
-            <svg viewBox="0 0 24 24" fill={progress.starred.has(card.id) ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="m12 3 2.6 5.6 6.1.7-4.5 4.2 1.2 6-5.4-3-5.4 3 1.2-6-4.5-4.2 6.1-.7Z" /></svg>
+            <svg viewBox="0 0 24 24" fill={cardState.starred ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="m12 3 2.6 5.6 6.1.7-4.5 4.2 1.2 6-5.4-3-5.4 3 1.2-6-4.5-4.2 6.1-.7Z" /></svg>
           </button>
         </div>
         <p className={styles.studyQuestion}>{revealed ? card.answer : card.question}</p>

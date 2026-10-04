@@ -26,6 +26,8 @@ import {
   DOCUMENT_UPLOAD_HINT,
   validateDocumentFile,
 } from "@/lib/documentUpload";
+import CourseFactsEditor from "./CourseFactsEditor";
+import CourseLectures from "./CourseLectures";
 import styles from "./coursesList.module.css";
 
 function formatSize(bytes: number): string {
@@ -303,8 +305,12 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
         <div>
           <h1>{course.title}</h1>
           <p className={styles.subhead}>{course.description || "Keine Beschreibung hinterlegt."}</p>
+          {/* Optionale Kursangaben, direkt hier bearbeitbar. */}
+          <CourseFactsEditor course={course} onSaved={setCourse} />
         </div>
       </header>
+
+      <CourseLectures courseId={courseId} />
 
       <div className={styles.toolGrid}>
         <Link href={`/courses/${courseId}/flashcards`} className={styles.toolCard}>

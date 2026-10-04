@@ -11,6 +11,7 @@ import {
 import { validateDisplayName } from "@/lib/auth/validation";
 import type { OwnSubscription } from "@/lib/billing";
 import { createClient } from "@/lib/supabase/browser";
+import AccountDataCard from "./AccountDataCard";
 import ProfileProCard from "./ProfileProCard";
 import s from "./profile.module.css";
 
@@ -237,6 +238,8 @@ export default function ProfilePage({
             Deine E-Mail-Adresse gehört zu deiner Anmeldung und kann hier nicht geändert werden.
           </p>
         </aside>
+
+        <AccountDataCard />
         </div>
       </div>
     </div>

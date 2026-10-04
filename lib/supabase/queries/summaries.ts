@@ -57,71 +57,39 @@ export async function getCourseSummary(courseId: string): Promise<CourseSummary 
   };
 }
 
+/**
+ * Speichert die eigene Zusammenfassung eines Kurses.
+ *
+ * Seit Backend-Migration 20261003140000 erledigt das der RPC `save_course_summary`. Er
+ * sperrt den Kurs für die Dauer der Transaktion, aktualisiert ausschließlich die älteste
+ * **manuelle** Zusammenfassung und legt sonst eine neue an. Das ersetzt das frühere
+ * Lesen-dann-Schreiben, bei dem zwei gleichzeitige Erst-Speicherungen zwei Materialien
+ * erzeugen konnten, und es kann per Definition keine generierte Zeile erwischen.
+ *
+ * Grenzen des Backends: Titel 1–200, Text 1–30000 Zeichen, jeweils nach Trimmen.
+ */
 export async function saveCourseSummary(
   courseId: string,
   input: { title: string; text: string }
 ): Promise<CourseSummary> {
-  const supabase = createClient();
-  const existing = await getCourseSummary(courseId);
+  const { data, error } = await createClient().rpc("save_course_summary", {
+    p_course: courseId,
+    p_title: input.title.trim(),
+    p_text: input.text.trim(),
+  });
+  if (error) throw error;
 
-  if (existing) {
-    const { error: materialError } = await supabase
-      .from("materials")
-      .update({ title: input.title })
-      .eq("id", existing.materialId);
-    if (materialError) throw materialError;
-
-    const { data, error } = await supabase
-      .from("summaries")
-      .update({ content: { text: input.text } })
-      .eq("id", existing.summaryId)
-      .select("id, content, updated_at")
-      .single();
-    if (error) throw error;
-
-    return {
-      materialId: existing.materialId,
-      summaryId: data.id,
-      title: input.title,
-      text: summaryText(data.content),
-      updatedAt: data.updated_at,
-    };
-  }
-
-  const { data: userData, error: userError } = await supabase.auth.getUser();
-  if (userError || !userData.user) throw userError ?? new Error("Nicht angemeldet.");
-
-  const { data: material, error: materialError } = await supabase
-    .from("materials")
-    .insert({
-      course_id: courseId,
-      created_by: userData.user.id,
-      type: "summary",
-      title: input.title,
-    })
-    .select("id")
-    .single();
-  if (materialError) throw materialError;
-
-  const { data: summary, error: summaryError } = await supabase
-    .from("summaries")
-    .insert({
-      material_id: material.id,
-      content: { text: input.text },
-    })
-    .select("id, content, updated_at")
-    .single();
-  if (summaryError) {
-    await supabase.from("materials").delete().eq("id", material.id);
-    throw summaryError;
+  const row = data as { material_id?: unknown; summary_id?: unknown; updated_at?: unknown } | null;
+  if (typeof row?.material_id !== "string" || typeof row.summary_id !== "string") {
+    throw new Error("Unerwartete Antwort beim Speichern der Zusammenfassung.");
   }
 
   return {
-    materialId: material.id,
-    summaryId: summary.id,
-    title: input.title,
-    text: summaryText(summary.content),
-    updatedAt: summary.updated_at,
+    materialId: row.material_id,
+    summaryId: row.summary_id,
+    title: input.title.trim(),
+    text: input.text.trim(),
+    updatedAt: typeof row.updated_at === "string" ? row.updated_at : new Date().toISOString(),
   };
 }
 

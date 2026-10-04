@@ -8,7 +8,7 @@ import {
   listCourseDecks,
   type FlashcardDeckSummary,
 } from "@/lib/supabase/queries/flashcards";
-import { getDeckProgress } from "@/lib/flashcardProgress";
+import { listDeckProgressCounts, type DeckProgressCounts } from "@/lib/supabase/queries/flashcardReview";
 import CreateDeckDialog from "./CreateDeckDialog";
 import GenerateDeckDialog from "./GenerateDeckDialog";
 import styles from "@/components/documents/documents.module.css";
@@ -25,6 +25,18 @@ function formatShortDate(iso: string): string {
   return new Intl.DateTimeFormat("de-DE", { day: "2-digit", month: "short", year: "numeric" }).format(new Date(iso)).toUpperCase();
 }
 
+/**
+ * Zählerstände nachladen. Ein Fehler hier darf die Deckliste nicht verhindern — ohne
+ * Fortschritt zeigen die Karten neutrale Werte statt gar nichts.
+ */
+async function loadCounts(materialIds: string[]): Promise<Map<string, DeckProgressCounts>> {
+  try {
+    return await listDeckProgressCounts(materialIds);
+  } catch {
+    return new Map();
+  }
+}
+
 export default function CourseFlashcardDecks({ courseId }: { courseId: string }) {
   const [loading, setLoading] = useState(true);
   const [decks, setDecks] = useState<FlashcardDeckSummary[]>([]);
@@ -33,11 +45,18 @@ export default function CourseFlashcardDecks({ courseId }: { courseId: string })
   const [generateOpen, setGenerateOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [removingId, setRemovingId] = useState<string | null>(null);
+  // Serverseitiger Lernfortschritt je Deck. Früher nur in der Browser-Sitzung, also pro Tab.
+  const [progressCounts, setProgressCounts] = useState<Map<string, DeckProgressCounts>>(new Map());
 
   useEffect(() => {
     let active = true;
     listCourseDecks(courseId)
-      .then((nextDecks) => { if (active) setDecks(nextDecks); })
+      .then(async (nextDecks) => {
+        if (!active) return;
+        setDecks(nextDecks);
+        const counts = await loadCounts(nextDecks.map((deck) => deck.materialId));
+        if (active) setProgressCounts(counts);
+      })
       .catch(() => { if (active) setLoadError("Die Karteikarten-Decks konnten nicht geladen werden."); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
@@ -45,7 +64,9 @@ export default function CourseFlashcardDecks({ courseId }: { courseId: string })
 
   async function reloadDecks() {
     try {
-      setDecks(await listCourseDecks(courseId));
+      const next = await listCourseDecks(courseId);
+      setDecks(next);
+      setProgressCounts(await loadCounts(next.map((deck) => deck.materialId)));
     } catch {
       setError("Die Decks konnten nicht neu geladen werden. Lade die Seite neu.");
     }
@@ -115,9 +136,10 @@ export default function CourseFlashcardDecks({ courseId }: { courseId: string })
         ) : (
           <ul className={styles.deckGrid}>
             {decks.map((deck) => {
-              const progress = getDeckProgress(deck.materialId);
-              const reviewedCount = Math.min(progress.reviewed.size, deck.cardCount);
-              const score = progress.reviewed.size > 0 ? Math.round((progress.known.size / progress.reviewed.size) * 100) : null;
+              // Zählerstände kommen serverseitig; fehlen sie noch, zeigt die Karte neutrale Werte.
+              const counts = progressCounts.get(deck.materialId);
+              const reviewedCount = Math.min(counts?.reviewed ?? 0, deck.cardCount);
+              const score = counts && counts.reviewed > 0 ? Math.round((counts.known / counts.reviewed) * 100) : null;
               const percent = deck.cardCount > 0 ? Math.round((reviewedCount / deck.cardCount) * 100) : 0;
               return (
                 <li key={deck.materialId}>
@@ -136,6 +158,11 @@ export default function CourseFlashcardDecks({ courseId }: { courseId: string })
                           <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m4 15 5-5 4 4 7-7" /><path d="M14 7h6v6" /></svg>
                           {score}%
                         </span>
+                      )}
+                      {/* Fällige Wiederholungen rechnet der Server aus — hier hinge das
+                          sonst von der aktuellen Uhrzeit ab und wäre im Render unrein. */}
+                      {counts && counts.due > 0 && (
+                        <span className={styles.deckCardDue}>{counts.due} fällig</span>
                       )}
                     </div>
                     <div className={styles.deckCardProgressRow}>
