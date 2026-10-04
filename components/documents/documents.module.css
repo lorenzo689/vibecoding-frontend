@@ -557,6 +557,8 @@
 .noteItem { padding: var(--space-5); background: var(--app-surface); border: 1px solid var(--doc-line); border-radius: 12px; }
 .noteItem[data-resolved] { opacity: .6; }
 .noteMeta { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); font-size: 11.5px; color: var(--doc-muted); }
+.notePage[data-link] { border: 0; font-size: inherit; cursor: pointer; }
+.notePage[data-link]:hover { background: var(--app-neutral-line); }
 .notePage { padding: 3px 10px; border-radius: 999px; background: var(--app-bg); font-weight: 650; color: var(--doc-ink); }
 .noteKind { padding: 3px 10px; border-radius: 999px; font-weight: 650; }
 .noteKind[data-kind="note"] { background: var(--app-purple-tint); color: var(--app-purple); }

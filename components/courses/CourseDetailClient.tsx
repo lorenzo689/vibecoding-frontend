@@ -27,6 +27,7 @@ import {
   validateDocumentFile,
 } from "@/lib/documentUpload";
 import CourseFactsEditor from "./CourseFactsEditor";
+import CourseOpenNotes from "./CourseOpenNotes";
 import CourseLectures from "./CourseLectures";
 import styles from "./coursesList.module.css";
 
@@ -311,6 +312,7 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
       </header>
 
       <CourseLectures courseId={courseId} />
+      <CourseOpenNotes courseId={courseId} />
 
       <div className={styles.toolGrid}>
         <Link href={`/courses/${courseId}/flashcards`} className={styles.toolCard}>
