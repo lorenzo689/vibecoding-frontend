@@ -10,5 +10,6 @@ export default async function CourseDocumentDetailPage(
   props: PageProps<"/courses/[courseId]/documents/[fileId]">
 ) {
   const { courseId, fileId } = await props.params;
-  return <CourseDocumentDetail courseId={courseId} fileId={fileId} />;
+  const { tab } = await props.searchParams;
+  return <CourseDocumentDetail courseId={courseId} fileId={fileId} initialTab={tab === "notes" ? "notes" : "content"} />;
 }

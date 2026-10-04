@@ -31,7 +31,14 @@ function formatDate(value: string) {
  *
  * Offene Notizen stehen oben: sie sind die Liste, die beim Wiederholen zählt.
  */
-export default function DocumentNotes({ materialId }: { materialId: string }) {
+export default function DocumentNotes({
+  materialId,
+  onOpenPage,
+}: {
+  materialId: string;
+  /** Öffnet die Unterlage an dieser Seite; fehlt, wenn der Viewer das nicht kann. */
+  onOpenPage?: (page: number) => void;
+}) {
   const [notes, setNotes] = useState<DocumentNote[] | undefined>(undefined);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [kind, setKind] = useState<NoteKind>("note");
@@ -183,7 +190,14 @@ export default function DocumentNotes({ materialId }: { materialId: string }) {
           {sorted.map((note) => (
             <li key={note.id} className={styles.noteItem} data-resolved={note.status === "resolved" || undefined}>
               <div className={styles.noteMeta}>
-                <span className={styles.notePage}>Seite {note.pageNumber}</span>
+                {onOpenPage ? (
+                  <button type="button" className={styles.notePage} data-link onClick={() => onOpenPage(note.pageNumber)}
+                    title="Unterlage an dieser Seite öffnen">
+                    Seite {note.pageNumber} →
+                  </button>
+                ) : (
+                  <span className={styles.notePage}>Seite {note.pageNumber}</span>
+                )}
                 <span className={styles.noteKind} data-kind={note.kind}>
                   {note.kind === "highlight" ? "Markierung" : "Notiz"}
                 </span>

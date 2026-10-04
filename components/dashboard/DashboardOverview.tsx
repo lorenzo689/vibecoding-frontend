@@ -7,10 +7,12 @@ import { createClient } from "@/lib/supabase/browser";
 import { listCourses, type Course } from "@/lib/supabase/queries/courses";
 import { listEvents } from "@/lib/supabase/queries/calendar";
 import {
+  countDueFlashcards,
   getProfileName,
   listRecentDocuments,
   listUnfinishedDocuments,
 } from "@/lib/supabase/queries/dashboard";
+import { listOpenNotes, openNoteHref } from "@/lib/supabase/queries/open-notes";
 import { deriveCourseBadge } from "@/lib/courseBadge";
 import { KIND_LABELS } from "@/components/calendar/EventDialog";
 import { formatDateKey, formatEventWhen, localDateKey } from "@/components/calendar/dateUtils";
@@ -56,6 +58,8 @@ const loadEvents = () => listEvents();
 const loadRecentDocuments = () => listRecentDocuments(createClient(), 5);
 const loadUnfinishedDocuments = () => listUnfinishedDocuments(createClient());
 const loadProfileName = () => getProfileName(createClient());
+const loadOpenNotes = () => listOpenNotes(createClient(), { limit: 4 });
+const loadDueFlashcards = () => countDueFlashcards(createClient());
 
 const MAX_EVENTS = 5;
 
@@ -181,6 +185,8 @@ export default function DashboardOverview() {
   const [events, reloadEvents] = useLoadable(loadEvents);
   const [recent, reloadRecent] = useLoadable(loadRecentDocuments);
   const [unfinished] = useLoadable(loadUnfinishedDocuments);
+  const [openNotes] = useLoadable(loadOpenNotes);
+  const [dueCards] = useLoadable(loadDueFlashcards);
 
   const courseTitles = useMemo(
     () => new Map(courses.status === "ready" ? courses.data.map((course) => [course.id, course.title]) : []),
@@ -350,6 +356,26 @@ export default function DashboardOverview() {
         </section>
       )}
 
+      {openNotes.status === "ready" && openNotes.data.total > 0 && (
+        <section className={s.card} aria-labelledby="open-notes-heading">
+          <CardHead id="open-notes-heading" icon="file" title={`Offene Notizen (${openNotes.data.total})`} />
+          <ul className={s.docGrid}>
+            {openNotes.data.items.map((note) => (
+              <li key={note.id}>
+                <Link href={openNoteHref(note)} className={s.docRow}>
+                  <span className={s.rowBody}>
+                    <strong className={s.docName}>{note.text}</strong>
+                    <span className={s.rowSub}>{courseTitles.get(note.courseId) ?? "Kurs"} · {note.materialTitle} · Seite {note.pageNumber}</span>
+                  </span>
+                  <span className={s.chip}>{note.kind === "highlight" ? "Markierung" : "Notiz"}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+          {openNotes.data.total > openNotes.data.items.length && <p className={s.more}>Weitere offene Notizen findest du in den jeweiligen Unterlagen.</p>}
+        </section>
+      )}
+
       <section className={`${s.card} ${s.toolsCard}`} aria-labelledby="tools-heading">
         <CardHead id="tools-heading" icon="bolt" title="Lern-Tools" />
         <div className={s.toolsGrid}>
@@ -358,7 +384,9 @@ export default function DashboardOverview() {
               <span className={s.toolIcon} data-icon={tool.icon} aria-hidden="true"><Icon name={tool.icon} /></span>
               <span className={s.toolBody}>
                 <strong>{tool.title}</strong>
-                <span>{tool.text}</span>
+                <span>{tool.icon === "flashcard" && dueCards.status === "ready" && dueCards.data > 0
+                  ? `${dueCards.data} ${dueCards.data === 1 ? "Karte" : "Karten"} fällig`
+                  : tool.text}</span>
               </span>
               <Icon name="chevron" className={s.chevron} />
             </Link>

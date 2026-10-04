@@ -256,6 +256,12 @@
 .studyQuestion { max-width: 46ch; font-size: 19px; font-weight: 650; line-height: 1.55; letter-spacing: -.01em; overflow-wrap: anywhere; }
 .studyHint { display: inline-flex; align-items: center; gap: var(--space-2); color: var(--doc-muted); font-size: 12px; font-weight: 600; }
 .studyHint svg { width: 14px; height: 14px; }
+.studyRateRow { display: flex; gap: var(--space-3); }
+.studyRateRow button { flex: 1; min-height: 42px; border: 0; border-radius: 999px; font-size: 13px; font-weight: 650; cursor: pointer; transition: background var(--motion); }
+.studyRateAgain { color: var(--doc-ink); background: var(--app-surface-soft); }
+.studyRateAgain:hover { background: var(--app-neutral-line); }
+.studyRateKnown { color: var(--doc-accent-b); background: var(--app-teal-soft); }
+.studyError { margin: 0; color: var(--app-fg-amber); font-size: 12.5px; }
 .studyNav { display: flex; align-items: center; gap: var(--space-5); }
 .studyNav span { min-width: 4ch; color: var(--doc-muted); font: 600 12.5px/1 var(--font-geist-mono), monospace; text-align: center; }
 .studyNav button { display: inline-flex; align-items: center; gap: var(--space-2); min-height: 42px; padding-inline: var(--space-5); color: var(--doc-ink); background: var(--app-surface-soft); border: 0; border-radius: 999px; font-size: 13px; font-weight: 650; cursor: pointer; transition: background var(--motion); }
@@ -551,6 +557,8 @@
 .noteItem { padding: var(--space-5); background: var(--app-surface); border: 1px solid var(--doc-line); border-radius: 12px; }
 .noteItem[data-resolved] { opacity: .6; }
 .noteMeta { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); font-size: 11.5px; color: var(--doc-muted); }
+.notePage[data-link] { border: 0; font-size: inherit; cursor: pointer; }
+.notePage[data-link]:hover { background: var(--app-neutral-line); }
 .notePage { padding: 3px 10px; border-radius: 999px; background: var(--app-bg); font-weight: 650; color: var(--doc-ink); }
 .noteKind { padding: 3px 10px; border-radius: 999px; font-weight: 650; }
 .noteKind[data-kind="note"] { background: var(--app-purple-tint); color: var(--app-purple); }
