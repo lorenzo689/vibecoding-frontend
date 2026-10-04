@@ -13,7 +13,7 @@ const { DEFAULT_FILTERS, applyFilters, courseOptions, documentTypeLabel, formatF
 
 const READY = { processingStatus: "ready", errorCode: null, indexingStatus: "ready", indexingError: null };
 const doc = (id, patch = {}) => ({
-  documentId: `d-${id}`, materialId: `m-${id}`, fileId: `f-${id}`, courseId: "c1", courseTitle: "Netzwerksicherheit",
+  documentId: `d-${id}`, materialId: `m-${id}`, fileId: `f-${id}`, courseId: "c1", courseTitle: "Netzwerksicherheit", lectureTitle: null,
   name: `${id}.pdf`, mimeType: "application/pdf", sizeBytes: 2048, uploadedAt: "2026-09-10T10:00:00Z",
   fileStatus: "ready", state: READY, ...patch,
 });
@@ -43,6 +43,11 @@ test("search matches the file name case-insensitively", () => {
 test("search also matches the course title", () => {
   const docs = [doc("a", { courseTitle: "Analysis" }), doc("b", { courseTitle: "Netzwerksicherheit" })];
   assert.deepEqual(run(docs, { query: "netzwerk" }), ["b"]);
+});
+
+test("search also matches the lecture title", () => {
+  const docs = [doc("a", { lectureTitle: "VL 3 – Kryptographie" }), doc("b")];
+  assert.deepEqual(run(docs, { query: "krypto" }), ["a"]);
 });
 
 test("search ignores surrounding and repeated whitespace, and every word must match", () => {

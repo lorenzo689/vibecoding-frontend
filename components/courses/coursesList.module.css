@@ -221,6 +221,7 @@ button.fileName:hover { text-decoration: underline; text-underline-offset: 3px; 
 
 .lectureList { display: grid; gap: var(--space-2); margin: var(--space-5) 0 0; padding: 0; list-style: none; }
 .lectureList li { display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap; padding: 11px 14px; background: var(--app-bg); border-radius: 10px; font-size: 13px; }
+.lectureList li > .lectureForm { flex: 1 1 100%; margin-top: 0; padding: 0; }
 .lectureTitle { font-weight: 650; overflow-wrap: anywhere; }
 .lectureDate { color: var(--cl-muted); font-size: 12px; }
 .lectureDocs { color: var(--cl-muted); font-size: 12px; font-weight: 650; }

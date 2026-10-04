@@ -11,6 +11,7 @@ import {
   updateLecture,
   type Lecture,
 } from "@/lib/supabase/queries/lectures";
+import { sortLectures } from "./lectureFilter";
 import styles from "./coursesList.module.css";
 
 function formatHeldOn(value: string | null) {
@@ -30,7 +31,7 @@ function formatDocumentCount(count: number) {
  *
  * Damit entsteht die Ebene Kurs → Vorlesung → Dokument. Die Zuordnung einzelner
  * Unterlagen passiert auf der Unterlagen-Seite; hier werden die Vorlesungen selbst
- * gepflegt. Eine gelöschte Vorlesung nimmt keine Unterlagen mit — das Backend löst
+ * gepflegt (Titel und Termin bleiben nach dem Anlegen änderbar). Eine gelöschte Vorlesung nimmt keine Unterlagen mit — das Backend löst
  * nur die Zuordnung.
  */
 export default function CourseLectures({ courseId }: { courseId: string }) {
@@ -41,6 +42,9 @@ export default function CourseLectures({ courseId }: { courseId: string }) {
   const [heldOn, setHeldOn] = useState("");
   const [saving, setSaving] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editHeldOn, setEditHeldOn] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -66,7 +70,7 @@ export default function CourseLectures({ courseId }: { courseId: string }) {
     setError(null);
     try {
       const created = await createLecture(courseId, { title, heldOn: heldOn || null });
-      setLectures((current) => [...(current ?? []), created]);
+      setLectures((current) => sortLectures([...(current ?? []), created]));
       setTitle("");
       setHeldOn("");
       setAdding(false);
@@ -77,16 +81,34 @@ export default function CourseLectures({ courseId }: { courseId: string }) {
     }
   }
 
-  async function handleRename(lecture: Lecture) {
-    const next = window.prompt("Neuer Titel der Vorlesung", lecture.title);
-    if (next === null || next.trim() === lecture.title) return;
+  function startEdit(lecture: Lecture) {
+    setEditingId(lecture.id);
+    setEditTitle(lecture.title);
+    setEditHeldOn(lecture.heldOn ?? "");
+    setError(null);
+  }
+
+  async function handleEdit(event: FormEvent<HTMLFormElement>, lecture: Lecture) {
+    event.preventDefault();
+    if (!editTitle.trim()) return;
+    const titleChanged = editTitle.trim() !== lecture.title;
+    const heldOnChanged = (editHeldOn || null) !== lecture.heldOn;
+    if (!titleChanged && !heldOnChanged) {
+      setEditingId(null);
+      return;
+    }
     setBusyId(lecture.id);
     setError(null);
     try {
-      const updated = await updateLecture(lecture.id, { title: next });
-      setLectures((current) => (current ?? []).map((entry) => (entry.id === updated.id ? updated : entry)));
+      const updated = await updateLecture(lecture.id, {
+        ...(titleChanged ? { title: editTitle } : {}),
+        ...(heldOnChanged ? { heldOn: editHeldOn || null } : {}),
+      });
+      // Ein geänderter Termin verschiebt die Vorlesung in der Liste.
+      setLectures((current) => sortLectures((current ?? []).map((entry) => (entry.id === updated.id ? updated : entry))));
+      setEditingId(null);
     } catch {
-      setError("Die Vorlesung konnte nicht umbenannt werden.");
+      setError("Die Vorlesung konnte nicht gespeichert werden.");
     } finally {
       setBusyId(null);
     }
@@ -160,19 +182,53 @@ export default function CourseLectures({ courseId }: { courseId: string }) {
         <ul className={styles.lectureList}>
           {lectures.map((lecture) => (
             <li key={lecture.id}>
-              <span className={styles.lectureTitle}>{lecture.title}</span>
-              <span className={styles.lectureDate}>{formatHeldOn(lecture.heldOn)}</span>
-              <Link href={`/courses/${courseId}/documents?lecture=${lecture.id}`} className={styles.lectureDocs}>
-                {formatDocumentCount(counts.get(lecture.id) ?? 0)}
-              </Link>
-              <span className={styles.lectureActions}>
-                <button type="button" onClick={() => void handleRename(lecture)} disabled={busyId === lecture.id}>
-                  Umbenennen
-                </button>
-                <button type="button" data-tone="danger" onClick={() => void handleDelete(lecture)} disabled={busyId === lecture.id}>
-                  Löschen
-                </button>
-              </span>
+              {editingId === lecture.id ? (
+                <form className={styles.lectureForm} onSubmit={(event) => void handleEdit(event, lecture)}>
+                  <label>
+                    <span>Titel</span>
+                    <input
+                      value={editTitle}
+                      onChange={(event) => setEditTitle(event.target.value)}
+                      maxLength={LECTURE_TITLE_MAX}
+                      autoFocus
+                      disabled={busyId === lecture.id}
+                    />
+                  </label>
+                  <label>
+                    <span>Termin (optional)</span>
+                    <input
+                      type="date"
+                      value={editHeldOn}
+                      onChange={(event) => setEditHeldOn(event.target.value)}
+                      disabled={busyId === lecture.id}
+                    />
+                  </label>
+                  <div className={styles.lectureFormActions}>
+                    <button type="button" className={styles.cancelButton} onClick={() => setEditingId(null)} disabled={busyId === lecture.id}>
+                      Abbrechen
+                    </button>
+                    <button type="submit" className={styles.submitButton} disabled={busyId === lecture.id || !editTitle.trim()}>
+                      {busyId === lecture.id ? "Wird gespeichert …" : "Speichern"}
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <>
+                  <span className={styles.lectureTitle}>{lecture.title}</span>
+                  <span className={styles.lectureDate}>{formatHeldOn(lecture.heldOn)}</span>
+                  <Link href={`/courses/${courseId}/documents?lecture=${lecture.id}`} className={styles.lectureDocs}>
+                    {formatDocumentCount(counts.get(lecture.id) ?? 0)}
+                  </Link>
+                  <span className={styles.lectureActions}>
+                    <button type="button" onClick={() => startEdit(lecture)} disabled={busyId === lecture.id}>
+                      Bearbeiten
+                    </button>
+                    <button type="button" data-tone="danger" onClick={() => void handleDelete(lecture)} disabled={busyId === lecture.id}>
+                      Löschen
+                    </button>
+                  </span>
+                </>
+              )}
             </li>
           ))}
         </ul>

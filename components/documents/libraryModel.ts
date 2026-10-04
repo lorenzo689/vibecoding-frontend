@@ -53,10 +53,10 @@ export function searchTerms(query: string): string[] {
   return normalize(query).split(/\s+/).filter(Boolean);
 }
 
-/** Every search word must appear in the file name or the course title. */
+/** Every search word must appear in the file name, the course title or the lecture title. */
 function matchesTerms(document: LibraryDocument, terms: string[]): boolean {
   if (terms.length === 0) return true;
-  const haystack = normalize(`${document.name} ${document.courseTitle}`);
+  const haystack = normalize(`${document.name} ${document.courseTitle} ${document.lectureTitle ?? ""}`);
   return terms.every((term) => haystack.includes(term));
 }
 
