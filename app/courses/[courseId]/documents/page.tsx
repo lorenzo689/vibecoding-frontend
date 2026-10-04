@@ -10,5 +10,6 @@ export default async function CourseDocumentsPage(
   props: PageProps<"/courses/[courseId]/documents">
 ) {
   const { courseId } = await props.params;
-  return <CourseDocuments courseId={courseId} />;
+  const { lecture } = await props.searchParams;
+  return <CourseDocuments courseId={courseId} initialLecture={typeof lecture === "string" ? lecture : null} />;
 }

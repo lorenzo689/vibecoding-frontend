@@ -1,7 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState, type FormEvent } from "react";
 import {
+  countLectureDocuments,
   createLecture,
   deleteLecture,
   LECTURE_TITLE_MAX,
@@ -19,6 +21,10 @@ function formatHeldOn(value: string | null) {
     : date.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" });
 }
 
+function formatDocumentCount(count: number) {
+  return count === 1 ? "1 Unterlage" : `${count} Unterlagen`;
+}
+
 /**
  * Die Vorlesungen eines Kurses (Backend-Migration 20261004090000).
  *
@@ -29,6 +35,7 @@ function formatHeldOn(value: string | null) {
  */
 export default function CourseLectures({ courseId }: { courseId: string }) {
   const [lectures, setLectures] = useState<Lecture[] | undefined>(undefined);
+  const [counts, setCounts] = useState<Map<string, number>>(new Map());
   const [adding, setAdding] = useState(false);
   const [title, setTitle] = useState("");
   const [heldOn, setHeldOn] = useState("");
@@ -45,6 +52,10 @@ export default function CourseLectures({ courseId }: { courseId: string }) {
         setLectures([]);
         setError("Die Vorlesungen konnten nicht geladen werden.");
       });
+    // Die Anzahl ist nur Beiwerk; ohne sie bleibt die Liste nutzbar.
+    countLectureDocuments(courseId)
+      .then((loaded) => { if (active) setCounts(loaded); })
+      .catch(() => {});
     return () => { active = false; };
   }, [courseId]);
 
@@ -151,6 +162,9 @@ export default function CourseLectures({ courseId }: { courseId: string }) {
             <li key={lecture.id}>
               <span className={styles.lectureTitle}>{lecture.title}</span>
               <span className={styles.lectureDate}>{formatHeldOn(lecture.heldOn)}</span>
+              <Link href={`/courses/${courseId}/documents?lecture=${lecture.id}`} className={styles.lectureDocs}>
+                {formatDocumentCount(counts.get(lecture.id) ?? 0)}
+              </Link>
               <span className={styles.lectureActions}>
                 <button type="button" onClick={() => void handleRename(lecture)} disabled={busyId === lecture.id}>
                   Umbenennen
