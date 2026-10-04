@@ -15,6 +15,14 @@ import {
   listCourseDocumentStatuses,
   type CourseDocumentStatus,
 } from "@/lib/supabase/queries/documents";
+import { listLectures, type Lecture } from "@/lib/supabase/queries/lectures";
+import {
+  LECTURE_FILTER_ALL,
+  LECTURE_FILTER_NONE,
+  matchesLectureFilter,
+  resolveLectureFilter,
+  type LectureFilter,
+} from "./lectureFilter";
 import DocumentRetryButton from "./DocumentRetryButton";
 import {
   describeIndexingProgress,
@@ -95,10 +103,12 @@ function renameFile(file: File, title: string): File {
   return new File([file], `${trimmed}${extension}`, { type: file.type, lastModified: file.lastModified });
 }
 
-export default function CourseDocuments({ courseId }: { courseId: string }) {
+export default function CourseDocuments({ courseId, initialLecture = null }: { courseId: string; initialLecture?: string | null }) {
   const [course, setCourse] = useState<Course | null | undefined>(undefined);
   const [files, setFiles] = useState<CourseFile[]>([]);
   const [documentStatuses, setDocumentStatuses] = useState<CourseDocumentStatus[]>([]);
+  const [lectures, setLectures] = useState<Lecture[]>([]);
+  const [lectureFilter, setLectureFilter] = useState<LectureFilter>(LECTURE_FILTER_ALL);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [removingOrphan, setRemovingOrphan] = useState<string | null>(null);
@@ -143,11 +153,31 @@ export default function CourseDocuments({ courseId }: { courseId: string }) {
     return () => { active = false; };
   }, [courseId]);
 
+  // Vorlesungen sind Beiwerk: schlägt das Laden fehl, bleibt die Liste ungefiltert nutzbar.
+  useEffect(() => {
+    let active = true;
+    listLectures(courseId)
+      .then((loaded) => {
+        if (!active) return;
+        setLectures(loaded);
+        setLectureFilter(resolveLectureFilter(initialLecture, loaded));
+      })
+      .catch(() => {});
+    return () => { active = false; };
+  }, [courseId, initialLecture]);
+
+  const lectureTitleById = useMemo(() => new Map(lectures.map((lecture) => [lecture.id, lecture.title])), [lectures]);
+
   const statusByFile = useMemo(() => indexDocumentStatusesByFile(documentStatuses), [documentStatuses]);
 
   const fileProgress = useMemo(
     () => files.map((file) => ({ file, progress: describeIndexingProgress(file.status, statusByFile.get(file.id) ?? null) })),
     [files, statusByFile]
+  );
+
+  const visibleFiles = useMemo(
+    () => fileProgress.filter(({ file }) => matchesLectureFilter(statusByFile.get(file.id)?.lectureId, lectureFilter)),
+    [fileProgress, statusByFile, lectureFilter]
   );
 
   const hasUnfinishedDocuments = fileProgress.some((entry) => entry.progress.inProgress);
@@ -362,6 +392,21 @@ export default function CourseDocuments({ courseId }: { courseId: string }) {
         </section>
       )}
 
+      {lectures.length > 0 && files.length > 0 && (
+        <div className={styles.lectureFilter}>
+          <label>
+            <span>Vorlesung</span>
+            <select value={lectureFilter} onChange={(event) => setLectureFilter(event.target.value)}>
+              <option value={LECTURE_FILTER_ALL}>Alle Unterlagen</option>
+              {lectures.map((lecture) => (
+                <option key={lecture.id} value={lecture.id}>{lecture.title}</option>
+              ))}
+              <option value={LECTURE_FILTER_NONE}>Ohne Vorlesung</option>
+            </select>
+          </label>
+        </div>
+      )}
+
       {files.length === 0 ? (
         <div className={styles.empty}>
           <h2>Noch keine Unterlagen.</h2>
@@ -370,9 +415,16 @@ export default function CourseDocuments({ courseId }: { courseId: string }) {
             <span aria-hidden="true">+</span> Hochladen
           </button>
         </div>
+      ) : visibleFiles.length === 0 ? (
+        <div className={styles.empty}>
+          <h2>Keine Unterlagen in dieser Auswahl.</h2>
+          <button type="button" className={styles.textButton} onClick={() => setLectureFilter(LECTURE_FILTER_ALL)}>
+            Alle Unterlagen anzeigen
+          </button>
+        </div>
       ) : (
         <div className={styles.grid}>
-          {fileProgress.map(({ file, progress }) => {
+          {visibleFiles.map(({ file, progress }) => {
             const docStatus = statusByFile.get(file.id);
             const stage = retryStage(file.status, docStatus ?? null);
             return (
@@ -392,6 +444,9 @@ export default function CourseDocuments({ courseId }: { courseId: string }) {
                     <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="8.5" /><path d="M12 7.5V12l3 2" /></svg>
                     {TONE_LABELS[progress.tone]}
                   </span>
+                  {docStatus?.lectureId && lectureTitleById.has(docStatus.lectureId) && (
+                    <span className={styles.badge} data-tone="purple">{lectureTitleById.get(docStatus.lectureId)}</span>
+                  )}
                 </div>
                 {progress.detail && <p className={styles.badgeDetail}>{progress.detail}</p>}
                 <p className={styles.uploaded}>

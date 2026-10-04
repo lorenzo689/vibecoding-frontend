@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/browser";
+import { countByLecture } from "@/components/courses/lectureFilter";
 
 // Vorlesungen eines Kurses (Backend-Migration 20261004090000_course_structure_and_notes).
 //
@@ -50,6 +51,19 @@ export async function listLectures(courseId: string): Promise<Lecture[]> {
 
   if (error) throw error;
   return data.map(mapLecture);
+}
+
+/** Anzahl Unterlagen je Vorlesung des Kurses (nur Vorlesungen mit mindestens einer Unterlage). */
+export async function countLectureDocuments(courseId: string): Promise<Map<string, number>> {
+  const { data, error } = await createClient()
+    .from("materials")
+    .select("lecture_id")
+    .eq("course_id", courseId)
+    .eq("type", "source_document")
+    .not("lecture_id", "is", null);
+
+  if (error) throw error;
+  return countByLecture(data.map((row) => ({ lectureId: row.lecture_id })));
 }
 
 export async function createLecture(

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { assignMaterialToLecture, listLectures, type Lecture } from "@/lib/supabase/queries/lectures";
+import { isLectureNotFound } from "./lectureFilter";
 import styles from "@/components/documents/documents.module.css";
 
 /**
@@ -38,9 +39,14 @@ export default function DocumentLecturePicker({
     setSaving(true);
     setError(null);
     void assignMaterialToLecture(materialId, next || null)
-      .catch(() => {
+      .catch((assignError: unknown) => {
         setSelected(previous);
-        setError("Die Zuordnung konnte nicht gespeichert werden.");
+        if (isLectureNotFound(assignError)) {
+          setError("Diese Vorlesung gibt es nicht mehr. Die Liste wurde aktualisiert.");
+          listLectures(courseId).then(setLectures).catch(() => {});
+        } else {
+          setError("Die Zuordnung konnte nicht gespeichert werden.");
+        }
       })
       .finally(() => setSaving(false));
   }

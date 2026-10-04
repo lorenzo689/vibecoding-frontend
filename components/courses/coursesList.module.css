@@ -217,6 +217,8 @@ button.fileName:hover { text-decoration: underline; text-underline-offset: 3px; 
 .lectureList li { display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap; padding: 11px 14px; background: var(--app-bg); border-radius: 10px; font-size: 13px; }
 .lectureTitle { font-weight: 650; overflow-wrap: anywhere; }
 .lectureDate { color: var(--cl-muted); font-size: 12px; }
+.lectureDocs { color: var(--cl-muted); font-size: 12px; font-weight: 650; }
+.lectureDocs:hover { color: var(--cl-ink); text-decoration: underline; }
 .lectureActions { display: flex; gap: var(--space-3); margin-left: auto; }
 .lectureActions button { color: var(--cl-muted); background: none; border: 0; font-size: 12px; font-weight: 650; cursor: pointer; }
 .lectureActions button:hover:not(:disabled) { text-decoration: underline; }
