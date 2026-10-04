@@ -72,9 +72,12 @@ export default function CourseFlashcardDecks({ courseId }: { courseId: string })
     }
   }
 
-  async function handleCreate(title: string) {
-    const deck = await createDeck(courseId, title);
-    setDecks((current) => [...current, { ...deck, cardCount: 0, createdAt: new Date().toISOString() }]);
+  async function handleCreate(title: string, requestId: string) {
+    const deck = await createDeck(courseId, title, requestId);
+    // Ein wiederholter Versuch kann ein Deck liefern, das schon in der Liste steht.
+    setDecks((current) => current.some((entry) => entry.materialId === deck.materialId)
+      ? current
+      : [...current, { ...deck, cardCount: 0, createdAt: new Date().toISOString() }]);
     setDialogOpen(false);
   }
 

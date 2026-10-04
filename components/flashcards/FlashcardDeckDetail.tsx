@@ -9,6 +9,7 @@ import {
   deleteFlashcard,
   getDeck,
   updateDeck,
+  updateFlashcard,
   type FlashcardDeck,
 } from "@/lib/supabase/queries/flashcards";
 import {
@@ -21,6 +22,7 @@ import {
   setCardStarred,
   type CardProgress,
 } from "@/lib/supabase/queries/flashcardReview";
+import EditDeckDialog from "./EditDeckDialog";
 import styles from "@/components/documents/documents.module.css";
 
 export default function FlashcardDeckDetail({
@@ -43,6 +45,10 @@ export default function FlashcardDeckDetail({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [removingId, setRemovingId] = useState<string | null>(null);
+  const [editingDeck, setEditingDeck] = useState(false);
+  // Die Karte, die gerade in der Verwaltung bearbeitet wird, mit ihren ungespeicherten Eingaben.
+  const [editingCard, setEditingCard] = useState<{ id: string; question: string; answer: string } | null>(null);
+  const [savingCard, setSavingCard] = useState(false);
 
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [deletingSet, setDeletingSet] = useState(false);
@@ -82,16 +88,32 @@ export default function FlashcardDeckDetail({
     setIndex((current) => Math.min((deck?.cards.length ?? 1) - 1, Math.max(0, current + delta)));
   }
 
-  /** Benennt Material und Deck gemeinsam um; dafür gibt es seit 20261003140000 einen RPC. */
-  async function handleRename() {
-    if (!deck) return;
-    const next = window.prompt("Neuer Name des Kartensatzes", deck.title);
-    if (next === null || !next.trim() || next.trim() === deck.title) return;
+  /** Titel und Beschreibung gehen gemeinsam an den RPC; Fehler zeigt der Dialog selbst. */
+  async function handleSaveDeck(input: { title: string; description: string }) {
+    await updateDeck(materialId, input);
+    setDeck((current) => current && { ...current, ...input });
+    setEditingDeck(false);
+  }
+
+  async function handleSaveCard(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!editingCard || !editingCard.question.trim() || !editingCard.answer.trim()) return;
+    setSavingCard(true);
+    setError(null);
     try {
-      await updateDeck(materialId, { title: next });
-      setDeck({ ...deck, title: next.trim() });
+      const saved = await updateFlashcard(editingCard.id, {
+        question: editingCard.question.trim(),
+        answer: editingCard.answer.trim(),
+      });
+      setDeck((current) => current && {
+        ...current,
+        cards: current.cards.map((entry) => (entry.id === saved.id ? saved : entry)),
+      });
+      setEditingCard(null);
     } catch {
-      setError("Der Kartensatz konnte nicht umbenannt werden.");
+      setError("Die Karteikarte konnte nicht geändert werden.");
+    } finally {
+      setSavingCard(false);
     }
   }
 
@@ -215,10 +237,11 @@ export default function FlashcardDeckDetail({
         <div>
           <h1>{deck.title}</h1>
           <p className={styles.subhead}>{deck.cards.length} {deck.cards.length === 1 ? "Karte" : "Karten"}</p>
+          {deck.description && <p className={styles.deckDescription}>{deck.description}</p>}
         </div>
         <div className={styles.headerActions}>
-          <button type="button" className={styles.textButton} data-tone="neutral" onClick={() => void handleRename()}>
-            Umbenennen
+          <button type="button" className={styles.textButton} data-tone="neutral" onClick={() => setEditingDeck(true)}>
+            Bearbeiten
           </button>
           <button type="button" className={styles.deleteSetButton} onClick={() => setConfirmingDelete(true)}>
             <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M5 7h14M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2m2 0-.9 12.1a2 2 0 0 1-2 1.9H8.9a2 2 0 0 1-2-1.9L6 7Z" /></svg>
@@ -294,7 +317,7 @@ export default function FlashcardDeckDetail({
                     </span>
                     <div>
                       <h3>Karten in diesem Set</h3>
-                      <p>Neue Karte hinzufügen oder bestehende entfernen.</p>
+                      <p>Neue Karte hinzufügen, bestehende ändern oder entfernen.</p>
                     </div>
                   </div>
                   <form className={styles.manageForm} onSubmit={handleAdd}>
@@ -313,10 +336,37 @@ export default function FlashcardDeckDetail({
                     </button>
                   </form>
                   <ul className={styles.cardList}>
-                    {deck.cards.map((entry, entryIndex) => (
+                    {deck.cards.map((entry, entryIndex) => editingCard?.id === entry.id ? (
+                      <li key={entry.id}>
+                        <form className={styles.cardEditForm} onSubmit={handleSaveCard}>
+                          <div className={styles.field}>
+                            <label htmlFor="edit-card-question">Frage</label>
+                            <input id="edit-card-question" value={editingCard.question} autoFocus disabled={savingCard}
+                              onChange={(event) => setEditingCard({ ...editingCard, question: event.target.value })} />
+                          </div>
+                          <div className={styles.field}>
+                            <label htmlFor="edit-card-answer">Antwort</label>
+                            <textarea id="edit-card-answer" value={editingCard.answer} rows={3} disabled={savingCard}
+                              onChange={(event) => setEditingCard({ ...editingCard, answer: event.target.value })} />
+                          </div>
+                          <div className={styles.dialogFooter}>
+                            <button type="button" className={styles.cancelButton} onClick={() => setEditingCard(null)} disabled={savingCard}>Abbrechen</button>
+                            <button type="submit" className={styles.submitButton}
+                              disabled={savingCard || !editingCard.question.trim() || !editingCard.answer.trim()}>
+                              {savingCard ? "Wird gespeichert …" : "Speichern"}
+                            </button>
+                          </div>
+                        </form>
+                      </li>
+                    ) : (
                       <li key={entry.id} className={styles.cardListRow}>
                         <span className={styles.cardListIndex} aria-hidden="true">{entryIndex + 1}</span>
                         <span>{entry.question}</span>
+                        <button type="button" className={styles.cardListEdit} aria-label={`„${entry.question}“ bearbeiten`}
+                          onClick={() => setEditingCard({ id: entry.id, question: entry.question, answer: entry.answer })}
+                          disabled={savingCard}>
+                          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M4 20h4L19 9l-4-4L4 16v4Z" /><path d="m13.5 6.5 4 4" /></svg>
+                        </button>
                         <button type="button" className={styles.cardListRemove} aria-label={`„${entry.question}“ löschen`}
                           onClick={() => void handleRemoveCard(entry.id)} disabled={removingId === entry.id}>
                           <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M5 7h14M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2m2 0-.9 12.1a2 2 0 0 1-2 1.9H8.9a2 2 0 0 1-2-1.9L6 7Z" /></svg>
@@ -329,6 +379,15 @@ export default function FlashcardDeckDetail({
             </div>
           </div>
         )
+      )}
+
+      {editingDeck && (
+        <EditDeckDialog
+          title={deck.title}
+          description={deck.description}
+          onClose={() => setEditingDeck(false)}
+          onSave={handleSaveDeck}
+        />
       )}
 
       {confirmingDelete && (
