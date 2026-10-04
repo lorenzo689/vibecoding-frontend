@@ -235,6 +235,7 @@ button.fileName:hover { text-decoration: underline; text-underline-offset: 3px; 
 .factsForm { display: grid; grid-template-columns: 1fr 1fr 110px; gap: var(--space-4); margin-top: var(--space-4); padding: var(--space-4); background: var(--app-bg); border-radius: 12px; }
 .factsForm label { display: grid; gap: 5px; color: var(--cl-muted); font-size: 12px; font-weight: 650; }
 .factsForm input { width: 100%; padding: 9px 12px; color: var(--cl-ink); background: var(--app-surface); border: 1.5px solid var(--cl-line); border-radius: 10px; font-size: 13px; font-weight: 400; }
+.factsWide { grid-column: 1 / -1; }
 .factsFormActions { grid-column: 1 / -1; display: flex; justify-content: flex-end; gap: var(--space-3); }
 .factsForm .hint { grid-column: 1 / -1; }
 @media (max-width: 560px) { .factsForm { grid-template-columns: 1fr; } }

@@ -43,12 +43,12 @@ export default function GradeStudio() {
           <div className={s.pageState}><span className={s.micro}>NOCH KEIN KURS</span><h2>Erst ein Kurs,<br />dann Noten.</h2>
             <p>Leg zuerst einen Kurs an, um Prüfungsleistungen und Noten zu verwalten.</p>
             <Link href="/courses" className={s.primaryAction}>+ Kurs anlegen</Link></div>
-        ) : data.selectedCourse && <CourseCanvas key={data.selectedCourse.id} course={data.selectedCourse} />}
+        ) : data.selectedCourse && <CourseCanvas key={data.selectedCourse.id} course={data.selectedCourse} onCourseSaved={data.replaceCourse} />}
     </div>
   );
 }
 
-function CourseCanvas({ course }: { course: Course }) {
+function CourseCanvas({ course, onCourseSaved }: { course: Course; onCourseSaved: (next: Course) => void }) {
   const data = useCourseGrades(course.id);
   const { summary } = data;
 
@@ -79,7 +79,7 @@ function CourseCanvas({ course }: { course: Course }) {
             <div className={s.averageBasis}><span>Grundlage</span><strong>{formatEcts(summary.gradedEcts)} bewertete ECTS</strong></div>
             <p className={s.standingNote}>{summary.average === null ? "Dein Schnitt erscheint mit der ersten bewerteten Leistung." : "Dein Zwischenstand aus bereits bewerteten Leistungen. Keine offizielle Hochschulnote."}</p>
           </section>
-          <GoalEditor assessments={data.assessments} />
+          <GoalEditor assessments={data.assessments} course={course} onCourseSaved={onCourseSaved} />
         </div>
         </details>
 

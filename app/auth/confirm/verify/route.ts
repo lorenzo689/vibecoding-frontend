@@ -8,6 +8,7 @@ import {
   trustedOrigin,
   expiredAuthCookie,
 } from "@/lib/auth/confirmation";
+import { EMAIL_CHANGED_DESTINATION, emailChangeOutcome } from "@/lib/auth/emailChange";
 import { createClient } from "@/lib/supabase/server";
 
 const responseHeaders = {
@@ -33,7 +34,7 @@ export async function POST(request: NextRequest) {
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.verifyOtp({
+  const { data, error } = await supabase.auth.verifyOtp({
     token_hash: pending.tokenHash,
     type: pending.type,
   });
@@ -51,6 +52,17 @@ export async function POST(request: NextRequest) {
       path: "/auth",
       maxAge: 10 * 60,
     });
+  }
+
+  if (pending.type === "email_change") {
+    // Zwei Links, zwei Bestätigungen: nach dem ersten gibt es noch keine geänderte Adresse
+    // und kein Ziel — die Seite sagt dann, dass der zweite Link noch fehlt.
+    return NextResponse.json(
+      emailChangeOutcome(data.user) === "changed"
+        ? { destination: EMAIL_CHANGED_DESTINATION }
+        : { emailChange: "pending" },
+      { headers: responseHeaders }
+    );
   }
 
   return NextResponse.json(

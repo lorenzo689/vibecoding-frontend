@@ -12,6 +12,8 @@ export default function ConfirmAuthForm({
 }) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Erster von zwei Links einer E-Mail-Änderung: bestätigt, aber noch nicht wirksam.
+  const [awaitingSecondLink, setAwaitingSecondLink] = useState(false);
 
   async function confirm() {
     setPending(true);
@@ -21,7 +23,11 @@ export default function ConfirmAuthForm({
         method: "POST",
         headers: { "content-type": "application/json" },
       });
-      const body = (await response.json()) as { destination?: string };
+      const body = (await response.json()) as { destination?: string; emailChange?: string };
+      if (response.ok && body.emailChange === "pending") {
+        setAwaitingSecondLink(true);
+        return;
+      }
       if (!response.ok || !body.destination) {
         setError("Der Link ist ungültig, abgelaufen oder wurde bereits verwendet.");
         return;
@@ -49,19 +55,38 @@ export default function ConfirmAuthForm({
     );
   }
 
+  if (awaitingSecondLink) {
+    return (
+      <div className={styles.formContent}>
+        <p className={styles.eyebrow}>Sicherer Kontozugang</p>
+        <h1>Erste Bestätigung erhalten</h1>
+        <p className={styles.subtitle} role="status">
+          Deine E-Mail-Adresse ist noch nicht geändert. Öffne jetzt auch den Link in der Nachricht an deine
+          andere Adresse — erst danach gilt die neue Adresse.
+        </p>
+        <p className={styles.alternative}>
+          <Link href="/profile">Zum Profil</Link>
+        </p>
+      </div>
+    );
+  }
+
   const recovering = type === "recovery";
+  const changingEmail = type === "email_change";
   return (
     <div className={styles.formContent}>
       <p className={styles.eyebrow}>Sicherer Kontozugang</p>
-      <h1>{recovering ? "Passwort zurücksetzen" : "E-Mail bestätigen"}</h1>
+      <h1>{recovering ? "Passwort zurücksetzen" : changingEmail ? "E-Mail-Änderung bestätigen" : "E-Mail bestätigen"}</h1>
       <p className={styles.subtitle}>
         {recovering
           ? "Bestätige den Link, um anschließend ein neues Passwort festzulegen."
-          : "Bestätige deine E-Mail-Adresse, um deinen Studienraum zu öffnen."}
+          : changingEmail
+            ? "Bestätige die Änderung deiner E-Mail-Adresse. Sie gilt erst, wenn du die Links an die alte und die neue Adresse bestätigt hast."
+            : "Bestätige deine E-Mail-Adresse, um deinen Studienraum zu öffnen."}
       </p>
       {error && <p className={styles.notice} data-tone="error" role="alert">{error}</p>}
       <button type="button" className={styles.primary} onClick={confirm} disabled={pending}>
-        {pending ? "Wird bestätigt …" : recovering ? "Weiter zum neuen Passwort" : "E-Mail bestätigen"}
+        {pending ? "Wird bestätigt …" : recovering ? "Weiter zum neuen Passwort" : changingEmail ? "Änderung bestätigen" : "E-Mail bestätigen"}
       </button>
       <p className={styles.alternative}><Link href="/login">Abbrechen und anmelden</Link></p>
     </div>
