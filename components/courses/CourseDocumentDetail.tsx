@@ -51,13 +51,24 @@ const TONE_LABELS: Record<IndexingTone, string> = {
 
 type Tab = "content" | "chat" | "actions" | "notes" | "flashcards" | "quizzes";
 
-export default function CourseDocumentDetail({ courseId, fileId }: { courseId: string; fileId: string }) {
+export default function CourseDocumentDetail({
+  courseId,
+  fileId,
+  initialTab = "content",
+}: {
+  courseId: string;
+  fileId: string;
+  /** Erlaubt Links direkt in den Notizen-Tab, z. B. von den offenen Notizen. */
+  initialTab?: "content" | "notes";
+}) {
   const router = useRouter();
   const [course, setCourse] = useState<Course | null | undefined>(undefined);
   const [file, setFile] = useState<CourseFile | null | undefined>(undefined);
   const [documentStatuses, setDocumentStatuses] = useState<CourseDocumentStatus[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [tab, setTab] = useState<Tab>("content");
+  const [tab, setTab] = useState<Tab>(initialTab);
+  // Seite, zu der der Viewer springen soll (nur PDF: der Browser-Viewer versteht `#page=`).
+  const [viewerPage, setViewerPage] = useState<number | null>(null);
   const [viewUrl, setViewUrl] = useState<string | null>(null);
   const [viewUrlError, setViewUrlError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -242,7 +253,7 @@ export default function CourseDocumentDetail({ courseId, fileId }: { courseId: s
             ) : viewUrlError ? (
               <div className={styles.viewerEmpty}><p>{viewUrlError}</p></div>
             ) : viewUrl ? (
-              <iframe title={file.name} src={viewUrl} className={styles.viewerFrame} />
+              <iframe key={viewerPage ?? 0} title={file.name} src={viewerPage ? `${viewUrl}#page=${viewerPage}` : viewUrl} className={styles.viewerFrame} />
             ) : (
               <div className={styles.viewerSkeleton} aria-hidden="true" />
             )}
@@ -289,7 +300,12 @@ export default function CourseDocumentDetail({ courseId, fileId }: { courseId: s
 
       {tab === "notes" && materialId && (
         <section className={styles.viewerCard}>
-          <DocumentNotes materialId={materialId} />
+          <DocumentNotes
+            materialId={materialId}
+            onOpenPage={file.type === "application/pdf" && inlineViewable
+              ? (page) => { setViewerPage(page); setTab("content"); }
+              : undefined}
+          />
         </section>
       )}
 

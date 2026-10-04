@@ -12,6 +12,7 @@ import {
   listRecentDocuments,
   listUnfinishedDocuments,
 } from "@/lib/supabase/queries/dashboard";
+import { listOpenNotes, openNoteHref } from "@/lib/supabase/queries/open-notes";
 import { deriveCourseBadge } from "@/lib/courseBadge";
 import { KIND_LABELS } from "@/components/calendar/EventDialog";
 import { formatDateKey, formatEventWhen, localDateKey } from "@/components/calendar/dateUtils";
@@ -57,6 +58,7 @@ const loadEvents = () => listEvents();
 const loadRecentDocuments = () => listRecentDocuments(createClient(), 5);
 const loadUnfinishedDocuments = () => listUnfinishedDocuments(createClient());
 const loadProfileName = () => getProfileName(createClient());
+const loadOpenNotes = () => listOpenNotes(createClient(), { limit: 4 });
 const loadDueFlashcards = () => countDueFlashcards(createClient());
 
 const MAX_EVENTS = 5;
@@ -183,6 +185,7 @@ export default function DashboardOverview() {
   const [events, reloadEvents] = useLoadable(loadEvents);
   const [recent, reloadRecent] = useLoadable(loadRecentDocuments);
   const [unfinished] = useLoadable(loadUnfinishedDocuments);
+  const [openNotes] = useLoadable(loadOpenNotes);
   const [dueCards] = useLoadable(loadDueFlashcards);
 
   const courseTitles = useMemo(
@@ -350,6 +353,26 @@ export default function DashboardOverview() {
             ))}
           </ul>
           {attention.total > attention.items.length && <p className={s.more}>Weitere Dokumente findest du in den jeweiligen Kursen.</p>}
+        </section>
+      )}
+
+      {openNotes.status === "ready" && openNotes.data.total > 0 && (
+        <section className={s.card} aria-labelledby="open-notes-heading">
+          <CardHead id="open-notes-heading" icon="file" title={`Offene Notizen (${openNotes.data.total})`} />
+          <ul className={s.docGrid}>
+            {openNotes.data.items.map((note) => (
+              <li key={note.id}>
+                <Link href={openNoteHref(note)} className={s.docRow}>
+                  <span className={s.rowBody}>
+                    <strong className={s.docName}>{note.text}</strong>
+                    <span className={s.rowSub}>{courseTitles.get(note.courseId) ?? "Kurs"} · {note.materialTitle} · Seite {note.pageNumber}</span>
+                  </span>
+                  <span className={s.chip}>{note.kind === "highlight" ? "Markierung" : "Notiz"}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+          {openNotes.data.total > openNotes.data.items.length && <p className={s.more}>Weitere offene Notizen findest du in den jeweiligen Unterlagen.</p>}
         </section>
       )}
 
