@@ -156,6 +156,33 @@ export type SuggestionFormValues = {
   allDay: boolean;
 };
 
+export type SuggestionDateParts = { day: string; month: string; year: string };
+
+/** Preserve an unambiguous day/month from the quoted source when only the year is missing.
+ * Never reuse a model-supplied year (or today's date) alongside a missing_year issue.
+ * Multiple dates, ranges and unresolved conflicts need manual review.
+ */
+export function suggestionDateParts(suggestion: CalendarSuggestion): SuggestionDateParts | null {
+  if (!suggestion.issues.some((issue) => issue.code === "missing_year")) return null;
+  if (suggestion.issues.some((issue) => ["conflicting_information", "ambiguous_information", "relative_date_unresolved"].includes(issue.code))) return null;
+  const matches = [...suggestion.quote.matchAll(/(?<![\d.])(\d{1,2})\.\s*(\d{1,2})(?!\d)/g)];
+  if (matches.length !== 1 || /\b(?:bis|vom)\b|[–—]/i.test(suggestion.quote)) return null;
+  const match = matches[0];
+  // A full date in a contradictory result must be reviewed instead of partially parsed.
+  if (/^\.?\s*\d/.test(suggestion.quote.slice(match.index! + match[0].length))) return null;
+  const parts = { day: match[1].padStart(2, "0"), month: match[2].padStart(2, "0"), year: "" };
+  // Leap year is used only for validation; it is never proposed to the user.
+  return completeSuggestionDate({ ...parts, year: "2000" }) ? parts : null;
+}
+
+export function completeSuggestionDate(parts: SuggestionDateParts): string {
+  if (!/^\d{4}$/.test(parts.year) || Number(parts.year) < 1 ||
+      !/^\d{1,2}$/.test(parts.month) || !/^\d{1,2}$/.test(parts.day)) return "";
+  const date = `${parts.year}-${parts.month.padStart(2, "0")}-${parts.day.padStart(2, "0")}`;
+  const parsed = new Date(`${date}T00:00:00Z`);
+  return Number.isFinite(parsed.getTime()) && parsed.toISOString().slice(0, 10) === date ? date : "";
+}
+
 /**
  * Vorbelegung des Bestätigungsformulars. Ein Vorschlag ohne Uhrzeit wird als ganztägig
  * vorgeschlagen — so steht im Kalender keine erfundene Uhrzeit.
@@ -166,8 +193,8 @@ export function suggestionFormValues(suggestion: CalendarSuggestion): Suggestion
     title: suggestion.title,
     description: suggestion.description ?? "",
     kind: defaultEventKind(suggestion.kind),
-    date: suggestion.date ?? "",
-    time: suggestion.time ? suggestion.time.slice(0, 5) : "09:00",
+    date: suggestion.issues.some((issue) => ["missing_year", "relative_date_unresolved"].includes(issue.code)) ? "" : suggestion.date ?? "",
+    time: suggestion.time ? suggestion.time.slice(0, 5) : "",
     endDate: suggestion.endDate ?? "",
     endTime: suggestion.endTime ? suggestion.endTime.slice(0, 5) : "",
     allDay,

@@ -478,13 +478,13 @@
 .suggestionActions { display: flex; align-items: center; gap: var(--space-4); margin-top: var(--space-4); flex-wrap: wrap; }
 .suggestionActions .viewerLink { margin-top: 0; }
 
-.suggestionForm { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); margin-top: var(--space-4); padding-top: var(--space-4); border-top: 1px solid var(--doc-line); }
-.suggestionForm label { display: grid; gap: 5px; font-size: 12px; font-weight: 650; color: var(--doc-muted); }
-.suggestionForm input, .suggestionForm select, .suggestionForm textarea { width: 100%; padding: 9px 12px; color: var(--doc-ink); background: var(--app-surface); border: 1.5px solid var(--doc-line); border-radius: 10px; font-size: 13px; font-weight: 400; }
+.suggestionForm { display: grid; align-items: start; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); margin-top: var(--space-4); padding-top: var(--space-4); border-top: 1px solid var(--doc-line); }
+.suggestionForm label { min-width: 0; display: grid; gap: 5px; font-size: 12px; font-weight: 650; color: var(--doc-muted); }
+.suggestionForm input, .suggestionForm select, .suggestionForm textarea { min-width: 0; box-sizing: border-box; width: 100%; padding: 9px 12px; color: var(--doc-ink); background: var(--app-surface); border: 1.5px solid var(--doc-line); border-radius: 10px; font-size: 13px; font-weight: 400; }
 .suggestionForm input:focus-visible, .suggestionForm select:focus-visible, .suggestionForm textarea:focus-visible { outline: 2px solid var(--doc-accent-b); outline-offset: 1px; }
 .suggestionForm textarea { resize: vertical; }
 .suggestionWide { grid-column: 1 / -1; }
-.suggestionCheck { grid-column: 1 / -1; display: flex; align-items: center; gap: var(--space-2); }
+.suggestionForm .suggestionCheck { grid-column: 1 / -1; display: flex; align-items: center; gap: var(--space-2); }
 .suggestionCheck input { width: auto; }
 .suggestionForm .suggestionActions { grid-column: 1 / -1; margin-top: 0; }
 .suggestionForm .errorHint { grid-column: 1 / -1; margin-top: 0; }
@@ -624,3 +624,10 @@
 .lectureFilter label { display: inline-flex; align-items: center; gap: var(--space-4); flex-wrap: wrap; color: var(--doc-muted); font-size: 12px; font-weight: 650; }
 .lectureFilter select { min-width: 240px; max-width: 100%; padding: 8px 12px; color: var(--doc-ink); background: var(--app-surface); border: 1.5px solid var(--doc-line); border-radius: 10px; font-size: 13px; font-weight: 400; }
 .lectureFilter select:focus-visible { outline: 2px solid var(--doc-accent-b); outline-offset: 1px; }
+
+.suggestionDateParts { grid-column: 1 / -1; width: min(100%, 19rem); min-width: 0; margin: 0; padding: 0; border: 0; }
+.suggestionDateParts legend { color: var(--doc-muted); font-size: 12px; font-weight: 650; }
+.suggestionDateParts p { margin: 5px 0 10px; color: var(--doc-muted); font-size: 12px; }
+.suggestionDateParts > div { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.5fr); gap: var(--space-3); }
+.suggestionDateField { width: min(100%, 13rem); }
+.suggestionEndDate { grid-column: 1 / -1; width: min(100%, 13rem); }

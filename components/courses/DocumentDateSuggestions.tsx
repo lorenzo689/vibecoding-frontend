@@ -13,6 +13,9 @@ import {
   dismissSuggestion,
   fetchAnalysis,
   suggestionFormValues,
+  suggestionDateParts,
+  completeSuggestionDate,
+  type SuggestionDateParts,
   timezoneMismatch,
   toAnalysisErrorCode,
   type CalendarSuggestion,
@@ -201,7 +204,7 @@ function SuggestionRow({
   onDecided: (itemId: string, status: "accepted" | "dismissed", calendarEventId: string | null) => void;
 }) {
   const [form, setForm] = useState<SuggestionFormValues>(() => suggestionFormValues(suggestion));
-  const [confirming, setConfirming] = useState(false);
+  const [dateParts, setDateParts] = useState(() => suggestionDateParts(suggestion));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -212,6 +215,13 @@ function SuggestionRow({
   function update<K extends keyof SuggestionFormValues>(key: K, value: SuggestionFormValues[K]) {
     setForm((current) => ({ ...current, [key]: value }));
     setError(null);
+  }
+
+  function updateDatePart(key: keyof SuggestionDateParts, value: string) {
+    if (!dateParts) return;
+    const next = { ...dateParts, [key]: value };
+    setDateParts(next);
+    update("date", completeSuggestionDate(next));
   }
 
   // Gleiche Konvention wie der Termin-Dialog des Kalenders: ein eintägiger Ganztages-Termin
@@ -227,16 +237,18 @@ function SuggestionRow({
     const startsAt = formToIso(form.date, form.time);
     if (!form.endDate && !form.endTime) return { startsAt, endsAt: null };
     const endKey = form.endDate || form.date;
-    const endTime = form.endTime || form.time;
+    if (!form.endTime) return null;
+    const endTime = form.endTime;
     const endsAt = formToIso(endKey, endTime);
     if (new Date(endsAt).getTime() <= new Date(startsAt).getTime()) return null;
     return { startsAt, endsAt };
   }
 
   async function handleAccept() {
+    if (busy || !canAccept) return;
     const times = buildTimes();
     if (!times) {
-      setError("Das Ende muss nach dem Start liegen.");
+      setError("Ergänze eine Endzeit und prüfe, dass das Ende nach dem Start liegt. Bei ganztägigen Terminen darf das Enddatum nicht vor dem Start liegen.");
       return;
     }
     setBusy(true);
@@ -276,13 +288,6 @@ function SuggestionRow({
         <span className={styles.suggestionTag}>{suggestion.kind === "deadline" ? "Abgabe" : "Termin"}</span>
       </div>
 
-      {suggestion.description && <p className={styles.suggestionText}>{suggestion.description}</p>}
-
-      <blockquote className={styles.suggestionQuote}>
-        „{suggestion.quote}“
-        {suggestion.page !== null && <cite>Seite {suggestion.page}</cite>}
-      </blockquote>
-
       {suggestion.reviewRequired && suggestion.issues.length > 0 && (
         <ul className={styles.suggestionIssues}>
           {suggestion.issues.map((issue, index) => (
@@ -292,74 +297,107 @@ function SuggestionRow({
       )}
       {zoneHint && <p className={styles.suggestionIssues}>{zoneHint}</p>}
 
-      {!confirming ? (
+      <div className={styles.suggestionForm}>
+        <label>
+          <span>Titel</span>
+          <input value={form.title} onChange={(event) => update("title", event.target.value)} disabled={busy} />
+        </label>
+        <label>
+          <span>Art</span>
+          <select
+            value={form.kind}
+            onChange={(event) => update("kind", event.target.value as ConfirmableEventKind)}
+            disabled={busy}
+          >
+            {Object.entries(KIND_LABELS).map(([value, label]) => (
+              <option key={value} value={value}>{label}</option>
+            ))}
+          </select>
+        </label>
+        <label className={styles.suggestionCheck}>
+          <input
+            type="checkbox"
+            checked={form.allDay}
+            onChange={(event) => update("allDay", event.target.checked)}
+            disabled={busy}
+          />
+          <span>Ganztägig</span>
+        </label>
+        {dateParts ? (
+          <fieldset className={styles.suggestionDateParts}>
+            <legend>Datum</legend>
+            <p>Tag und Monat wurden erkannt. Ergänze nur das Jahr.</p>
+            <div>
+              <label>
+                <span>Tag</span>
+                <input type="text" inputMode="numeric" maxLength={2} value={dateParts.day} onChange={(event) => updateDatePart("day", event.target.value)} disabled={busy} />
+              </label>
+              <label>
+                <span>Monat</span>
+                <input type="text" inputMode="numeric" maxLength={2} value={dateParts.month} onChange={(event) => updateDatePart("month", event.target.value)} disabled={busy} />
+              </label>
+              <label>
+                <span>Jahr</span>
+                <input type="text" inputMode="numeric" maxLength={4} placeholder="JJJJ" value={dateParts.year} onChange={(event) => updateDatePart("year", event.target.value)} disabled={busy} aria-invalid={dateParts.year.length > 0 && !form.date} />
+              </label>
+            </div>
+          </fieldset>
+        ) : (
+          <label className={styles.suggestionDateField}>
+            <span>Datum</span>
+            <input type="date" value={form.date} onChange={(event) => update("date", event.target.value)} disabled={busy} />
+          </label>
+        )}
+        {!form.allDay && (
+          <label className={styles.suggestionDateField}>
+            <span>Uhrzeit</span>
+            <input type="time" value={form.time} onChange={(event) => update("time", event.target.value)} disabled={busy} />
+          </label>
+        )}
+        <label className={styles.suggestionEndDate}>
+          <span>Enddatum (optional)</span>
+          <input type="date" value={form.endDate} min={form.date || undefined} onChange={(event) => update("endDate", event.target.value)} disabled={busy} />
+        </label>
+        {!form.allDay && (
+          <label className={styles.suggestionDateField}>
+            <span>Endzeit (optional)</span>
+            <input type="time" value={form.endTime} onChange={(event) => update("endTime", event.target.value)} disabled={busy} />
+          </label>
+        )}
+        {!form.date && !dateParts && (
+          <p className={styles.errorHint} data-tone="info">Das Datum ist nicht eindeutig. Ergänze es vor der Übernahme; bei fehlendem Jahr kannst du oben ein Bezugsdatum setzen und erneut suchen.</p>
+        )}
+        {dateParts && dateParts.year.length > 0 && !form.date && (
+          <p className={styles.errorHint} data-tone="info">Bitte ergänze ein gültiges Datum mit vierstelligem Jahr.</p>
+        )}
+        {!form.allDay && !form.time && (
+          <p className={styles.errorHint} data-tone="info">Ergänze die Uhrzeit oder wähle „Ganztägig“.</p>
+        )}
+        <label className={styles.suggestionWide}>
+          <span>Notiz</span>
+          <textarea
+            value={form.description}
+            onChange={(event) => update("description", event.target.value)}
+            rows={2}
+            disabled={busy}
+          />
+        </label>
+
+        {error && <p className={styles.errorHint} role="alert">{error}</p>}
+
         <div className={styles.suggestionActions}>
-          <button type="button" className={styles.runButton} onClick={() => setConfirming(true)}>
-            Prüfen und übernehmen
+          <button type="button" className={styles.runButton} onClick={() => void handleAccept()} disabled={busy || !canAccept}>
+            {busy ? "Wird übernommen …" : "In den Kalender übernehmen"}
           </button>
           <button type="button" className={styles.viewerLink} onClick={() => void handleDismiss()} disabled={busy}>
             Verwerfen
           </button>
         </div>
-      ) : (
-        <div className={styles.suggestionForm}>
-          <label>
-            <span>Titel</span>
-            <input value={form.title} onChange={(event) => update("title", event.target.value)} disabled={busy} />
-          </label>
-          <label>
-            <span>Art</span>
-            <select
-              value={form.kind}
-              onChange={(event) => update("kind", event.target.value as ConfirmableEventKind)}
-              disabled={busy}
-            >
-              {Object.entries(KIND_LABELS).map(([value, label]) => (
-                <option key={value} value={value}>{label}</option>
-              ))}
-            </select>
-          </label>
-          <label className={styles.suggestionCheck}>
-            <input
-              type="checkbox"
-              checked={form.allDay}
-              onChange={(event) => update("allDay", event.target.checked)}
-              disabled={busy}
-            />
-            <span>Ganztägig</span>
-          </label>
-          <label>
-            <span>Datum</span>
-            <input type="date" value={form.date} onChange={(event) => update("date", event.target.value)} disabled={busy} />
-          </label>
-          {!form.allDay && (
-            <label>
-              <span>Uhrzeit</span>
-              <input type="time" value={form.time} onChange={(event) => update("time", event.target.value)} disabled={busy} />
-            </label>
-          )}
-          <label className={styles.suggestionWide}>
-            <span>Notiz</span>
-            <textarea
-              value={form.description}
-              onChange={(event) => update("description", event.target.value)}
-              rows={2}
-              disabled={busy}
-            />
-          </label>
-
-          {error && <p className={styles.errorHint} role="alert">{error}</p>}
-
-          <div className={styles.suggestionActions}>
-            <button type="button" className={styles.runButton} onClick={() => void handleAccept()} disabled={busy || !canAccept}>
-              {busy ? "Wird übernommen …" : "In den Kalender"}
-            </button>
-            <button type="button" className={styles.viewerLink} onClick={() => setConfirming(false)} disabled={busy}>
-              Abbrechen
-            </button>
-          </div>
-        </div>
-      )}
+      </div>
+      <blockquote className={styles.suggestionQuote}>
+        „{suggestion.quote}“
+        {suggestion.page !== null && <cite>Seite {suggestion.page}</cite>}
+      </blockquote>
     </li>
   );
 }
