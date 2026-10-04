@@ -1,35 +1,62 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { createClient } from "@/lib/supabase/browser";
 import { runTemporaryChat } from "@/lib/chat";
 import { ChatError } from "@/lib/chatProtocol";
 import { discardedNotice, parseQuiz } from "@/lib/aiOutput";
+import {
+  isAttemptComplete,
+  listQuizzes,
+  QUIZ_MAX_QUESTIONS,
+  QUIZ_MIN_QUESTIONS,
+  saveAttempt,
+  saveQuiz,
+  startAttempt,
+  validateQuiz,
+  type QuizAttempt,
+  type SavedQuiz,
+} from "@/lib/supabase/queries/learningQuizzes";
 import styles from "@/components/documents/documents.module.css";
 
 function asChatError(error: unknown): ChatError {
   return error instanceof ChatError ? error : new ChatError("LOAD_FAILED");
 }
 
-type QuizQuestion = { question: string; options: string[]; correctIndex: number; explanation: string };
-type Quiz = {
-  id: string;
-  title: string;
-  questions: QuizQuestion[];
-  createdAt: string;
+function formatShortDate(iso: string): string {
+  const date = new Date(iso);
+  return Number.isNaN(date.getTime())
+    ? ""
+    : new Intl.DateTimeFormat("de-DE", { day: "2-digit", month: "short", year: "numeric" }).format(date).toUpperCase();
+}
+
+// Die Fragen entstehen weiter über den echten Kurs-Chat (lib/chat.ts, geparst in
+// lib/aiOutput.ts) — eine KI-Quizgenerierung ist ausdrücklich nicht Teil der
+// Backend-Erweiterung. Neu ist, dass ein Quiz gespeichert wird: Versuche, Antworten und
+// Punktzahl liegen seit Migration 20261003142000 in der Datenbank statt im Komponenten-
+// zustand. Der Server normalisiert jede Frage auf Frage, vier Optionen und richtige
+// Antwort; die vom Modell gelieferte Erklärung wird dabei verworfen und deshalb hier
+// nicht mehr angezeigt.
+
+function QuizTaking({
+  quiz,
+  answers,
+  onAnswer,
+  onFinish,
+  busy,
+}: {
+  quiz: SavedQuiz;
   answers: (number | null)[];
-  submitted: boolean;
-};
-
-// There is no quiz/question/score table in the backend yet, so a generated
-// quiz only lives in this component's state — real AI content from the
-// existing course chat (parsed by lib/aiOutput.ts), but nothing is written to the database.
-
-function QuizTaking({ quiz, onAnswer, onFinish }: { quiz: Quiz; onAnswer: (questionIndex: number, optionIndex: number) => void; onFinish: () => void }) {
+  onAnswer: (questionIndex: number, optionIndex: number) => void;
+  onFinish: () => void;
+  busy: boolean;
+}) {
   const [index, setIndex] = useState(0);
   const question = quiz.questions[index];
-  const answered = quiz.answers.filter((answer) => answer !== null).length;
+  const answered = answers.filter((answer) => answer !== null).length;
   const isLast = index === quiz.questions.length - 1;
+
+  if (!question) return null;
 
   return (
     <div className={styles.quizTaking}>
@@ -46,9 +73,9 @@ function QuizTaking({ quiz, onAnswer, onFinish }: { quiz: Quiz; onAnswer: (quest
         <p className={styles.quizQuestionText}>{question.question}</p>
         <div className={styles.quizOptions} role="radiogroup" aria-label={question.question}>
           {question.options.map((option, optionIndex) => (
-            <button type="button" key={optionIndex} role="radio" aria-checked={quiz.answers[index] === optionIndex}
-              className={styles.quizOption} data-selected={quiz.answers[index] === optionIndex}
-              onClick={() => onAnswer(index, optionIndex)}>
+            <button type="button" key={optionIndex} role="radio" aria-checked={answers[index] === optionIndex}
+              className={styles.quizOption} data-selected={answers[index] === optionIndex}
+              onClick={() => onAnswer(index, optionIndex)} disabled={busy}>
               <span className={styles.quizOptionDot} aria-hidden="true" />
               {option}
             </button>
@@ -62,16 +89,18 @@ function QuizTaking({ quiz, onAnswer, onFinish }: { quiz: Quiz; onAnswer: (quest
           Zurück
         </button>
         <div className={styles.quizDots}>
-          {quiz.questions.map((_, dotIndex) => (
-            <button type="button" key={dotIndex} className={styles.quizDot} data-current={dotIndex === index} data-answered={quiz.answers[dotIndex] !== null}
+          {quiz.questions.map((_unused, dotIndex) => (
+            <button type="button" key={dotIndex} className={styles.quizDot} data-current={dotIndex === index} data-answered={answers[dotIndex] !== null}
               aria-label={`Zu Frage ${dotIndex + 1}`} onClick={() => setIndex(dotIndex)}>
               {dotIndex + 1}
             </button>
           ))}
         </div>
+        {/* Das Backend lehnt eine Abgabe mit offenen Fragen ab — dieselbe Regel hier. */}
         {isLast ? (
-          <button type="button" className={styles.quizNavPrimary} onClick={onFinish} disabled={answered < quiz.questions.length}>
-            Auswerten
+          <button type="button" className={styles.quizNavPrimary} onClick={onFinish}
+            disabled={busy || !isAttemptComplete(answers, quiz.questions.length)}>
+            {busy ? "Wird ausgewertet …" : "Auswerten"}
           </button>
         ) : (
           <button type="button" className={styles.quizNavPrimary} onClick={() => setIndex((current) => Math.min(quiz.questions.length - 1, current + 1))}>
@@ -84,9 +113,10 @@ function QuizTaking({ quiz, onAnswer, onFinish }: { quiz: Quiz; onAnswer: (quest
   );
 }
 
-function QuizResults({ quiz, onBack }: { quiz: Quiz; onBack: () => void }) {
-  const correctCount = quiz.questions.filter((question, index) => quiz.answers[index] === question.correctIndex).length;
-  const score = Math.round((correctCount / quiz.questions.length) * 100);
+function QuizResults({ quiz, attempt, onBack }: { quiz: SavedQuiz; attempt: QuizAttempt; onBack: () => void }) {
+  // Die Punktzahl kommt vom Server; hier wird nichts nachgerechnet.
+  const correctCount = attempt.score ?? 0;
+  const score = quiz.questions.length > 0 ? Math.round((correctCount / quiz.questions.length) * 100) : 0;
 
   return (
     <div className={styles.quizResults}>
@@ -97,71 +127,56 @@ function QuizResults({ quiz, onBack }: { quiz: Quiz; onBack: () => void }) {
         <p className={styles.quizScoreLabel}>DEINE PUNKTZAHL</p>
         <p className={styles.quizScoreValue} data-tone={score >= 70 ? "good" : score >= 40 ? "mid" : "low"}>{score}%</p>
         <p className={styles.quizScoreNote}>{score >= 70 ? "Stark!" : score >= 40 ? "Auf dem richtigen Weg." : "Weiter üben!"}</p>
-        <div className={styles.quizScoreStats}>
-          <span>{quiz.questions.length} gesamt</span>
-          <span className={styles.quizStatGood}>{correctCount} richtig</span>
-          <span className={styles.quizStatBad}>{quiz.questions.length - correctCount} falsch</span>
-        </div>
+        <p className={styles.quizScoreStats}>{correctCount} von {quiz.questions.length} richtig</p>
       </div>
 
-      <h3 className={styles.quizReviewHeading}>
-        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H12v18H6.5A2.5 2.5 0 0 1 4 18.5v-13Z" /><path d="M20 5.5A2.5 2.5 0 0 0 17.5 3H12v18h5.5a2.5 2.5 0 0 0 2.5-2.5v-13Z" /></svg>
-        Detaillierte Auswertung
-      </h3>
       <ul className={styles.quizReviewList}>
         {quiz.questions.map((question, index) => {
-          const given = quiz.answers[index];
-          const correct = given === question.correctIndex;
+          const given = attempt.answers[index];
+          const right = given === question.correctIndex;
           return (
-            <li key={index} className={styles.quizReviewItem}>
-              <div className={styles.quizReviewHead}>
-                <span className={styles.quizQuestionTag}><span aria-hidden="true" />Frage {index + 1}</span>
-                <span className={styles.quizReviewVerdict} data-correct={correct} aria-label={correct ? "Richtig beantwortet" : "Falsch beantwortet"}>
-                  {correct
-                    ? <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m5 13 4 4L19 7" /></svg>
-                    : <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 6l12 12M18 6 6 18" /></svg>}
-                </span>
-              </div>
-              <p className={styles.quizQuestionText}>{question.question}</p>
-              <div className={styles.quizOptions}>
-                {question.options.map((option, optionIndex) => (
-                  <div key={optionIndex} className={styles.quizReviewOption}
-                    data-tone={optionIndex === question.correctIndex ? "correct" : optionIndex === given ? "wrong" : "neutral"}>
-                    {option}
-                    {optionIndex === given && <span className={styles.quizReviewFlag} data-tone="wrong">{correct ? "✓ Deine Antwort" : "✕ Deine Antwort"}</span>}
-                    {optionIndex === question.correctIndex && optionIndex !== given && <span className={styles.quizReviewFlag} data-tone="correct">✓ Richtig</span>}
-                  </div>
-                ))}
-              </div>
-              <div className={styles.quizExplanation}>
-                <span>ERKLÄRUNG</span>
-                <p>{question.explanation}</p>
-              </div>
+            <li key={index} className={styles.quizReviewItem} data-correct={right || undefined}>
+              <p className={styles.quizReviewQuestion}>{index + 1}. {question.question}</p>
+              <p className={styles.quizReviewAnswer}>
+                Deine Antwort: {given === null ? "keine" : question.options[given]}
+              </p>
+              {!right && (
+                <p className={styles.quizReviewAnswer} data-tone="correct">
+                  Richtig: {question.options[question.correctIndex]}
+                </p>
+              )}
             </li>
           );
         })}
       </ul>
 
-      <button type="button" className={styles.quizNavPrimary} onClick={onBack}>
-        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m11 5-6 7 6 7M5 12h14" /></svg>
-        Zurück zu den Tests
-      </button>
+      <button type="button" className={styles.uploadButton} onClick={onBack}>Zurück zur Übersicht</button>
     </div>
   );
 }
 
 export default function DocumentQuizzes({ courseId, materialId, fileName }: { courseId: string; materialId: string; fileName: string }) {
-  const [quizzes, setQuizzes] = useState<Quiz[]>([]);
-  const [openId, setOpenId] = useState<string | null>(null);
-  const [showResultsId, setShowResultsId] = useState<string | null>(null);
+  const [quizzes, setQuizzes] = useState<SavedQuiz[] | undefined>(undefined);
+  const [active, setActive] = useState<{ quiz: SavedQuiz; attempt: QuizAttempt } | null>(null);
+  const [results, setResults] = useState<{ quiz: SavedQuiz; attempt: QuizAttempt } | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [count, setCount] = useState(5);
   const [generating, setGenerating] = useState(false);
+  const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
-  const openQuiz = quizzes.find((quiz) => quiz.id === openId) ?? null;
-  const resultsQuiz = quizzes.find((quiz) => quiz.id === showResultsId) ?? null;
+  useEffect(() => {
+    let active2 = true;
+    listQuizzes(materialId)
+      .then((loaded) => { if (active2) setQuizzes(loaded); })
+      .catch(() => {
+        if (!active2) return;
+        setQuizzes([]);
+        setError("Gespeicherte Tests konnten nicht geladen werden.");
+      });
+    return () => { active2 = false; };
+  }, [materialId]);
 
   async function handleGenerate(event: FormEvent) {
     event.preventDefault();
@@ -177,19 +192,25 @@ export default function DocumentQuizzes({ courseId, materialId, fileName }: { co
         setError(new ChatError("UNUSABLE_AI_OUTPUT").message);
         return;
       }
-      const questions = parsed.questions;
-      const quiz: Quiz = {
-        id: crypto.randomUUID(),
-        title: `${fileName.replace(/\.[^.]+$/, "")} – Test`,
-        questions,
-        createdAt: new Date().toISOString(),
-        answers: questions.map(() => null),
-        submitted: false,
-      };
-      setQuizzes((current) => [quiz, ...current]);
+
+      const title = `${fileName.replace(/\.[^.]+$/, "")} – Test`;
+      // Die Erklärung des Modells speichert das Backend nicht, deshalb hier nicht mitsenden.
+      const questions = parsed.questions.map((question) => ({
+        question: question.question,
+        options: [...question.options],
+        correctIndex: question.correctIndex,
+      }));
+
+      const check = validateQuiz(title, questions);
+      if (!check.ok) {
+        setError(check.message);
+        return;
+      }
+
+      await saveQuiz({ materialId, title, questions, requestId: crypto.randomUUID() });
+      setQuizzes(await listQuizzes(materialId));
       setNotice(discardedNotice(parsed.discarded));
       setDialogOpen(false);
-      setOpenId(quiz.id);
     } catch (failure) {
       setError(asChatError(failure).message);
     } finally {
@@ -197,118 +218,135 @@ export default function DocumentQuizzes({ courseId, materialId, fileName }: { co
     }
   }
 
-  function handleAnswer(quizId: string, questionIndex: number, optionIndex: number) {
-    setQuizzes((current) => current.map((quiz) => quiz.id !== quizId ? quiz : {
-      ...quiz,
-      answers: quiz.answers.map((answer, index) => index === questionIndex ? optionIndex : answer),
-    }));
+  async function handleStart(quiz: SavedQuiz) {
+    setBusy(true);
+    setError(null);
+    try {
+      const attempt = await startAttempt(quiz.id, quiz.questions.length, crypto.randomUUID());
+      setActive({ quiz, attempt });
+    } catch {
+      setError("Der Versuch konnte nicht gestartet werden.");
+    } finally {
+      setBusy(false);
+    }
   }
 
-  function handleFinish(quizId: string) {
-    setQuizzes((current) => current.map((quiz) => quiz.id !== quizId ? quiz : { ...quiz, submitted: true }));
-    setOpenId(null);
-    setShowResultsId(quizId);
+  function handleAnswer(questionIndex: number, optionIndex: number) {
+    setActive((current) => {
+      if (!current) return current;
+      const answers = current.attempt.answers.map((value, index) => (index === questionIndex ? optionIndex : value));
+      return { ...current, attempt: { ...current.attempt, answers } };
+    });
   }
 
-  if (openQuiz) {
-    return <QuizTaking quiz={openQuiz} onAnswer={(q, o) => handleAnswer(openQuiz.id, q, o)} onFinish={() => handleFinish(openQuiz.id)} />;
+  async function handleFinish() {
+    if (!active) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const submitted = await saveAttempt({
+        attemptId: active.attempt.id,
+        answers: active.attempt.answers,
+        expectedRevision: active.attempt.revision,
+        submit: true,
+      });
+      setResults({ quiz: active.quiz, attempt: submitted });
+      setActive(null);
+    } catch {
+      setError("Der Versuch konnte nicht ausgewertet werden. Lade die Seite neu und versuche es erneut.");
+    } finally {
+      setBusy(false);
+    }
   }
-  if (resultsQuiz) {
-    return <QuizResults quiz={resultsQuiz} onBack={() => setShowResultsId(null)} />;
+
+  if (active) {
+    return (
+      <>
+        {error && <p className={styles.errorHint} role="alert">{error}</p>}
+        <QuizTaking
+          quiz={active.quiz}
+          answers={active.attempt.answers}
+          onAnswer={handleAnswer}
+          onFinish={() => void handleFinish()}
+          busy={busy}
+        />
+      </>
+    );
+  }
+
+  if (results) {
+    return <QuizResults quiz={results.quiz} attempt={results.attempt} onBack={() => setResults(null)} />;
+  }
+
+  if (quizzes === undefined) {
+    return <p className={styles.loading} aria-live="polite">Tests werden geladen …</p>;
   }
 
   return (
-    <div className={styles.deckPanel}>
-      <div className={styles.preview}>
-        VORSCHAU
-        <span>Tests werden mit dem echten Kurs-Chat generiert, sind aber noch nicht mit einer Datenbank verbunden. Ergebnisse gehen beim Neuladen der Seite verloren.</span>
-      </div>
-
-      <div className={styles.deckToolbar}>
+    <div className={styles.quizPanel}>
+      <div className={styles.sectionHead}>
         <div>
-          <h2>Tests zu diesem Dokument</h2>
-          <p>{quizzes.length === 0 ? "Noch kein Test erstellt" : `${quizzes.length} ${quizzes.length === 1 ? "Test" : "Tests"} verfügbar`}</p>
+          <h2>Tests</h2>
+          <p>
+            {quizzes.length === 0
+              ? "Lass dir einen Multiple-Choice-Test aus dieser Unterlage erstellen."
+              : `${quizzes.length} ${quizzes.length === 1 ? "Test" : "Tests"} gespeichert`}
+          </p>
         </div>
-        <button type="button" className={styles.runButton} onClick={() => setDialogOpen(true)}>
-          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14" /></svg>
-          Test generieren
+        <button type="button" className={styles.uploadButton} onClick={() => setDialogOpen(true)} disabled={generating}>
+          Test erstellen
         </button>
       </div>
 
-      {notice && <p className={styles.noticeHint} role="status">{notice}</p>}
-      {error && !dialogOpen && <p className={styles.errorHint} role="alert">{error}</p>}
-
-      {quizzes.length === 0 ? (
-        <div className={styles.panelEmpty}>
-          <span className={styles.panelIcon} aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="8.5" /><path d="M9.5 9.5a2.5 2.5 0 1 1 3.4 2.3c-.7.3-1.4.9-1.4 1.7" /><path d="M12 17h.01" /></svg>
-          </span>
-          <h3>Noch keine Tests</h3>
-          <p>Erstelle einen Test aus den Kursunterlagen, um dein Wissen zu prüfen.</p>
-        </div>
-      ) : (
-        <ul className={styles.deckGrid}>
-          {quizzes.map((quiz) => {
-            const correctCount = quiz.questions.filter((question, index) => quiz.answers[index] === question.correctIndex).length;
-            const score = quiz.submitted ? Math.round((correctCount / quiz.questions.length) * 100) : null;
-            return (
-              <li key={quiz.id}>
-                <article className={styles.deckCard}>
-                  <span className={styles.quizScoreBadge}>
-                    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M8 21h8M12 17v4M7 4h10v4a5 5 0 0 1-10 0V4Z" /></svg>
-                    {score === null ? "Nicht gestartet" : `${score}%`}
-                  </span>
-                  <span className={styles.deckCardTitle}>{quiz.title}</span>
-                  <span className={styles.deckCardDate}>ERSTELLT {formatShortDate(quiz.createdAt)}</span>
-                  <span className={styles.deckCardCount}>{quiz.questions.length} Fragen</span>
-                  {quiz.submitted ? (
-                    <button type="button" className={styles.deckCardAction} onClick={() => setShowResultsId(quiz.id)}>
-                      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19V10M12 19V4M20 19v-7" /></svg>
-                      Ergebnisse ansehen
-                    </button>
-                  ) : (
-                    <button type="button" className={`${styles.deckCardAction} ${styles.deckCardActionPrimary}`} onClick={() => setOpenId(quiz.id)}>
-                      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M8 5v14l11-7Z" /></svg>
-                      Test starten
-                    </button>
-                  )}
-                </article>
-              </li>
-            );
-          })}
-        </ul>
-      )}
+      {notice && <p className={styles.errorHint} data-tone="info">{notice}</p>}
+      {error && <p className={styles.errorHint} role="alert">{error}</p>}
 
       {dialogOpen && (
-        <div className={styles.backdrop} onClick={(event) => { if (event.target === event.currentTarget && !generating) setDialogOpen(false); }}>
-          <div className={styles.dialog} role="dialog" aria-modal="true" aria-labelledby="generate-quiz-heading">
-            <div className={styles.dialogHeader}>
-              <h2 id="generate-quiz-heading">Neuen Test generieren</h2>
-              <button type="button" className={styles.closeButton} aria-label="Schließen" onClick={() => setDialogOpen(false)} disabled={generating}>
-                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M6 6l12 12M18 6 6 18" /></svg>
-              </button>
-            </div>
-            <form onSubmit={handleGenerate}>
-              <div className={styles.field}>
-                <label htmlFor="quiz-count">Anzahl der Fragen</label>
-                <input id="quiz-count" type="number" min={3} max={10} value={count}
-                  onChange={(event) => setCount(Math.min(10, Math.max(3, Number(event.target.value) || 5)))} disabled={generating} />
-              </div>
-              {error && <p className={styles.errorHint} role="alert">{error}</p>}
-              <div className={styles.dialogFooter}>
-                <button type="button" className={styles.cancelButton} onClick={() => setDialogOpen(false)} disabled={generating}>Abbrechen</button>
-                <button type="submit" className={styles.submitButton} disabled={generating}>
-                  {generating ? "Wird generiert …" : "Generieren"}
-                </button>
-              </div>
-            </form>
+        <form className={styles.quizSetup} onSubmit={handleGenerate}>
+          <label>
+            <span>Anzahl Fragen</span>
+            <input
+              type="number"
+              min={QUIZ_MIN_QUESTIONS}
+              max={QUIZ_MAX_QUESTIONS}
+              value={count}
+              onChange={(event) => setCount(Number.parseInt(event.target.value, 10) || QUIZ_MIN_QUESTIONS)}
+              disabled={generating}
+            />
+          </label>
+          <div className={styles.quizSetupActions}>
+            <button type="button" className={styles.viewerLink} onClick={() => setDialogOpen(false)} disabled={generating}>
+              Abbrechen
+            </button>
+            <button type="submit" className={styles.uploadButton} disabled={generating}>
+              {generating ? "Wird erstellt …" : "Erstellen"}
+            </button>
           </div>
-        </div>
+          <p className={styles.quizSetupHint}>
+            Automatisch erzeugt und nicht geprüft. Die Fragen stammen aus dem indexierten Text
+            dieser Unterlage.
+          </p>
+        </form>
+      )}
+
+      {quizzes.length > 0 && (
+        <ul className={styles.quizList}>
+          {quizzes.map((quiz) => (
+            <li key={quiz.id}>
+              <div>
+                <strong>{quiz.title}</strong>
+                <small>
+                  {quiz.questions.length} {quiz.questions.length === 1 ? "Frage" : "Fragen"}
+                  {quiz.revision > 1 && ` · Fassung ${quiz.revision}`} · {formatShortDate(quiz.createdAt)}
+                </small>
+              </div>
+              <button type="button" className={styles.uploadButton} onClick={() => void handleStart(quiz)} disabled={busy}>
+                Starten
+              </button>
+            </li>
+          ))}
+        </ul>
       )}
     </div>
   );
-}
-
-function formatShortDate(iso: string): string {
-  return new Intl.DateTimeFormat("de-DE", { day: "2-digit", month: "short", year: "numeric" }).format(new Date(iso)).toUpperCase();
 }

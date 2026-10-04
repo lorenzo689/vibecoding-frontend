@@ -16,6 +16,8 @@ export type CourseDocumentStatus = DocumentPipelineState & {
   materialId: string;
   /** Titel des Materials — zur Anzeige, welche Unterlage eine Generierung blockiert. */
   title: string;
+  /** Zugeordnete Vorlesung desselben Kurses, oder `null`. */
+  lectureId: string | null;
   fileId: string | null;
   updatedAt: string;
 };
@@ -23,6 +25,7 @@ export type CourseDocumentStatus = DocumentPipelineState & {
 type MaterialWithSourceRow = {
   id: string;
   title: string;
+  lecture_id: string | null;
   file_id: string | null;
   source_documents: {
     id: string;
@@ -55,7 +58,7 @@ export async function listCourseDocumentStatuses(
   const { data, error } = await createClient()
     .from("materials")
     .select(
-      "id, title, file_id, source_documents!source_documents_material_id_fkey(id, processing_status, error_code, indexing_status, indexing_error, updated_at)"
+      "id, title, lecture_id, file_id, source_documents!source_documents_material_id_fkey(id, processing_status, error_code, indexing_status, indexing_error, updated_at)"
     )
     .eq("course_id", courseId)
     .eq("type", "source_document")
@@ -70,6 +73,7 @@ export async function listCourseDocumentStatuses(
       documentId: row.source_documents!.id,
       materialId: row.id,
       title: row.title,
+      lectureId: row.lecture_id,
       fileId: row.file_id,
       processingStatus: row.source_documents!.processing_status as ProcessingStatus,
       errorCode: row.source_documents!.error_code,

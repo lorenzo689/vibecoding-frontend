@@ -71,37 +71,44 @@ export async function getDeck(materialId: string): Promise<FlashcardDeck | null>
   };
 }
 
+/**
+ * Legt ein leeres Deck an.
+ *
+ * Seit Backend-Migration 20261003140000 übernimmt das der RPC `create_manual_deck`:
+ * Material und Deck entstehen in einer Transaktion, statt wie zuvor in zwei Schritten
+ * mit manuellem Aufräumen, wenn der zweite scheitert. `requestId` macht den Aufruf
+ * wiederholbar — derselbe Wert liefert dasselbe Deck statt eines zweiten.
+ */
 export async function createDeck(
   courseId: string,
-  title: string
+  title: string,
+  requestId: string = crypto.randomUUID()
 ): Promise<{ materialId: string; deckId: string; title: string }> {
-  const supabase = createClient();
-  const { data: userData, error: userError } = await supabase.auth.getUser();
-  if (userError || !userData.user) throw userError ?? new Error("Nicht angemeldet.");
+  const { data, error } = await createClient().rpc("create_manual_deck", {
+    p_course: courseId,
+    p_title: title.trim(),
+    p_request_id: requestId,
+  });
+  if (error) throw error;
 
-  const { data: material, error: materialError } = await supabase
-    .from("materials")
-    .insert({
-      course_id: courseId,
-      created_by: userData.user.id,
-      type: "flashcard_deck",
-      title,
-    })
-    .select("id")
-    .single();
-  if (materialError) throw materialError;
-
-  const { data: deck, error: deckError } = await supabase
-    .from("flashcard_decks")
-    .insert({ material_id: material.id, title })
-    .select("id")
-    .single();
-  if (deckError) {
-    await supabase.from("materials").delete().eq("id", material.id);
-    throw deckError;
+  const row = data as { material_id?: unknown; deck_id?: unknown } | null;
+  if (typeof row?.material_id !== "string" || typeof row.deck_id !== "string") {
+    throw new Error("Unerwartete Antwort beim Anlegen des Decks.");
   }
+  return { materialId: row.material_id, deckId: row.deck_id, title: title.trim() };
+}
 
-  return { materialId: material.id, deckId: deck.id, title };
+/** Benennt Deck und zugehöriges Material gemeinsam um; gilt auch für generierte Decks. */
+export async function updateDeck(
+  materialId: string,
+  input: { title: string; description?: string | null }
+): Promise<void> {
+  const { error } = await createClient().rpc("update_learning_deck", {
+    p_material: materialId,
+    p_title: input.title.trim(),
+    p_description: input.description?.trim() ?? "",
+  });
+  if (error) throw error;
 }
 
 export async function deleteDeck(materialId: string): Promise<void> {

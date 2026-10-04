@@ -13,6 +13,7 @@ export type BillingErrorCode =
   | "NO_SUBSCRIPTION"
   | "LOAD_FAILED"
   | "UNAVAILABLE"
+  | "WAIVER_REQUIRED"
   | "NETWORK_ERROR"
   | "INVALID_RESPONSE";
 
@@ -234,7 +235,17 @@ export function parseStripeRedirect(action: StripeRedirectAction, value: unknown
  * liefert die Stripe-URL. Es werden bewusst keine Daten mitgeschickt: Preis, Nutzer und Customer
  * bestimmt allein das Backend.
  */
-export async function requestStripeRedirect(client: SupabaseClient<Database>, action: StripeRedirectAction): Promise<string> {
+/**
+ * `waiverAccepted`: ausdrückliches Verlangen nach sofortiger Leistung samt Verzicht auf
+ * das Widerrufsrecht (§ 356 Abs. 4/5 BGB). Das Backend speichert Zeitpunkt und
+ * Textversion in den Stripe-Metadaten und kann die Zustimmung zur Pflicht machen
+ * (`WAIVER_REQUIRED`). Nur weitergeben, was der Nutzer wirklich angekreuzt hat.
+ */
+export async function requestStripeRedirect(
+  client: SupabaseClient<Database>,
+  action: StripeRedirectAction,
+  options: { waiverAccepted?: boolean } = {}
+): Promise<string> {
   const { data: { session }, error: sessionError } = await client.auth.getSession();
   if (sessionError || !session) throw new BillingError("UNAUTHENTICATED");
   let result;
@@ -242,6 +253,7 @@ export async function requestStripeRedirect(client: SupabaseClient<Database>, ac
     result = await client.functions.invoke<{ url?: unknown }>(FUNCTION_NAMES[action], {
       method: "POST",
       headers: { Authorization: `Bearer ${session.access_token}` },
+      ...(action === "checkout" ? { body: { waiver_accepted: options.waiverAccepted === true } } : {}),
     });
   } catch {
     throw new BillingError("NETWORK_ERROR");
@@ -257,6 +269,7 @@ export async function requestStripeRedirect(client: SupabaseClient<Database>, ac
     if (response.status === 401 || code === "UNAUTHENTICATED") throw new BillingError("UNAUTHENTICATED");
     if (code === "ALREADY_SUBSCRIBED") throw new BillingError("ALREADY_SUBSCRIBED");
     if (code === "NO_SUBSCRIPTION") throw new BillingError("NO_SUBSCRIPTION");
+    if (code === "WAIVER_REQUIRED") throw new BillingError("WAIVER_REQUIRED");
     throw new BillingError("UNAVAILABLE");
   }
   if (result.error) throw new BillingError("NETWORK_ERROR");
@@ -313,6 +326,8 @@ export function billingErrorMessage(error: unknown, action: StripeRedirectAction
       return "Du hast bereits ein Abo. Wir aktualisieren deinen Status.";
     case "NO_SUBSCRIPTION":
       return "Zu deinem Konto wurde kein Abo gefunden.";
+    case "WAIVER_REQUIRED":
+      return "Bitte bestätige den Hinweis zum Widerrufsrecht, um fortzufahren.";
     case "NETWORK_ERROR":
       return "Die Verbindung ist fehlgeschlagen. Bitte prüfe dein Netzwerk und versuche es erneut.";
     default:

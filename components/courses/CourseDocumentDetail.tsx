@@ -26,6 +26,8 @@ import DocumentRetryButton from "./DocumentRetryButton";
 import DocumentCourseChat from "./DocumentCourseChat";
 import DocumentAiActions from "./DocumentAiActions";
 import DocumentFlashcards from "./DocumentFlashcards";
+import DocumentLecturePicker from "./DocumentLecturePicker";
+import DocumentNotes from "./DocumentNotes";
 import DocumentQuizzes from "./DocumentQuizzes";
 import styles from "@/components/documents/documents.module.css";
 
@@ -47,7 +49,7 @@ const TONE_LABELS: Record<IndexingTone, string> = {
   failed: "Fehlgeschlagen",
 };
 
-type Tab = "content" | "chat" | "actions" | "flashcards" | "quizzes";
+type Tab = "content" | "chat" | "actions" | "notes" | "flashcards" | "quizzes";
 
 export default function CourseDocumentDetail({ courseId, fileId }: { courseId: string; fileId: string }) {
   const router = useRouter();
@@ -201,6 +203,7 @@ export default function CourseDocumentDetail({ courseId, fileId }: { courseId: s
         <button type="button" role="tab" aria-selected={tab === "content"} className={styles.tab} data-active={tab === "content"} onClick={() => setTab("content")}>Inhalt</button>
         <button type="button" role="tab" aria-selected={tab === "chat"} className={styles.tab} data-active={tab === "chat"} onClick={() => setTab("chat")}>Chat</button>
         <button type="button" role="tab" aria-selected={tab === "actions"} className={styles.tab} data-active={tab === "actions"} onClick={() => setTab("actions")}>KI-Aktionen</button>
+        <button type="button" role="tab" aria-selected={tab === "notes"} className={styles.tab} data-active={tab === "notes"} onClick={() => setTab("notes")}>Notizen</button>
         <button type="button" role="tab" aria-selected={tab === "flashcards"} className={styles.tab} data-active={tab === "flashcards"} onClick={() => setTab("flashcards")}>Karteikarten</button>
         <button type="button" role="tab" aria-selected={tab === "quizzes"} className={styles.tab} data-active={tab === "quizzes"} onClick={() => setTab("quizzes")}>Tests</button>
       </div>
@@ -247,6 +250,14 @@ export default function CourseDocumentDetail({ courseId, fileId }: { courseId: s
         </section>
       )}
 
+      {tab === "content" && materialId && (
+        <DocumentLecturePicker
+          courseId={courseId}
+          materialId={materialId}
+          initialLectureId={documentStatus?.lectureId ?? null}
+        />
+      )}
+
       {tab === "content" && <aside className={styles.documentTools}>
         <h2>Mit deinen Unterlagen lernen</h2>
         <p>Erstelle eine Zusammenfassung, lerne mit Karteikarten oder stelle Fragen zu diesem Dokument.</p>
@@ -255,7 +266,7 @@ export default function CourseDocumentDetail({ courseId, fileId }: { courseId: s
         <button type="button" className={styles.toolLink} onClick={() => setTab("chat")}>Frage zum Dokument stellen →</button>
       </aside>}
 
-      {(tab === "chat" || tab === "actions" || tab === "quizzes") && !materialId && (
+      {(tab === "chat" || tab === "actions" || tab === "notes" || tab === "quizzes") && !materialId && (
         <section className={styles.viewerCard}>
           <div className={styles.viewerEmpty}>
             <p><strong>Noch nicht für dieses Dokument verfügbar.</strong></p>
@@ -273,6 +284,12 @@ export default function CourseDocumentDetail({ courseId, fileId }: { courseId: s
       {tab === "actions" && materialId && documentId && (
         <section className={styles.viewerCard}>
           <DocumentAiActions courseId={courseId} documentId={documentId} materialId={materialId} />
+        </section>
+      )}
+
+      {tab === "notes" && materialId && (
+        <section className={styles.viewerCard}>
+          <DocumentNotes materialId={materialId} />
         </section>
       )}
 

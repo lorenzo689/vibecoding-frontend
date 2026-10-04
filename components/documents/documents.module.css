@@ -530,3 +530,67 @@
 .textButton:hover:not(:disabled) { text-decoration: underline; }
 .textButton:disabled { opacity: .5; cursor: not-allowed; }
 .textButton:focus-visible { outline: 2px solid var(--doc-accent-b); outline-offset: 2px; }
+
+/* Private Seitennotizen und Markierungen. Offene stehen oben — das ist die Liste,
+   die beim Wiederholen zählt. Erledigte bleiben sichtbar, aber zurückgenommen. */
+.notesPanel { display: grid; gap: var(--space-5); }
+.notesHead h2 { font-size: 17px; font-weight: 700; letter-spacing: -.02em; }
+.notesHead p { margin-top: var(--space-2); color: var(--doc-muted); font-size: 13px; }
+
+.noteForm { display: grid; gap: var(--space-4); padding: var(--space-5); background: var(--app-bg); border: 1px solid var(--doc-line); border-radius: 12px; }
+.noteFormRow { display: flex; flex-wrap: wrap; gap: var(--space-4); }
+.noteForm label { display: grid; gap: 5px; color: var(--doc-muted); font-size: 12px; font-weight: 650; }
+.noteForm select, .noteForm input, .noteForm textarea { padding: 9px 12px; color: var(--doc-ink); background: var(--app-surface); border: 1.5px solid var(--doc-line); border-radius: 10px; font-size: 13px; font-weight: 400; }
+.noteForm textarea { width: 100%; resize: vertical; }
+.noteForm input[type="number"] { width: 110px; }
+.noteForm select:focus-visible, .noteForm input:focus-visible, .noteForm textarea:focus-visible { outline: 2px solid var(--doc-accent-b); outline-offset: 1px; }
+.noteField { width: 100%; }
+.noteForm .uploadButton { justify-self: start; }
+
+.noteList { display: grid; gap: var(--space-4); margin: 0; padding: 0; list-style: none; }
+.noteItem { padding: var(--space-5); background: var(--app-surface); border: 1px solid var(--doc-line); border-radius: 12px; }
+.noteItem[data-resolved] { opacity: .6; }
+.noteMeta { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); font-size: 11.5px; color: var(--doc-muted); }
+.notePage { padding: 3px 10px; border-radius: 999px; background: var(--app-bg); font-weight: 650; color: var(--doc-ink); }
+.noteKind { padding: 3px 10px; border-radius: 999px; font-weight: 650; }
+.noteKind[data-kind="note"] { background: var(--app-purple-tint); color: var(--app-purple); }
+.noteKind[data-kind="highlight"] { background: var(--app-amber-tint); color: var(--app-fg-amber); }
+.noteDate { margin-left: auto; }
+.noteQuote { margin-top: var(--space-3); padding-left: var(--space-4); border-left: 2px solid var(--app-fg-amber); color: var(--doc-muted); font-size: 12.5px; line-height: 1.65; }
+.noteBody { margin-top: var(--space-3); color: var(--doc-ink); font-size: 13.5px; line-height: 1.65; white-space: pre-wrap; overflow-wrap: anywhere; }
+.noteActions { display: flex; gap: var(--space-4); margin-top: var(--space-4); }
+.textButton[data-tone="neutral"] { color: var(--doc-accent-b); }
+
+/* Zuordnung einer Unterlage zu einer Vorlesung des Kurses. */
+.lecturePicker { margin-top: var(--space-5); padding: var(--space-4) var(--space-5); background: var(--app-bg); border: 1px solid var(--doc-line); border-radius: 12px; }
+.lecturePicker label { display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap; color: var(--doc-muted); font-size: 12px; font-weight: 650; }
+.lecturePicker select { min-width: 240px; padding: 8px 12px; color: var(--doc-ink); background: var(--app-surface); border: 1.5px solid var(--doc-line); border-radius: 10px; font-size: 13px; font-weight: 400; }
+.lecturePicker select:focus-visible { outline: 2px solid var(--doc-accent-b); outline-offset: 1px; }
+
+/* Gespeicherte Tests. Versuche, Antworten und Punktzahl liegen serverseitig; die
+   Punktzahl kommt fertig vom Backend und wird hier nur dargestellt. */
+.quizPanel { display: grid; gap: var(--space-5); }
+.sectionHead { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-5); flex-wrap: wrap; }
+.sectionHead h2 { font-size: 17px; font-weight: 700; letter-spacing: -.02em; }
+.sectionHead p { margin-top: var(--space-2); color: var(--doc-muted); font-size: 12.5px; }
+
+.quizSetup { display: grid; gap: var(--space-4); padding: var(--space-5); background: var(--app-bg); border: 1px solid var(--doc-line); border-radius: 12px; }
+.quizSetup label { display: grid; gap: 5px; color: var(--doc-muted); font-size: 12px; font-weight: 650; }
+.quizSetup input { width: 110px; padding: 9px 12px; color: var(--doc-ink); background: var(--app-surface); border: 1.5px solid var(--doc-line); border-radius: 10px; font-size: 13px; font-weight: 400; }
+.quizSetupActions { display: flex; justify-content: flex-end; gap: var(--space-4); align-items: center; }
+.quizSetupActions .viewerLink { margin-top: 0; }
+.quizSetupHint { color: var(--doc-muted); font-size: 11.5px; line-height: 1.6; }
+
+.quizList { display: grid; gap: var(--space-3); margin: 0; padding: 0; list-style: none; }
+.quizList li { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; padding: var(--space-4) var(--space-5); background: var(--app-surface); border: 1px solid var(--doc-line); border-radius: 12px; }
+.quizList strong { display: block; font-size: 14px; font-weight: 650; overflow-wrap: anywhere; }
+.quizList small { display: block; margin-top: 3px; color: var(--doc-muted); font-size: 11.5px; }
+
+.quizReviewQuestion { font-size: 13.5px; font-weight: 650; line-height: 1.5; }
+.quizReviewAnswer { margin-top: var(--space-2); color: var(--doc-muted); font-size: 12.5px; line-height: 1.5; }
+.quizReviewAnswer[data-tone="correct"] { color: var(--app-fg-teal); }
+/* Kurzer Hinweis unter dem Lernfortschritt. Die Klasse wurde bislang verwendet,
+   war aber nie definiert — der Text lief daher ohne Formatierung mit. */
+.uploadHint { margin-top: var(--space-4); color: var(--doc-muted); font-size: 12.5px; line-height: 1.6; }
+/* Fällige Wiederholungen eines Decks; die Zahl kommt serverseitig berechnet. */
+.deckCardDue { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 999px; background: var(--app-amber-tint); color: var(--app-fg-amber); font-size: 11px; font-weight: 650; }

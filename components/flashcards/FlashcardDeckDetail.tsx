@@ -8,10 +8,29 @@ import {
   deleteDeck,
   deleteFlashcard,
   getDeck,
+  updateDeck,
   type FlashcardDeck,
 } from "@/lib/supabase/queries/flashcards";
-import { getDeckProgress, markCardKnown, markCardReviewed, toggleCardStarred } from "@/lib/flashcardProgress";
+import {
+  listCardProgress,
+  recordFlashcardReview,
+  setCardStarred,
+  type CardProgress,
+} from "@/lib/supabase/queries/flashcardReview";
 import styles from "@/components/documents/documents.module.css";
+
+/** Ein noch nie beantwortetes, nicht markiertes Kartenblatt. */
+function blankProgress(cardId: string): CardProgress {
+  return {
+    cardId,
+    known: null,
+    starred: false,
+    intervalDays: 0,
+    repetitionCount: 0,
+    reviewedAt: null,
+    dueAt: null,
+  };
+}
 
 export default function FlashcardDeckDetail({
   courseId,
@@ -36,12 +55,20 @@ export default function FlashcardDeckDetail({
 
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [deletingSet, setDeletingSet] = useState(false);
-  const [, forceUpdate] = useState(0);
+  // Serverseitiger Lernfortschritt je Karte. Früher lag er nur in der Browser-Sitzung
+  // und war nach dem Schließen des Tabs weg; jetzt gehört er zum Konto.
+  const [progress, setProgress] = useState<Map<string, CardProgress>>(new Map());
 
   useEffect(() => {
     let active = true;
     getDeck(materialId)
-      .then((nextDeck) => { if (active) setDeck(nextDeck); })
+      .then(async (nextDeck) => {
+        if (!active) return;
+        setDeck(nextDeck);
+        if (!nextDeck || nextDeck.cards.length === 0) return;
+        const loaded = await listCardProgress(nextDeck.cards.map((entry) => entry.id));
+        if (active) setProgress(loaded);
+      })
       .catch(() => { if (active) setLoadError("Das Deck konnte nicht geladen werden."); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
@@ -49,26 +76,47 @@ export default function FlashcardDeckDetail({
 
   const card = deck?.cards[index];
 
-  useEffect(() => {
-    if (card) markCardReviewed(materialId, card.id);
-  }, [materialId, card]);
-
   function go(delta: number) {
     setRevealed(false);
     setIndex((current) => Math.min((deck?.cards.length ?? 1) - 1, Math.max(0, current + delta)));
   }
 
+  /** Benennt Material und Deck gemeinsam um; dafür gibt es seit 20261003140000 einen RPC. */
+  async function handleRename() {
+    if (!deck) return;
+    const next = window.prompt("Neuer Name des Kartensatzes", deck.title);
+    if (next === null || !next.trim() || next.trim() === deck.title) return;
+    try {
+      await updateDeck(materialId, { title: next });
+      setDeck({ ...deck, title: next.trim() });
+    } catch {
+      setError("Der Kartensatz konnte nicht umbenannt werden.");
+    }
+  }
+
   function toggleStar() {
     if (!card) return;
-    toggleCardStarred(materialId, card.id);
-    forceUpdate((current) => current + 1);
+    const current = progress.get(card.id);
+    const next = !(current?.starred ?? false);
+    // Sofort umschalten, damit der Stern nicht hängt; schlägt das Speichern fehl, zurück.
+    setProgress((map) => new Map(map).set(card.id, { ...blankProgress(card.id), ...current, starred: next }));
+    void setCardStarred(card.id, next).catch(() => {
+      setProgress((map) => new Map(map).set(card.id, { ...blankProgress(card.id), ...current, starred: !next }));
+      setError("Die Markierung konnte nicht gespeichert werden.");
+    });
   }
 
   function rate(known: boolean) {
     if (!card) return;
-    markCardKnown(materialId, card.id, known);
-    if (index === (deck?.cards.length ?? 1) - 1) return;
-    go(1);
+    const cardId = card.id;
+    const last = index === (deck?.cards.length ?? 1) - 1;
+    // Der Server bestimmt Intervall und Fälligkeit; hier wird nichts selbst gerechnet.
+    void recordFlashcardReview(cardId, known, crypto.randomUUID())
+      .then((saved) => {
+        if (saved) setProgress((map) => new Map(map).set(cardId, saved));
+      })
+      .catch(() => setError("Die Antwort konnte nicht gespeichert werden."));
+    if (!last) go(1);
   }
 
   async function handleAdd(event: FormEvent<HTMLFormElement>) {
@@ -127,7 +175,15 @@ export default function FlashcardDeckDetail({
     );
   }
 
-  const progress = getDeckProgress(materialId);
+  const cardState = (card ? progress.get(card.id) : undefined) ?? blankProgress(card?.id ?? "");
+  // Nur zeitunabhängige Zahlen: „beantwortet“ und „gewusst“ stehen direkt im geladenen
+  // Fortschritt. Die Zahl fälliger Wiederholungen hinge von der aktuellen Uhrzeit ab und
+  // wäre im Render unrein; sie steht serverseitig berechnet in der Deck-Übersicht.
+  const tracked = deck.cards.map((entry) => progress.get(entry.id)).filter((entry) => entry !== undefined);
+  const counts = {
+    reviewed: tracked.filter((entry) => entry.known !== null).length,
+    known: tracked.filter((entry) => entry.known === true).length,
+  };
 
   return (
     <div className={styles.page}>
@@ -141,10 +197,15 @@ export default function FlashcardDeckDetail({
           <h1>{deck.title}</h1>
           <p className={styles.subhead}>{deck.cards.length} {deck.cards.length === 1 ? "Karte" : "Karten"}</p>
         </div>
-        <button type="button" className={styles.deleteSetButton} onClick={() => setConfirmingDelete(true)}>
-          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M5 7h14M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2m2 0-.9 12.1a2 2 0 0 1-2 1.9H8.9a2 2 0 0 1-2-1.9L6 7Z" /></svg>
-          Set löschen
-        </button>
+        <div className={styles.headerActions}>
+          <button type="button" className={styles.textButton} data-tone="neutral" onClick={() => void handleRename()}>
+            Umbenennen
+          </button>
+          <button type="button" className={styles.deleteSetButton} onClick={() => setConfirmingDelete(true)}>
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M5 7h14M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2m2 0-.9 12.1a2 2 0 0 1-2 1.9H8.9a2 2 0 0 1-2-1.9L6 7Z" /></svg>
+            Set löschen
+          </button>
+        </div>
       </header>
 
       {error && <p className={styles.errorHint} role="alert">{error}</p>}
@@ -166,13 +227,13 @@ export default function FlashcardDeckDetail({
               onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setRevealed((current) => !current); } }}
             >
               <div className={styles.studyBadgeRow}>
-                <span className={styles.studyStatusTag} data-tone={progress.known.has(card.id) ? "known" : undefined}>
-                  {progress.known.has(card.id) ? "Gewusst" : progress.reviewed.has(card.id) ? "Gesehen" : "Neu"}
+                <span className={styles.studyStatusTag} data-tone={cardState.known === true ? "known" : undefined}>
+                  {cardState.known === true ? "Gewusst" : cardState.known === false ? "Nochmal" : "Neu"}
                 </span>
-                <button type="button" className={styles.studyStarButton} data-active={progress.starred.has(card.id)}
-                  aria-label={progress.starred.has(card.id) ? "Aus Favoriten entfernen" : "Als Favorit markieren"}
+                <button type="button" className={styles.studyStarButton} data-active={cardState.starred}
+                  aria-label={cardState.starred ? "Aus Favoriten entfernen" : "Als Favorit markieren"}
                   onClick={(event) => { event.stopPropagation(); toggleStar(); }}>
-                  <svg viewBox="0 0 24 24" fill={progress.starred.has(card.id) ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="m12 3 2.6 5.6 6.1.7-4.5 4.2 1.2 6-5.4-3-5.4 3 1.2-6-4.5-4.2 6.1-.7Z" /></svg>
+                  <svg viewBox="0 0 24 24" fill={cardState.starred ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="m12 3 2.6 5.6 6.1.7-4.5 4.2 1.2 6-5.4-3-5.4 3 1.2-6-4.5-4.2 6.1-.7Z" /></svg>
                 </button>
               </div>
               <p className={styles.studyQuestion}>{revealed ? card.answer : card.question}</p>
@@ -198,7 +259,7 @@ export default function FlashcardDeckDetail({
                 <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m9 5 7 7-7 7" /></svg>
               </button>
             </div>
-            <p className={styles.uploadHint}>{progress.known.size} von {progress.reviewed.size} gesehenen Karten als gewusst markiert.</p>
+            <p className={styles.uploadHint}>{counts.known} von {counts.reviewed} beantworteten Karten gewusst.</p>
 
             <div className={styles.manageSection}>
               <button type="button" className={styles.manageToggle} data-open={manageOpen} onClick={() => setManageOpen((current) => !current)}>

@@ -190,3 +190,43 @@ button.fileName:hover { text-decoration: underline; text-underline-offset: 3px; 
 /* Shared light workspace surface from the reference screens. */
 .page { min-height: calc(100svh - 102px); padding: 26px; background: var(--app-veil); border: 1px solid var(--app-line-soft); border-radius: 14px; box-shadow: 0 5px 24px rgba(104,133,190,.035); }
 @media (max-width: 640px) { .page { padding: 18px 14px; min-height: calc(100svh - 100px); } }
+
+/* Optionale Kursangaben nebeneinander: Semester, Dozent/in, Zielnote.
+   Unter 560px untereinander, sonst wird die Zielnote zu schmal. */
+.fieldRow { display: grid; grid-template-columns: 1fr 1fr 110px; gap: var(--space-4); }
+.fieldRow .field { margin-top: var(--space-5); }
+@media (max-width: 560px) { .fieldRow { grid-template-columns: 1fr; gap: 0; } }
+
+/* Kursangaben im Kopf und die Vorlesungsgliederung darunter. */
+.courseFacts { display: flex; flex-wrap: wrap; gap: var(--space-4); margin-top: var(--space-3); color: var(--cl-muted); font-size: 12.5px; }
+.courseFacts span { display: inline-flex; align-items: center; padding: 3px 11px; background: var(--app-bg); border: 1px solid var(--cl-line); border-radius: 999px; }
+
+.lectureSection { margin-top: var(--space-6); padding: var(--space-6); background: var(--app-surface); border: 1px solid var(--cl-line); border-radius: 14px; }
+.lectureSection h2 { font-size: 16px; font-weight: 700; letter-spacing: -.02em; }
+.lectureSection .sectionHead p { margin-top: var(--space-2); color: var(--cl-muted); font-size: 12.5px; }
+.secondaryButton { flex-shrink: 0; min-height: 38px; padding-inline: var(--space-4); color: var(--cl-ink); background: var(--app-bg); border: 1.5px solid var(--cl-line); border-radius: 999px; font-size: 12.5px; font-weight: 650; cursor: pointer; }
+.secondaryButton:hover { border-color: var(--app-line-strong); }
+
+.lectureForm { display: grid; grid-template-columns: 1fr 180px; gap: var(--space-4); margin-top: var(--space-5); padding: var(--space-4); background: var(--app-bg); border-radius: 12px; }
+.lectureForm label { display: grid; gap: 5px; color: var(--cl-muted); font-size: 12px; font-weight: 650; }
+.lectureForm input { width: 100%; padding: 9px 12px; color: var(--cl-ink); background: var(--app-surface); border: 1.5px solid var(--cl-line); border-radius: 10px; font-size: 13px; font-weight: 400; }
+.lectureFormActions { grid-column: 1 / -1; display: flex; justify-content: flex-end; gap: var(--space-3); }
+@media (max-width: 560px) { .lectureForm { grid-template-columns: 1fr; } }
+
+.lectureList { display: grid; gap: var(--space-2); margin: var(--space-5) 0 0; padding: 0; list-style: none; }
+.lectureList li { display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap; padding: 11px 14px; background: var(--app-bg); border-radius: 10px; font-size: 13px; }
+.lectureTitle { font-weight: 650; overflow-wrap: anywhere; }
+.lectureDate { color: var(--cl-muted); font-size: 12px; }
+.lectureActions { display: flex; gap: var(--space-3); margin-left: auto; }
+.lectureActions button { color: var(--cl-muted); background: none; border: 0; font-size: 12px; font-weight: 650; cursor: pointer; }
+.lectureActions button:hover:not(:disabled) { text-decoration: underline; }
+.lectureActions button[data-tone="danger"] { color: var(--app-danger-strong); }
+.lectureActions button:disabled { opacity: .5; cursor: not-allowed; }
+.factsEdit { color: var(--cl-muted); background: none; border: 0; font-size: 12px; font-weight: 650; text-decoration: underline; cursor: pointer; }
+.factsEdit:hover { color: var(--cl-ink); }
+.factsForm { display: grid; grid-template-columns: 1fr 1fr 110px; gap: var(--space-4); margin-top: var(--space-4); padding: var(--space-4); background: var(--app-bg); border-radius: 12px; }
+.factsForm label { display: grid; gap: 5px; color: var(--cl-muted); font-size: 12px; font-weight: 650; }
+.factsForm input { width: 100%; padding: 9px 12px; color: var(--cl-ink); background: var(--app-surface); border: 1.5px solid var(--cl-line); border-radius: 10px; font-size: 13px; font-weight: 400; }
+.factsFormActions { grid-column: 1 / -1; display: flex; justify-content: flex-end; gap: var(--space-3); }
+.factsForm .hint { grid-column: 1 / -1; }
+@media (max-width: 560px) { .factsForm { grid-template-columns: 1fr; } }

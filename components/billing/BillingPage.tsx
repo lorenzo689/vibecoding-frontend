@@ -15,6 +15,7 @@ import {
   type StripeRedirectAction,
 } from "@/lib/billing";
 import { createClient } from "@/lib/supabase/browser";
+import UsageOverview from "./UsageOverview";
 import s from "./billing.module.css";
 
 type LoadState =
@@ -47,6 +48,8 @@ export default function BillingPage({
     initialError ? { status: "error", message: initialError } : { status: "ready", subscription: initialSubscription }
   );
   const [actionState, setActionState] = useState<ActionState>({ status: "idle" });
+  // Nie vorangekreuzt: die Zustimmung muss eine bewusste Handlung sein.
+  const [waiver, setWaiver] = useState(false);
 
   // Beim Zurück-Navigieren von Stripe (Browser-Cache) soll die Seite nicht im Weiterleitungs-Zustand hängen.
   useEffect(() => {
@@ -71,7 +74,7 @@ export default function BillingPage({
   async function open(action: StripeRedirectAction) {
     setActionState({ status: "redirecting", action });
     try {
-      const url = await requestStripeRedirect(createClient(), action);
+      const url = await requestStripeRedirect(createClient(), action, { waiverAccepted: waiver });
       window.location.assign(url);
     } catch (error) {
       if (error instanceof BillingError && error.code === "UNAUTHENTICATED") {
@@ -144,9 +147,23 @@ export default function BillingPage({
         <div className={s.planFoot}>
           {pro && <p className={s.detail}>{view.detail}</p>}
 
+          {/* Widerrufsrecht (§ 356 Abs. 4/5 BGB): Pro steht sofort zur Verfügung, deshalb
+              muss der Nutzer die sofortige Leistung ausdrücklich verlangen. Das Häkchen
+              geht als `waiver_accepted` an die Function, die Zeitpunkt und Textversion
+              bei Stripe festhält. Nie vorangekreuzt. */}
+          {view.canSubscribe && (
+            <label className={s.waiver}>
+              <input type="checkbox" checked={waiver} onChange={(event) => setWaiver(event.target.checked)} disabled={busy} />
+              <span>
+                Ich verlange ausdrücklich, dass UniVerse Pro sofort bereitsteht, und weiß,
+                dass mein Widerrufsrecht mit der vollständigen Bereitstellung erlischt.
+              </span>
+            </label>
+          )}
+
           <div className={s.actions}>
             {view.canSubscribe && (
-              <button type="button" className={s.primary} onClick={() => void open("checkout")} disabled={busy}>
+              <button type="button" className={s.primary} onClick={() => void open("checkout")} disabled={busy || !waiver}>
                 {actionState.status === "redirecting" && actionState.action === "checkout" ? "Weiterleitung zu Stripe …" : "Pro freischalten"}
               </button>
             )}
@@ -174,6 +191,8 @@ export default function BillingPage({
           </div>
         </div>
       </section>
+
+      <UsageOverview />
     </div>
   );
 }
