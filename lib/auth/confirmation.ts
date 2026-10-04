@@ -1,7 +1,7 @@
 export const PENDING_CONFIRMATION_COOKIE = "lernapp_pending_confirmation";
 export const RECOVERY_SESSION_COOKIE = "lernapp_recovery_session";
 
-export type SupportedEmailOtpType = "email" | "recovery";
+export type SupportedEmailOtpType = "email" | "recovery" | "email_change";
 
 export type PendingConfirmation = {
   tokenHash: string;
@@ -11,7 +11,7 @@ export type PendingConfirmation = {
 const TOKEN_HASH_PATTERN = /^[A-Za-z0-9_-]{20,512}$/;
 
 export function parseEmailOtpType(value: string | null): SupportedEmailOtpType | null {
-  return value === "email" || value === "recovery" ? value : null;
+  return value === "email" || value === "recovery" || value === "email_change" ? value : null;
 }
 
 export function createPendingConfirmation(

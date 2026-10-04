@@ -11,7 +11,8 @@ export const metadata: Metadata = {
   description: "Persönliche Profil- und Kontoinformationen",
 };
 
-export default async function Page() {
+export default async function Page(props: PageProps<"/profile">) {
+  const { email: emailNotice } = await props.searchParams;
   const supabase = await createClient();
   const { data: userData, error: userError } = await supabase.auth.getUser();
 
@@ -38,7 +39,8 @@ export default async function Page() {
     <ProfilePage
       proSubscription={proSubscription}
       proUnavailable={proUnavailable}
-      email={userData.user.email ?? "Keine E-Mail-Adresse verfügbar"}
+      email={userData.user.email ?? null}
+      emailChanged={emailNotice === "changed"}
       initialProfile={data ?? null}
       initialError={
         error
