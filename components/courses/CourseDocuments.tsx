@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent, type DragEvent, type FormEvent } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { getCourse, type Course } from "@/lib/supabase/queries/courses";
 import {
   deleteCourseFile,
@@ -19,6 +20,7 @@ import { listLectures, type Lecture } from "@/lib/supabase/queries/lectures";
 import {
   LECTURE_FILTER_ALL,
   LECTURE_FILTER_NONE,
+  lectureFilterSearch,
   matchesLectureFilter,
   resolveLectureFilter,
   type LectureFilter,
@@ -109,6 +111,7 @@ export default function CourseDocuments({ courseId, initialLecture = null }: { c
   const [documentStatuses, setDocumentStatuses] = useState<CourseDocumentStatus[]>([]);
   const [lectures, setLectures] = useState<Lecture[]>([]);
   const [lectureFilter, setLectureFilter] = useState<LectureFilter>(LECTURE_FILTER_ALL);
+  const pathname = usePathname();
   const [loadError, setLoadError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [removingOrphan, setRemovingOrphan] = useState<string | null>(null);
@@ -165,6 +168,13 @@ export default function CourseDocuments({ courseId, initialLecture = null }: { c
       .catch(() => {});
     return () => { active = false; };
   }, [courseId, initialLecture]);
+
+  // Der Filter steht in der URL, damit er Neuladen und Zurück-Navigation übersteht.
+  // `replaceState` statt Router: kein neuer Server-Render, kein neues Laden der Vorlesungen.
+  function selectLectureFilter(next: LectureFilter) {
+    setLectureFilter(next);
+    window.history.replaceState(null, "", `${pathname}${lectureFilterSearch(next)}`);
+  }
 
   const lectureTitleById = useMemo(() => new Map(lectures.map((lecture) => [lecture.id, lecture.title])), [lectures]);
 
@@ -396,7 +406,7 @@ export default function CourseDocuments({ courseId, initialLecture = null }: { c
         <div className={styles.lectureFilter}>
           <label>
             <span>Vorlesung</span>
-            <select value={lectureFilter} onChange={(event) => setLectureFilter(event.target.value)}>
+            <select value={lectureFilter} onChange={(event) => selectLectureFilter(event.target.value)}>
               <option value={LECTURE_FILTER_ALL}>Alle Unterlagen</option>
               {lectures.map((lecture) => (
                 <option key={lecture.id} value={lecture.id}>{lecture.title}</option>
@@ -418,7 +428,7 @@ export default function CourseDocuments({ courseId, initialLecture = null }: { c
       ) : visibleFiles.length === 0 ? (
         <div className={styles.empty}>
           <h2>Keine Unterlagen in dieser Auswahl.</h2>
-          <button type="button" className={styles.textButton} onClick={() => setLectureFilter(LECTURE_FILTER_ALL)}>
+          <button type="button" className={styles.textButton} onClick={() => selectLectureFilter(LECTURE_FILTER_ALL)}>
             Alle Unterlagen anzeigen
           </button>
         </div>

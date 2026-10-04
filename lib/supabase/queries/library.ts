@@ -3,7 +3,7 @@ import type { DocumentPipelineState, FileProgressStatus } from "../../../compone
 import type { Database } from "../database.types";
 
 // One query for the global document library: every confirmed document of the signed-in
-// user (RLS), across all courses, with its file, its course title and its processing and
+// user (RLS), across all courses, with its file, its course and lecture title and its processing and
 // indexing state. Confirmed means the upload was completed, so a source material exists;
 // unfinished or failed uploads have no document yet and are not part of the library.
 
@@ -20,6 +20,8 @@ export type LibraryDocument = {
   fileId: string;
   courseId: string;
   courseTitle: string;
+  /** Title of the assigned lecture (`materials.lecture_id`), or null when there is none. */
+  lectureTitle: string | null;
   name: string;
   mimeType: string;
   sizeBytes: number;
@@ -34,6 +36,7 @@ type LibraryRow = {
   course_id: string;
   file_id: string | null;
   courses: { title: string } | null;
+  lectures: { title: string } | null;
   files: { original_filename: string; mime_type: string; size_bytes: number; status: string; created_at: string } | null;
   source_documents: {
     id: string;
@@ -56,6 +59,7 @@ export function mapLibraryRows(rows: LibraryRow[]): LibraryDocument[] {
         fileId,
         courseId: row.course_id,
         courseTitle: course.title,
+        lectureTitle: row.lectures?.title ?? null,
         name: file.original_filename,
         mimeType: file.mime_type,
         sizeBytes: file.size_bytes,
@@ -76,7 +80,7 @@ export async function listLibraryDocuments(client: Client): Promise<LibraryDocum
   const { data, error } = await client
     .from("materials")
     .select(
-      "id, course_id, file_id, courses!course_id(title), files!file_id(original_filename, mime_type, size_bytes, status, created_at), source_documents!source_documents_material_id_fkey(id, processing_status, error_code, indexing_status, indexing_error)"
+      "id, course_id, file_id, courses!course_id(title), lectures!lecture_id(title), files!file_id(original_filename, mime_type, size_bytes, status, created_at), source_documents!source_documents_material_id_fkey(id, processing_status, error_code, indexing_status, indexing_error)"
     )
     .eq("type", "source_document")
     .not("file_id", "is", null)

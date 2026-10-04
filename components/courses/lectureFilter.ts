@@ -16,6 +16,23 @@ export function resolveLectureFilter(
   return lectures.some((lecture) => lecture.id === requested) ? requested : LECTURE_FILTER_ALL;
 }
 
+/** Query-String für die Unterlagen-Seite; `all` ist der Normalfall und steht nicht in der URL. */
+export function lectureFilterSearch(filter: LectureFilter): string {
+  return filter === LECTURE_FILTER_ALL ? "" : `?lecture=${encodeURIComponent(filter)}`;
+}
+
+/** Gleiche Reihenfolge wie `listLectures`: nach Termin, ohne Termin zuletzt, sonst nach Anlage. */
+export function sortLectures<T extends { heldOn: string | null; createdAt: string }>(lectures: T[]): T[] {
+  return [...lectures].sort((a, b) => {
+    if (a.heldOn !== b.heldOn) {
+      if (!a.heldOn) return 1;
+      if (!b.heldOn) return -1;
+      return a.heldOn < b.heldOn ? -1 : 1;
+    }
+    return a.createdAt < b.createdAt ? -1 : a.createdAt > b.createdAt ? 1 : 0;
+  });
+}
+
 export function matchesLectureFilter(lectureId: string | null | undefined, filter: LectureFilter): boolean {
   if (filter === LECTURE_FILTER_ALL) return true;
   if (filter === LECTURE_FILTER_NONE) return !lectureId;

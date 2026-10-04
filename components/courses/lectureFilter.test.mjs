@@ -1,6 +1,13 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { countByLecture, isLectureNotFound, matchesLectureFilter, resolveLectureFilter } from "./lectureFilter.ts";
+import {
+  countByLecture,
+  isLectureNotFound,
+  lectureFilterSearch,
+  matchesLectureFilter,
+  resolveLectureFilter,
+  sortLectures,
+} from "./lectureFilter.ts";
 
 const lectures = [{ id: "a" }, { id: "b" }];
 
@@ -32,4 +39,21 @@ test("isLectureNotFound erkennt den Backend-Fehler", () => {
   assert.equal(isLectureNotFound({ message: "x", details: "LECTURE_NOT_FOUND" }), true);
   assert.equal(isLectureNotFound(new Error("other")), false);
   assert.equal(isLectureNotFound(null), false);
+});
+
+test("lectureFilterSearch lässt den Normalfall aus der URL", () => {
+  assert.equal(lectureFilterSearch("all"), "");
+  assert.equal(lectureFilterSearch("none"), "?lecture=none");
+  assert.equal(lectureFilterSearch("a b"), "?lecture=a%20b");
+});
+
+test("sortLectures sortiert nach Termin, ohne Termin zuletzt, sonst nach Anlage", () => {
+  const sorted = sortLectures([
+    { id: "ohne-spaet", heldOn: null, createdAt: "2026-10-02T00:00:00Z" },
+    { id: "nov", heldOn: "2026-11-01", createdAt: "2026-10-01T00:00:00Z" },
+    { id: "ohne-frueh", heldOn: null, createdAt: "2026-10-01T00:00:00Z" },
+    { id: "okt-b", heldOn: "2026-10-15", createdAt: "2026-10-03T00:00:00Z" },
+    { id: "okt-a", heldOn: "2026-10-15", createdAt: "2026-10-01T00:00:00Z" },
+  ]);
+  assert.deepEqual(sorted.map((lecture) => lecture.id), ["okt-a", "okt-b", "nov", "ohne-frueh", "ohne-spaet"]);
 });

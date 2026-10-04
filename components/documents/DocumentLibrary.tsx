@@ -143,7 +143,7 @@ export default function DocumentLibrary() {
               <input
                 type="search"
                 value={filters.query}
-                placeholder="Dateiname oder Kurs suchen …"
+                placeholder="Dateiname, Kurs oder Vorlesung suchen …"
                 onChange={(event) => setFilters((current) => ({ ...current, query: event.target.value }))}
               />
             </label>
@@ -206,7 +206,10 @@ export default function DocumentLibrary() {
                       {progress.tone === "failed" && progress.detail && <span className={s.detail}>{progress.detail}</span>}
                       </span>
                     </span>
-                    <span className={s.meta}>{document.courseTitle}</span>
+                    <span className={s.meta} title={document.lectureTitle ? `${document.courseTitle} · ${document.lectureTitle}` : document.courseTitle}>
+                      {document.courseTitle}
+                      {document.lectureTitle && ` · ${document.lectureTitle}`}
+                    </span>
                     <span className={s.chip} data-tone={progress.tone}>{TONE_LABELS[progress.tone]}</span>
                     <span className={s.meta}>{formatFileSize(document.sizeBytes)}</span>
                     <span className={s.meta}>{formatUploaded(document.uploadedAt)}</span>
