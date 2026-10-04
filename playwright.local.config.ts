@@ -22,7 +22,7 @@ const e2eConfig = {
     {
       name: "authenticated",
       testDir: "./e2e/local",
-      testMatch: /(flow|responsive)\.spec\.ts/,
+      testMatch: /(flow|responsive|quiz)\.spec\.ts/,
       dependencies: ["setup"],
       use: { ...chromium, storageState: authFile },
     },

@@ -301,7 +301,13 @@ export default function CourseDocumentDetail({ courseId, fileId }: { courseId: s
 
       {tab === "quizzes" && materialId && (
         <section className={styles.viewerCard}>
-          <DocumentQuizzes courseId={courseId} materialId={materialId} fileName={file.name} />
+          <DocumentQuizzes key={materialId} materialId={materialId} onOpenSource={(page) => {
+              void getCourseFileDownloadUrl(file.id, false).then(url => {
+                setViewUrlError(null);
+                setViewUrl(file.type === "application/pdf" && page ? `${url.split("#")[0]}#page=${page}` : url);
+                document.querySelector("iframe")?.scrollIntoView({ behavior: "smooth", block: "center" });
+              }).catch(() => setActionError("Die Quelle konnte nicht geöffnet werden."));
+            }} />
         </section>
       )}
 

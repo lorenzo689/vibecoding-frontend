@@ -115,6 +115,8 @@ Do not:
 
 Backend contract baseline:
 
+- Feature exception authorized for `feat/ai-quiz-generation`: use the paired backend feature branch and migration `20261005100000_quiz_generation.sql`. Deploy its migration and functions before this frontend; update the types header to the final backend commit.
+
 - Until the pending backend release merge `dev` → `main`, the backend `dev` branch at the revision recorded in the header of `lib/supabase/database.types.ts` is the integration baseline of this frontend. Backend `main` does not yet contain the features the frontend depends on (RLS, files, chat, calendar, grades), so it is not the complete contract.
 - After the release merge, backend `main` is the production contract again. Then update this section and re-sync `lib/supabase/database.types.ts` from `main`.
 - The baseline is a deliberate, documented state, not a permanent rule. Do not switch to another branch, an unmerged feature branch, or a different revision without an explicit instruction.

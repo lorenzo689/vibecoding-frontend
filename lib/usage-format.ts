@@ -1,13 +1,14 @@
 // Reine Darstellungshilfen für Nutzungskontingente — ohne Supabase-Client, damit sie
 // testbar bleiben. Die Schlüssel stammen aus `plan_limits.kind` (Backend 20261004120000).
 
-export type UsageKind = "chat" | "search" | "summary" | "flashcards" | "material_analysis" | "upload";
+export type UsageKind = "chat" | "search" | "summary" | "flashcards" | "quizzes" | "material_analysis" | "upload";
 
 export const USAGE_LABELS: Record<UsageKind, string> = {
   chat: "KI-Nachrichten",
   search: "Suchanfragen",
   summary: "Zusammenfassungen",
   flashcards: "Karteikarten-Generierungen",
+  quizzes: "Quiz-Generierungen",
   material_analysis: "Materialanalysen",
   upload: "Uploads",
 };

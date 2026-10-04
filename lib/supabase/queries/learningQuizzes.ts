@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase/browser";
 // das Frontend zählt nichts selbst nach. Es ist bewusst kein Prüfungsmodus: Besitzer
 // dürfen die richtigen Antworten sehen.
 
-import type { QuizQuestion } from "./quiz-format";
+import { parseQuizQuestions, type QuizQuestion } from "./quiz-format";
 
 // Reine Regeln liegen in `quiz-format`, damit sie ohne Supabase-Client testbar sind.
 export {
@@ -39,31 +39,25 @@ export type QuizAttempt = {
   submittedAt: string | null;
 };
 
-function parseQuestions(value: unknown): QuizQuestion[] {
-  if (!Array.isArray(value)) return [];
-  return value.flatMap((entry) => {
-    const row = entry as { question?: unknown; options?: unknown; correctIndex?: unknown };
-    if (typeof row.question !== "string" || !Array.isArray(row.options)) return [];
-    const options = row.options.filter((option): option is string => typeof option === "string");
-    if (options.length !== 4) return [];
-    const correct = typeof row.correctIndex === "number" ? row.correctIndex : -1;
-    if (!Number.isInteger(correct) || correct < 0 || correct > 3) return [];
-    return [{ question: row.question, options, correctIndex: correct }];
-  });
-}
-
 function parseAnswers(value: unknown, length: number): (number | null)[] {
   const raw = Array.isArray(value) ? value : [];
   return Array.from({ length }, (_unused, index) => {
     const entry = raw[index];
-    return typeof entry === "number" && Number.isInteger(entry) ? entry : null;
+    return typeof entry === "number" &&
+      Number.isInteger(entry) &&
+      entry >= 0 &&
+      entry <= 3
+      ? entry
+      : null;
   });
 }
 
 export async function listQuizzes(materialId: string): Promise<SavedQuiz[]> {
   const { data, error } = await createClient()
     .from("learning_quizzes")
-    .select("id, family_id, revision, title, source_material_id, questions, created_at")
+    .select(
+      "id, family_id, revision, title, source_material_id, questions, created_at",
+    )
     .eq("source_material_id", materialId)
     .order("created_at", { ascending: false });
 
@@ -74,7 +68,7 @@ export async function listQuizzes(materialId: string): Promise<SavedQuiz[]> {
     revision: row.revision,
     title: row.title,
     sourceMaterialId: row.source_material_id,
-    questions: parseQuestions(row.questions),
+    questions: parseQuizQuestions(row.questions),
     createdAt: row.created_at,
   }));
 }
@@ -98,14 +92,23 @@ export async function saveQuiz(input: {
       question: question.question,
       options: question.options,
       correctIndex: question.correctIndex,
+      ...(question.explanation ? { explanation: question.explanation } : {}),
+      ...(question.source_chunk_ids
+        ? { source_chunk_ids: question.source_chunk_ids }
+        : {}),
     })),
     p_request_id: input.requestId,
     ...(input.previousQuizId ? { p_previous_quiz: input.previousQuizId } : {}),
   });
 
   if (error) throw error;
-  const row = data as { quiz_id?: unknown; family_id?: unknown; revision?: unknown } | null;
-  if (typeof row?.quiz_id !== "string") throw new Error("Unerwartete Antwort beim Speichern des Quiz.");
+  const row = data as {
+    quiz_id?: unknown;
+    family_id?: unknown;
+    revision?: unknown;
+  } | null;
+  if (typeof row?.quiz_id !== "string")
+    throw new Error("Unerwartete Antwort beim Speichern des Quiz.");
   return {
     quizId: row.quiz_id,
     familyId: typeof row.family_id === "string" ? row.family_id : "",
@@ -115,7 +118,8 @@ export async function saveQuiz(input: {
 
 function mapAttempt(value: unknown, questionCount: number): QuizAttempt {
   const row = (value ?? {}) as Record<string, unknown>;
-  if (typeof row.id !== "string") throw new Error("Unerwartete Antwort beim Versuch.");
+  if (typeof row.id !== "string")
+    throw new Error("Unerwartete Antwort beim Versuch.");
   return {
     id: row.id,
     quizId: typeof row.quiz_id === "string" ? row.quiz_id : "",
@@ -129,25 +133,22 @@ function mapAttempt(value: unknown, questionCount: number): QuizAttempt {
 export async function startAttempt(
   quizId: string,
   questionCount: number,
-  requestId: string
+  requestId: string,
 ): Promise<QuizAttempt> {
-  const { data, error } = await createClient().rpc("start_learning_quiz_attempt", {
-    p_quiz: quizId,
-    p_request_id: requestId,
-  });
+  const { data, error } = await createClient().rpc(
+    "start_learning_quiz_attempt",
+    {
+      p_quiz: quizId,
+      p_request_id: requestId,
+    },
+  );
   if (error) throw error;
 
   const row = (data ?? {}) as Record<string, unknown>;
   const attemptId = row.attempt_id ?? row.id;
-  if (typeof attemptId !== "string") throw new Error("Unerwartete Antwort beim Start des Versuchs.");
-  return {
-    id: attemptId,
-    quizId,
-    revision: typeof row.revision === "number" ? row.revision : 1,
-    answers: Array.from({ length: questionCount }, () => null),
-    score: null,
-    submittedAt: null,
-  };
+  if (typeof attemptId !== "string")
+    throw new Error("Unerwartete Antwort beim Start des Versuchs.");
+  return getAttempt(attemptId, questionCount);
 }
 
 /**
@@ -160,12 +161,48 @@ export async function saveAttempt(input: {
   expectedRevision: number;
   submit: boolean;
 }): Promise<QuizAttempt> {
-  const { data, error } = await createClient().rpc("save_learning_quiz_attempt", {
-    p_attempt: input.attemptId,
-    p_answers: input.answers,
-    p_expected_revision: input.expectedRevision,
-    p_submit: input.submit,
-  });
+  const { data, error } = await createClient().rpc(
+    "save_learning_quiz_attempt",
+    {
+      p_attempt: input.attemptId,
+      p_answers: input.answers,
+      p_expected_revision: input.expectedRevision,
+      p_submit: input.submit,
+    },
+  );
   if (error) throw error;
   return mapAttempt(data, input.answers.length);
+}
+
+export async function getAttempt(
+  id: string,
+  count: number,
+): Promise<QuizAttempt> {
+  const { data, error } = await createClient()
+    .from("learning_quiz_attempts")
+    .select("*")
+    .eq("id", id)
+    .single();
+  if (error) throw error;
+  return mapAttempt(data, count);
+}
+export async function listAttempts(
+  quizzes: SavedQuiz[],
+): Promise<QuizAttempt[]> {
+  if (!quizzes.length) return [];
+  const { data, error } = await createClient()
+    .from("learning_quiz_attempts")
+    .select("*")
+    .in(
+      "quiz_id",
+      quizzes.map((q) => q.id),
+    )
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return data.map((row) =>
+    mapAttempt(
+      row,
+      quizzes.find((q) => q.id === row.quiz_id)!.questions.length,
+    ),
+  );
 }
