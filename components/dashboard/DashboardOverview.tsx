@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/browser";
 import { listCourses, type Course } from "@/lib/supabase/queries/courses";
 import { listEvents } from "@/lib/supabase/queries/calendar";
 import {
+  countDueFlashcards,
   getProfileName,
   listRecentDocuments,
   listUnfinishedDocuments,
@@ -56,6 +57,7 @@ const loadEvents = () => listEvents();
 const loadRecentDocuments = () => listRecentDocuments(createClient(), 5);
 const loadUnfinishedDocuments = () => listUnfinishedDocuments(createClient());
 const loadProfileName = () => getProfileName(createClient());
+const loadDueFlashcards = () => countDueFlashcards(createClient());
 
 const MAX_EVENTS = 5;
 
@@ -181,6 +183,7 @@ export default function DashboardOverview() {
   const [events, reloadEvents] = useLoadable(loadEvents);
   const [recent, reloadRecent] = useLoadable(loadRecentDocuments);
   const [unfinished] = useLoadable(loadUnfinishedDocuments);
+  const [dueCards] = useLoadable(loadDueFlashcards);
 
   const courseTitles = useMemo(
     () => new Map(courses.status === "ready" ? courses.data.map((course) => [course.id, course.title]) : []),
@@ -358,7 +361,9 @@ export default function DashboardOverview() {
               <span className={s.toolIcon} data-icon={tool.icon} aria-hidden="true"><Icon name={tool.icon} /></span>
               <span className={s.toolBody}>
                 <strong>{tool.title}</strong>
-                <span>{tool.text}</span>
+                <span>{tool.icon === "flashcard" && dueCards.status === "ready" && dueCards.data > 0
+                  ? `${dueCards.data} ${dueCards.data === 1 ? "Karte" : "Karten"} fällig`
+                  : tool.text}</span>
               </span>
               <Icon name="chevron" className={s.chevron} />
             </Link>

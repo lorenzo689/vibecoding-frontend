@@ -3,7 +3,11 @@
 import { useEffect, useState } from "react";
 import { deleteDeck, getDeck, listCourseDecks, type Flashcard, type FlashcardDeck, type FlashcardDeckSummary } from "@/lib/supabase/queries/flashcards";
 import {
+  blankProgress,
+  cardStatusLabel,
   listCardProgress,
+  markCardSeen,
+  recordFlashcardReview,
   setCardStarred,
   type CardProgress,
 } from "@/lib/supabase/queries/flashcardReview";
@@ -24,17 +28,13 @@ function formatShortDate(iso: string): string {
   return new Intl.DateTimeFormat("de-DE", { day: "2-digit", month: "short", year: "numeric" }).format(new Date(iso)).toUpperCase();
 }
 
-/** Eine noch nie beantwortete, nicht markierte Karte. */
-function emptyProgress(cardId: string): CardProgress {
-  return { cardId, known: null, starred: false, intervalDays: 0, repetitionCount: 0, reviewedAt: null, dueAt: null };
-}
-
 // Studying a set happens in place; there is no separate route for it.
 function DeckStudy({ deck, onBack }: { deck: FlashcardDeck; onBack: () => void }) {
   const [index, setIndex] = useState(0);
   const [revealed, setRevealed] = useState(false);
   // Serverseitiger Fortschritt statt Browser-Ablage: er überlebt Tab und Gerät.
   const [progress, setProgress] = useState<Map<string, CardProgress>>(new Map());
+  const [error, setError] = useState<string | null>(null);
   const card: Flashcard | undefined = deck.cards[index];
 
   useEffect(() => {
@@ -50,19 +50,48 @@ function DeckStudy({ deck, onBack }: { deck: FlashcardDeck; onBack: () => void }
     setIndex((current) => Math.min(deck.cards.length - 1, Math.max(0, current + delta)));
   }
 
+  // Aufdecken zählt als „gesehen“ und wird wie der übrige Fortschritt am Konto gespeichert.
+  function toggleReveal() {
+    setRevealed((current) => !current);
+    if (!card || revealed || progress.has(card.id)) return;
+    const cardId = card.id;
+    setProgress((map) => new Map(map).set(cardId, blankProgress(cardId)));
+    void markCardSeen(cardId).catch(() => {
+      setProgress((map) => {
+        if (map.get(cardId)?.reviewedAt) return map;
+        const next = new Map(map);
+        next.delete(cardId);
+        return next;
+      });
+    });
+  }
+
   function toggleStar() {
     if (!card) return;
     const cardId = card.id;
     const current = progress.get(cardId);
     const next = !(current?.starred ?? false);
-    setProgress((map) => new Map(map).set(cardId, { ...emptyProgress(cardId), ...current, starred: next }));
+    setProgress((map) => new Map(map).set(cardId, { ...blankProgress(cardId), ...current, starred: next }));
     void setCardStarred(cardId, next).catch(() => {
-      setProgress((map) => new Map(map).set(cardId, { ...emptyProgress(cardId), ...current, starred: !next }));
+      setProgress((map) => new Map(map).set(cardId, { ...blankProgress(cardId), ...current, starred: !next }));
+      setError("Die Markierung konnte nicht gespeichert werden.");
     });
   }
 
+  function rate(known: boolean) {
+    if (!card) return;
+    const cardId = card.id;
+    setError(null);
+    // Der Server bestimmt Intervall und Fälligkeit; hier wird nichts selbst gerechnet.
+    void recordFlashcardReview(cardId, known, crypto.randomUUID())
+      .then((saved) => { if (saved) setProgress((map) => new Map(map).set(cardId, saved)); })
+      .catch(() => setError("Die Antwort konnte nicht gespeichert werden."));
+    if (index < deck.cards.length - 1) go(1);
+  }
+
   if (!card) return null;
-  const cardState = progress.get(card.id) ?? emptyProgress(card.id);
+  const cardState = progress.get(card.id) ?? blankProgress(card.id);
+  const status = cardStatusLabel(progress.get(card.id));
 
   return (
     <div className={styles.studyPanel}>
@@ -71,12 +100,10 @@ function DeckStudy({ deck, onBack }: { deck: FlashcardDeck; onBack: () => void }
         Zurück zu den Sets
       </button>
 
-      <div className={styles.studyCard} data-revealed={revealed} onClick={() => setRevealed((current) => !current)} role="button" tabIndex={0}
-        onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setRevealed((current) => !current); } }}>
+      <div className={styles.studyCard} data-revealed={revealed} onClick={toggleReveal} role="button" tabIndex={0}
+        onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); toggleReveal(); } }}>
         <div className={styles.studyBadgeRow}>
-          <span className={styles.studyStatusTag} data-tone={cardState.known === true ? "known" : undefined}>
-            {cardState.known === true ? "Gewusst" : cardState.known === false ? "Nochmal" : "Neu"}
-          </span>
+          <span className={styles.studyStatusTag} data-tone={status === "Gewusst" ? "known" : undefined}>{status}</span>
           <button type="button" className={styles.studyStarButton} data-active={cardState.starred}
             aria-label={cardState.starred ? "Aus Favoriten entfernen" : "Als Favorit markieren"}
             onClick={(event) => { event.stopPropagation(); toggleStar(); }}>
@@ -89,6 +116,14 @@ function DeckStudy({ deck, onBack }: { deck: FlashcardDeck; onBack: () => void }
           {revealed ? "Klicken für die Frage" : "Klicken zum Anzeigen der Antwort"}
         </span>
       </div>
+
+      {revealed && (
+        <div className={styles.studyRateRow}>
+          <button type="button" className={styles.studyRateAgain} onClick={() => rate(false)}>Nochmal üben</button>
+          <button type="button" className={styles.studyRateKnown} onClick={() => rate(true)}>Ich wusste es</button>
+        </div>
+      )}
+      {error && <p className={styles.studyError} role="alert">{error}</p>}
 
       <div className={styles.studyNav}>
         <button type="button" onClick={() => go(-1)} disabled={index === 0}>

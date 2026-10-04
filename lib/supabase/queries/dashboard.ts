@@ -109,3 +109,19 @@ export async function getProfileName(client: Client): Promise<string | null> {
   if (error) throw error;
   return data?.name ?? null;
 }
+
+/**
+ * Number of flashcard reviews that are due now, across all of the user's decks. Same rule as
+ * `learning_deck_progress_counts.due` (`due_at <= now`); RLS limits the rows to the user's own
+ * progress, so the count needs no extra owner filter.
+ */
+export async function countDueFlashcards(client: Client, now: Date = new Date()): Promise<number> {
+  const { count, error } = await client
+    .from("flashcard_progress")
+    .select("card_id", { count: "exact", head: true })
+    .not("due_at", "is", null)
+    .lte("due_at", now.toISOString());
+
+  if (error) throw error;
+  return count ?? 0;
+}
